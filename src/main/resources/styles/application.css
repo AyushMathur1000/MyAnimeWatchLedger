@@ -1,0 +1,13 @@
+.app-root {
+    -fx-background-color: #17191f;
+    -fx-font-family: "Segoe UI", sans-serif;
+}
+.app-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f1f2f5;
+}
+.app-subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #aeb4c0;
+}
