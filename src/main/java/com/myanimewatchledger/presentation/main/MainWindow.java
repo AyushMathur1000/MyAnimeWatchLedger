@@ -28,7 +28,7 @@ public final class MainWindow {
     private final ApplicationServices services;
     private final WindowStateStore windowStateStore;
     private final BorderPane root = new BorderPane();
-    private final ContextualToolbar toolbar = new ContextualToolbar();
+    private final ContextualToolbar toolbar;
     private final NavigationSidebar sidebar = new NavigationSidebar(this::navigate);
     private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
     private double lastWindowedWidth = WindowState.defaults().width();
@@ -43,6 +43,7 @@ public final class MainWindow {
     public MainWindow(ApplicationServices services, WindowStateStore windowStateStore) {
         this.services = Objects.requireNonNull(services, "services");
         this.windowStateStore = Objects.requireNonNull(windowStateStore, "windowStateStore");
+        this.toolbar = new ContextualToolbar(this::navigate);
     }
 
     public void show(Stage stage) {
@@ -86,9 +87,7 @@ public final class MainWindow {
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(12, 18, 10, 18));
         header.getStyleClass().add("application-header");
-        VBox top = new VBox(header, toolbar);
-        toolbar.showFor(activeNavigation);
-        return top;
+        return new VBox(header, toolbar);
     }
 
     private void navigate(MainNavigation navigation) {

@@ -6,6 +6,7 @@ import com.myanimewatchledger.domain.ledger.LedgerStatus;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /** Thin presentation controller for permanent ledger operations. */
 public final class LedgerController {
@@ -17,6 +18,10 @@ public final class LedgerController {
 
     public List<LedgerEntry> loadEntries() {
         return service.getAll();
+    }
+
+    public Optional<LedgerEntry> find(long malId) {
+        return service.find(malId);
     }
 
     public boolean changeStatus(long malId, LedgerStatus status) {

@@ -27,11 +27,28 @@ class LedgerFilterTest {
     void selectedStatusesCombineWithTitleSearchUsingAndSemantics() {
         var entries = List.of(entry(1, "Steins;Gate", LedgerStatus.WATCHED),
                 entry(2, "Steins;Gate 0", LedgerStatus.HOLD),
-                entry(3, "Steins;Gate Movie", LedgerStatus.WATCHING));
+                entry(3, "Steins;Gate Movie", LedgerStatus.WATCHING),
+                entry(4, "Steins;Gate OVA", LedgerStatus.WATCH_LATER));
 
         assertEquals(List.of(1L, 3L), LedgerFilter.apply(entries, "steins",
                 Set.of(LedgerStatus.WATCHED, LedgerStatus.WATCHING))
                 .stream().map(LedgerEntry::malId).toList());
+    }
+
+    @Test
+    void allSixStatusesCanBeSelectedIndividually() {
+        var entries = List.of(
+                entry(1, "Watched", LedgerStatus.WATCHED),
+                entry(2, "Watching", LedgerStatus.WATCHING),
+                entry(3, "Abandoned", LedgerStatus.ABANDONED),
+                entry(4, "Blacklisted", LedgerStatus.BLACKLISTED),
+                entry(5, "Hold", LedgerStatus.HOLD),
+                entry(6, "Watch Later", LedgerStatus.WATCH_LATER));
+
+        for (LedgerStatus status : LedgerStatus.values()) {
+            assertEquals(List.of(status), LedgerFilter.apply(entries, "", Set.of(status))
+                    .stream().map(LedgerEntry::status).toList());
+        }
     }
 
     @Test
@@ -40,6 +57,12 @@ class LedgerFilterTest {
                 entry(2, "Two", LedgerStatus.BLACKLISTED));
 
         assertEquals(entries, LedgerFilter.apply(entries, "  ", Set.of()));
+    }
+
+    @Test
+    void nullSearchAndNullStatusSelectionAreTreatedAsNoFilters() {
+        var entries = List.of(entry(1, "One", LedgerStatus.WATCH_LATER));
+        assertEquals(entries, LedgerFilter.apply(entries, null, null));
     }
 
     private static LedgerEntry entry(long id, String title, LedgerStatus status) {

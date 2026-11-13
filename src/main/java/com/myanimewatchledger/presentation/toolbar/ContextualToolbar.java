@@ -2,23 +2,26 @@ package com.myanimewatchledger.presentation.toolbar;
 
 import com.myanimewatchledger.presentation.main.MainNavigation;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.ToolBar;
 import javafx.scene.layout.Region;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /** Builds compact, screen-specific action groups using standard JavaFX controls. */
 public final class ContextualToolbar extends ToolBar {
-    public ContextualToolbar() {
+    private final Consumer<MainNavigation> navigation;
+
+    public ContextualToolbar(Consumer<MainNavigation> navigation) {
+        this.navigation = Objects.requireNonNull(navigation, "navigation");
         getStyleClass().add("contextual-toolbar");
     }
 
-    public void showFor(MainNavigation navigation) {
+    public void showFor(MainNavigation screen) {
         getItems().clear();
-        List<String[]> groups = switch (navigation) {
+        List<String[]> groups = switch (screen) {
             case MY_LEDGER -> List.of(
                     new String[]{"＋ Add anime"},
                     new String[]{"⇄ Change status", "－ Remove"},
@@ -40,9 +43,15 @@ public final class ContextualToolbar extends ToolBar {
             for (String action : groups.get(groupIndex)) {
                 Button button = new Button(action);
                 button.getStyleClass().add("toolbar-action");
-                button.setDisable(true);
                 button.setFocusTraversable(false);
-                button.setTooltip(new javafx.scene.control.Tooltip(action + " — available in a later milestone"));
+                if (screen == MainNavigation.MY_LEDGER && action.contains("Add anime")) {
+                    button.setOnAction(event -> navigation.accept(MainNavigation.CATALOGUE));
+                    button.setTooltip(new javafx.scene.control.Tooltip("Open the Catalogue to add anime"));
+                } else {
+                    button.setDisable(true);
+                    button.setTooltip(new javafx.scene.control.Tooltip(
+                            action + " — available in a later milestone"));
+                }
                 getItems().add(button);
             }
         }

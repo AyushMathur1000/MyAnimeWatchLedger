@@ -33,8 +33,8 @@ public final class LedgerView extends VBox {
     private final Button applyStatusButton = new Button("Apply status");
     private final Button removeButton = new Button("Remove");
     private final EnumSet<LedgerStatus> selectedStatuses = EnumSet.noneOf(LedgerStatus.class);
-    private final Set<CheckBox> statusChecks = new java.util.LinkedHashSet<>();
-    private final Label emptyLabel = new Label("Your anime ledger is empty. Add anime from the Catalogue.");
+    private final Label emptyLabel = new Label();
+    private final Label feedbackLabel = new Label();
 
     public LedgerView(LedgerController controller) {
         this.controller = controller;
@@ -55,11 +55,11 @@ public final class LedgerView extends VBox {
 
         configureTable();
         emptyLabel.getStyleClass().add("ledger-empty");
+        feedbackLabel.getStyleClass().add("ledger-feedback");
         table.setPlaceholder(emptyLabel);
         VBox.setVgrow(table, Priority.ALWAYS);
-        getChildren().addAll(heading, searchRow, createRowActions(), table);
+        getChildren().addAll(heading, searchRow, createRowActions(), feedbackLabel, table);
         load();
-        updateCount();
     }
 
     private HBox createStatusFilters() {
@@ -71,9 +71,8 @@ public final class LedgerView extends VBox {
         for (LedgerStatus status : LedgerStatus.values()) {
             CheckBox check = new CheckBox(displayStatus(status));
             check.getStyleClass().add("ledger-status-filter");
-            statusChecks.add(check);
-            check.selectedProperty().addListener((obs, oldValue, selected) -> {
-                if (selected) selectedStatuses.add(status);
+            check.setOnAction(event -> {
+                if (check.isSelected()) selectedStatuses.add(status);
                 else selectedStatuses.remove(status);
                 applyFilters();
             });
@@ -98,6 +97,8 @@ public final class LedgerView extends VBox {
 
         TableColumn<LedgerEntry, LedgerStatus> status = new TableColumn<>("Status");
         status.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyObjectWrapper<>(data.getValue().status()));
+        status.setComparator(java.util.Comparator.comparing(LedgerView::displayStatus,
+                String.CASE_INSENSITIVE_ORDER));
         status.setCellFactory(column -> new TableCell<>() {
             @Override protected void updateItem(LedgerStatus item, boolean empty) {
                 super.updateItem(item, empty);
@@ -126,6 +127,7 @@ public final class LedgerView extends VBox {
         TableColumn<LedgerEntry, java.time.Instant> column = new TableColumn<>(heading);
         column.setCellValueFactory(data ->
                 new javafx.beans.property.ReadOnlyObjectWrapper<>(extractor.apply(data.getValue())));
+        column.setComparator(java.util.Comparator.naturalOrder());
         column.setCellFactory(col -> new TableCell<>() {
             @Override protected void updateItem(java.time.Instant item, boolean empty) {
                 super.updateItem(item, empty);
@@ -155,6 +157,7 @@ public final class LedgerView extends VBox {
             applyStatusButton.setDisable(!hasSelection);
             removeButton.setDisable(!hasSelection);
             if (selected != null) statusChoice.setValue(selected.status());
+            else statusChoice.setValue(null);
         });
         applyStatusButton.setOnAction(event -> changeSelectedStatus());
         removeButton.setOnAction(event -> removeSelected());
@@ -167,16 +170,21 @@ public final class LedgerView extends VBox {
     }
 
     private void load() {
-        source.setAll(controller.loadEntries());
-        applyFilters();
+        try {
+            source.setAll(controller.loadEntries());
+            feedbackLabel.setText("");
+            applyFilters();
+        } catch (RuntimeException exception) {
+            source.clear();
+            emptyLabel.setText("The ledger could not be loaded. Check the database and try again.");
+            feedbackLabel.setText("Database error: " + safeMessage(exception));
+            updateCount();
+        }
     }
 
     private void applyFilters() {
-        String query = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase(java.util.Locale.ROOT);
-        Set<LedgerStatus> statuses = Set.copyOf(selectedStatuses);
-        filtered.setPredicate(entry ->
-                (query.isEmpty() || entry.title().toLowerCase(java.util.Locale.ROOT).contains(query))
-                        && (statuses.isEmpty() || statuses.contains(entry.status())));
+        filtered.setPredicate(entry -> LedgerFilter.apply(
+                java.util.List.of(entry), searchField.getText(), Set.copyOf(selectedStatuses)).size() == 1);
         emptyLabel.setText(source.isEmpty()
                 ? "Your anime ledger is empty. Add anime from the Catalogue."
                 : "No entries match the current search and filters.");
@@ -185,9 +193,14 @@ public final class LedgerView extends VBox {
 
     private void clearFilters() {
         searchField.clear();
-        for (CheckBox check : statusChecks) check.setSelected(false);
         selectedStatuses.clear();
+        getStatusChecks().forEach(check -> check.setSelected(false));
         applyFilters();
+    }
+
+    private java.util.List<CheckBox> getStatusChecks() {
+        return ((HBox) getChildren().get(1)).getChildren().stream()
+                .filter(CheckBox.class::isInstance).map(CheckBox.class::cast).toList();
     }
 
     private void changeSelectedStatus() {
@@ -195,10 +208,20 @@ public final class LedgerView extends VBox {
         LedgerStatus next = statusChoice.getValue();
         if (selected == null || next == null || selected.status() == next) return;
         try {
-            if (controller.changeStatus(selected.malId(), next)) load();
-            else showError("The status could not be changed. The entry may have been modified elsewhere.");
+            if (!controller.changeStatus(selected.malId(), next)) {
+                showFeedback("The status could not be changed. The entry may have been modified elsewhere.", true);
+                return;
+            }
+            LedgerEntry updated = controller.find(selected.malId()).orElseThrow(
+                    () -> new IllegalStateException("The updated ledger entry could not be reloaded."));
+            int index = source.indexOf(selected);
+            if (index >= 0) source.set(index, updated);
+            table.getSelectionModel().select(updated);
+            statusChoice.setValue(updated.status());
+            showFeedback("Status updated to " + displayStatus(updated.status()) + ".", false);
+            applyFilters();
         } catch (RuntimeException exception) {
-            showError("Could not change status: " + exception.getMessage());
+            showFeedback("Could not change status: " + safeMessage(exception), true);
         }
     }
 
@@ -212,32 +235,40 @@ public final class LedgerView extends VBox {
         confirmation.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
         confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(button -> {
             try {
-                if (controller.remove(selected.malId())) load();
-                else showError("The entry was not found and could not be removed.");
+                if (controller.remove(selected.malId())) {
+                    source.remove(selected);
+                    showFeedback("Removed “" + selected.title() + "” from your ledger.", false);
+                    applyFilters();
+                } else {
+                    showFeedback("The entry was not found and could not be removed.", true);
+                }
             } catch (RuntimeException exception) {
-                showError("Could not remove entry: " + exception.getMessage());
+                showFeedback("Could not remove entry: " + safeMessage(exception), true);
             }
         });
     }
 
     private void updateCount() {
         countLabel.setText(source.size() == filtered.size()
-                ? source.size() + " entries"
+                ? source.size() + (source.size() == 1 ? " entry" : " entries")
                 : filtered.size() + " of " + source.size() + " entries");
     }
 
-    private static String displayStatus(LedgerStatus status) {
+    private void showFeedback(String message, boolean error) {
+        feedbackLabel.setText(message);
+        feedbackLabel.getStyleClass().removeAll("feedback-error", "feedback-success");
+        feedbackLabel.getStyleClass().add(error ? "feedback-error" : "feedback-success");
+    }
+
+    private static String safeMessage(RuntimeException exception) {
+        return exception.getMessage() == null || exception.getMessage().isBlank()
+                ? exception.getClass().getSimpleName() : exception.getMessage();
+    }
+
+    static String displayStatus(LedgerStatus status) {
         String lower = status.name().toLowerCase().replace('_', ' ');
         return java.util.Arrays.stream(lower.split(" "))
                 .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
                 .collect(java.util.stream.Collectors.joining(" "));
-    }
-
-    private static void showError(String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Ledger operation failed");
-        alert.setHeaderText("My Ledger could not be updated");
-        alert.setContentText(message);
-        alert.showAndWait();
     }
 }
