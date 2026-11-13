@@ -2,6 +2,8 @@ package com.myanimewatchledger.app;
 
 import com.myanimewatchledger.presentation.main.MainWindow;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import javafx.stage.Stage;
 
 import java.util.logging.Level;
@@ -19,8 +21,24 @@ public final class MyAnimeWatchLedgerApplication extends Application {
         } catch (Exception exception) {
             LOGGER.log(Level.SEVERE, "Application startup failed.", exception);
             initializer.close();
-            throw new IllegalStateException("MyAnimeWatchLedger could not initialize. Check the application log.", exception);
+            showStartupFailure(primaryStage);
+            Platform.exit();
         }
+    }
+
+    private static void showStartupFailure(Stage owner) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.initOwner(owner);
+        alert.setTitle("Startup failed");
+        alert.setHeaderText("MyAnimeWatchLedger could not start");
+        alert.setContentText("""
+                The application could not initialize its local database.
+
+                No application data has been intentionally changed. Please check the
+                application log for technical details, resolve the reported problem,
+                and try starting MyAnimeWatchLedger again.
+                """);
+        alert.showAndWait();
     }
 
     @Override
