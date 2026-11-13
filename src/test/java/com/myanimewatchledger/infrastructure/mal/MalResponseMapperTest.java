@@ -24,7 +24,7 @@ class MalResponseMapperTest {
         assertEquals("English", mapped.preferredTitle());
         assertEquals("Canonical", mapped.canonicalTitle());
         assertEquals("日本語", mapped.japaneseTitle());
-        assertEquals(8.25, mapped.meanScore());
+        assertEquals(8.25, mapped.meanScore(), 0.0001);
         assertEquals(24, mapped.episodeCount());
         assertEquals("Fantasy", mapped.genres().getFirst().name());
         assertEquals("Studio", mapped.studios().getFirst().name());
@@ -103,7 +103,7 @@ class MalResponseMapperTest {
         AnimeMetadata merged = mapper.merge(existing, incoming);
 
         assertEquals("English", merged.preferredTitle());
-        assertEquals(8.5, merged.meanScore());
+        assertEquals(8.5, merged.meanScore(), 0.0001);
         assertEquals("Fantasy", merged.genres().getFirst().name());
         assertEquals("New Canonical", merged.canonicalTitle());
     }
