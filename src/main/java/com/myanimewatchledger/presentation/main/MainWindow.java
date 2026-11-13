@@ -9,7 +9,6 @@ import com.myanimewatchledger.presentation.navigation.NavigationSidebar;
 import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
-import com.myanimewatchledger.presentation.toolbar.ContextualToolbar;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -30,7 +29,6 @@ public final class MainWindow {
     private final ApplicationServices services;
     private final WindowStateStore windowStateStore;
     private final BorderPane root = new BorderPane();
-    private final ContextualToolbar toolbar;
     private final NavigationSidebar sidebar = new NavigationSidebar(this::navigate);
     private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
     private double lastWindowedWidth = WindowState.defaults().width();
@@ -45,13 +43,12 @@ public final class MainWindow {
     public MainWindow(ApplicationServices services, WindowStateStore windowStateStore) {
         this.services = Objects.requireNonNull(services, "services");
         this.windowStateStore = Objects.requireNonNull(windowStateStore, "windowStateStore");
-        this.toolbar = new ContextualToolbar(this::navigate);
     }
 
     public void show(Stage stage) {
         root.getStyleClass().add("app-root");
         root.setLeft(sidebar);
-        root.setTop(createHeaderAndToolbar());
+        root.setTop(createHeader());
         root.setBottom(new ApplicationStatusBar(services.isMalConfigured()));
 
         Scene scene = new Scene(root);
@@ -61,7 +58,6 @@ public final class MainWindow {
         WindowState saved = windowStateStore.load();
         activeNavigation = saved.lastNavigation();
         sidebar.select(activeNavigation);
-        toolbar.showFor(activeNavigation);
         renderWorkspace();
         lastWindowedWidth = saved.width();
         lastWindowedHeight = saved.height();
@@ -82,21 +78,20 @@ public final class MainWindow {
         stage.setMaximized(saved.maximized());
     }
 
-    private VBox createHeaderAndToolbar() {
+    private HBox createHeader() {
         Label title = new Label("MyAnimeWatchLedger");
         title.getStyleClass().add("app-title");
         HBox header = new HBox(title);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(12, 18, 10, 18));
         header.getStyleClass().add("application-header");
-        return new VBox(header, toolbar);
+        return header;
     }
 
     private void navigate(MainNavigation navigation) {
         if (activeNavigation == navigation) return;
         activeNavigation = navigation;
         sidebar.select(navigation);
-        toolbar.showFor(navigation);
         renderWorkspace();
     }
 

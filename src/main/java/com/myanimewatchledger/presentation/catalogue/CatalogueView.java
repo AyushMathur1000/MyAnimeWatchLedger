@@ -47,7 +47,7 @@ public final class CatalogueView extends BorderPane {
         next.setOnAction(e -> shiftSeason(1));
         open.setOnAction(e -> openSelectedSeason());
         refresh.setOnAction(e -> refreshSelected());
-        HBox seasonBar = new HBox(9, previous, seasonChoice, yearChoice, open, next, new Separator(), refresh);
+        HBox seasonBar = new HBox(9, previous, next, seasonChoice, yearChoice, open, new Separator(), refresh);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
         feedback.getStyleClass().add("catalogue-feedback");
@@ -250,7 +250,11 @@ public final class CatalogueView extends BorderPane {
         mal.setOnAction(e -> openMal(item.malId()));
         HBox actions = new HBox(7, ledgerAction, mal);
         actions.setAlignment(Pos.CENTER_LEFT);
-        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, actions);
+        Region cardSpacer = new Region();
+        VBox.setVgrow(cardSpacer, Priority.ALWAYS);
+        card.setMinHeight(510);
+        card.setPrefHeight(510);
+        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, cardSpacer, actions);
         return card;
     }
 
@@ -320,7 +324,9 @@ public final class CatalogueView extends BorderPane {
             cards.setPrefWrapLength(1050);
             scroll.setFitToWidth(true);
             scroll.getStyleClass().add("catalogue-scroll");
-            HBox searchRow = new HBox(12, searchField, message, progress);
+            Button clearSearch = new Button("Clear search");
+            clearSearch.setOnAction(event -> searchField.clear());
+            HBox searchRow = new HBox(12, searchField, clearSearch, message, progress);
             searchRow.setAlignment(Pos.CENTER_LEFT);
             progress.setPrefSize(22, 22);
             progress.setVisible(false);
