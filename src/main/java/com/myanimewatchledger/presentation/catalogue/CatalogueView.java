@@ -14,8 +14,6 @@ import javafx.scene.layout.*;
 import javafx.scene.text.Text;
 import javafx.stage.Window;
 
-import java.awt.Desktop;
-import java.net.URI;
 import java.time.Clock;
 import java.util.*;
 import java.util.concurrent.CompletionException;
@@ -268,15 +266,8 @@ public final class CatalogueView extends BorderPane {
         detailsAction.getStyleClass().add("anime-card-details-action");
         detailsAction.setMaxWidth(Double.MAX_VALUE);
         detailsAction.setOnAction(e -> onOpenDetails.accept(item.malId()));
-        Button mal = new Button("MAL ↗");
-        mal.setOnAction(e -> openMal(item.malId()));
-        HBox secondaryActions = new HBox(6, ledgerAction, mal);
-        secondaryActions.setAlignment(Pos.CENTER_LEFT);
-        HBox.setHgrow(ledgerAction, Priority.ALWAYS);
-        HBox.setHgrow(mal, Priority.ALWAYS);
         ledgerAction.setMaxWidth(Double.MAX_VALUE);
-        mal.setMaxWidth(Double.MAX_VALUE);
-        VBox actions = new VBox(6, detailsAction, secondaryActions);
+        VBox actions = new VBox(6, detailsAction, ledgerAction);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
         card.setMinHeight(510);
@@ -294,15 +285,6 @@ public final class CatalogueView extends BorderPane {
             feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as Watch Later.");
         } catch (RuntimeException failure) {
             feedback.setText("Could not add anime: " + safeMessage(failure));
-        }
-    }
-
-    private static void openMal(long malId) {
-        try {
-            if (Desktop.isDesktopSupported()) Desktop.getDesktop().browse(
-                    URI.create("https://myanimelist.net/anime/" + malId));
-        } catch (Exception failure) {
-            // External browser integration is optional; the catalogue remains usable.
         }
     }
 
