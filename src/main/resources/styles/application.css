@@ -135,3 +135,17 @@
 .app-dialog .text-field, .app-dialog .combo-box {
     -fx-background-color: #252934; -fx-text-fill: #f1f2f5;
 }
+
+
+/* Inline ledger row actions and aligned catalogue card footers */
+.ledger-table .combo-box {
+    -fx-background-color: #303642;
+    -fx-border-color: #424a59;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+}
+.ledger-table .combo-box .list-cell { -fx-text-fill: #e0e4eb; }
+.ledger-table .table-cell { -fx-alignment: CENTER_LEFT; }
+.ledger-table .ledger-destructive-action { -fx-padding: 5px 9px; }
+.anime-card { -fx-min-height: 510px; -fx-pref-height: 510px; }
+.anime-card .button { -fx-min-height: 30px; }
