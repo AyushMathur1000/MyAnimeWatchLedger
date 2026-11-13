@@ -87,6 +87,11 @@ class ApplicationServicesTest {
     }
 
     @Test
+    void searchTokenizationNormalizesUnicodeCompatibilityCharacters() {
+        assertEquals(List.of("alpha", "beta"), CatalogueSearchService.tokenize("ＡLPHA  Beta"));
+    }
+
+    @Test
     void seasonNavigationHandlesBoundariesAndYearChanges() {
         assertEquals(new SeasonNavigator.SeasonYear(Season.WINTER, 2026),
                 SeasonNavigator.fromDate(LocalDate.of(2026, 3, 31)));

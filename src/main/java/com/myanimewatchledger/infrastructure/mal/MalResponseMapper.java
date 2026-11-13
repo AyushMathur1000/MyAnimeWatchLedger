@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadata;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
+import com.myanimewatchledger.domain.catalogue.SearchTextNormalizer;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -129,7 +130,7 @@ public final class MalResponseMapper {
         if (metadata.rank() != null) add(searchable, metadata.rank().toString());
         if (metadata.popularity() != null) add(searchable, metadata.popularity().toString());
         if (metadata.episodeCount() != null) add(searchable, metadata.episodeCount().toString());
-        return searchable.toString().toLowerCase(Locale.ROOT);
+        return SearchTextNormalizer.normalize(searchable.toString());
     }
 
     private static long positiveLong(JsonNode value) {
