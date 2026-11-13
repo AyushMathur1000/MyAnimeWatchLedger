@@ -33,6 +33,8 @@ public final class LedgerView extends VBox {
     private final Button applyStatusButton = new Button("Apply status");
     private final Button removeButton = new Button("Remove");
     private final EnumSet<LedgerStatus> selectedStatuses = EnumSet.noneOf(LedgerStatus.class);
+    private final Set<CheckBox> statusChecks = new java.util.LinkedHashSet<>();
+    private final Label emptyLabel = new Label("Your anime ledger is empty. Add anime from the Catalogue.");
 
     public LedgerView(LedgerController controller) {
         this.controller = controller;
@@ -52,6 +54,8 @@ public final class LedgerView extends VBox {
         searchRow.setAlignment(Pos.CENTER_LEFT);
 
         configureTable();
+        emptyLabel.getStyleClass().add("ledger-empty");
+        table.setPlaceholder(emptyLabel);
         VBox.setVgrow(table, Priority.ALWAYS);
         getChildren().addAll(heading, searchRow, createRowActions(), table);
         load();
@@ -67,6 +71,7 @@ public final class LedgerView extends VBox {
         for (LedgerStatus status : LedgerStatus.values()) {
             CheckBox check = new CheckBox(displayStatus(status));
             check.getStyleClass().add("ledger-status-filter");
+            statusChecks.add(check);
             check.selectedProperty().addListener((obs, oldValue, selected) -> {
                 if (selected) selectedStatuses.add(status);
                 else selectedStatuses.remove(status);
@@ -178,9 +183,7 @@ public final class LedgerView extends VBox {
 
     private void clearFilters() {
         searchField.clear();
-        for (javafx.scene.Node node : ((HBox) getChildren().get(1)).getChildren()) {
-            if (node instanceof CheckBox check) check.setSelected(false);
-        }
+        for (CheckBox check : statusChecks) check.setSelected(false);
         selectedStatuses.clear();
         applyFilters();
     }
