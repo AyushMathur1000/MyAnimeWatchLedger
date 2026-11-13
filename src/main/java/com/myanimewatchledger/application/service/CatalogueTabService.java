@@ -1,98 +1,31 @@
 package com.myanimewatchledger.application.service;
-
-import com.myanimewatchledger.application.port.CatalogueRepository;
-import com.myanimewatchledger.application.port.OpenCatalogueTabRepository;
-import com.myanimewatchledger.domain.catalogue.CatalogueSearch;
-import com.myanimewatchledger.domain.catalogue.OpenCatalogueTab;
-import com.myanimewatchledger.domain.catalogue.Season;
-
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-
-/** Manages the user's restorable catalogue-tab state independently of search history. */
+import com.myanimewatchledger.application.port.*;
+import com.myanimewatchledger.domain.catalogue.*;
+import java.util.*;
+/** Manages restorable catalogue-tab state independently of search history. */
 public final class CatalogueTabService {
-    private final CatalogueRepository catalogue;
-    private final OpenCatalogueTabRepository tabs;
-
-    public CatalogueTabService(CatalogueRepository catalogue, OpenCatalogueTabRepository tabs) {
-        this.catalogue = Objects.requireNonNull(catalogue, "catalogue");
-        this.tabs = Objects.requireNonNull(tabs, "tabs");
-    }
-
-    public List<OpenCatalogueTab> restoreOpenTabs() {
-        return tabs.findAllOrdered();
-    }
-
-    public OpenCatalogueTab open(Season season, int year, String query) {
-        CatalogueSearch search = catalogue.findOrCreate(Objects.requireNonNull(season, "season"), year);
-        List<OpenCatalogueTab> current = tabs.findAllOrdered();
-        for (OpenCatalogueTab tab : current) {
-            if (tab.searchId() == search.searchId()) {
-                OpenCatalogueTab updated = new OpenCatalogueTab(tab.searchId(), tab.tabOrder(), normalizeQuery(query));
-                tabs.save(updated);
-                return updated;
-            }
-        }
-        OpenCatalogueTab created = new OpenCatalogueTab(search.searchId(), current.size(), normalizeQuery(query));
-        tabs.save(created);
-        return created;
-    }
-
-    public boolean updateQuery(long searchId, String query) {
-        List<OpenCatalogueTab> current = tabs.findAllOrdered();
-        for (OpenCatalogueTab tab : current) {
-            if (tab.searchId() == searchId) {
-                tabs.save(new OpenCatalogueTab(searchId, tab.tabOrder(), normalizeQuery(query)));
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public boolean close(long searchId) {
-        boolean removed = tabs.close(searchId);
-        if (removed) {
-            compactOrder(tabs.findAllOrdered());
-        }
-        return removed;
-    }
-
-    /** Reorders all open tabs; the supplied IDs must be an exact permutation. */
-    public void reorder(List<Long> orderedSearchIds) {
-        Objects.requireNonNull(orderedSearchIds, "orderedSearchIds");
-        List<OpenCatalogueTab> current = tabs.findAllOrdered();
-        Set<Long> existing = new HashSet<>();
-        current.forEach(tab -> existing.add(tab.searchId()));
-        Set<Long> requested = new HashSet<>(orderedSearchIds);
-        if (orderedSearchIds.size() != requested.size() || !existing.equals(requested)) {
-            throw new IllegalArgumentException("Tab order must contain every open tab exactly once.");
-        }
-
-        List<OpenCatalogueTab> reordered = new ArrayList<>(orderedSearchIds.size());
-        for (int i = 0; i < orderedSearchIds.size(); i++) {
-            long id = orderedSearchIds.get(i);
-            OpenCatalogueTab old = current.stream()
-                    .filter(tab -> tab.searchId() == id)
-                    .findFirst()
-                    .orElseThrow();
-            reordered.add(new OpenCatalogueTab(id, i, old.searchQuery()));
-        }
-        tabs.replaceAll(reordered);
-    }
-
-    private void compactOrder(List<OpenCatalogueTab> current) {
-        List<OpenCatalogueTab> compacted = new ArrayList<>(current.size());
-        for (int i = 0; i < current.size(); i++) {
-            OpenCatalogueTab tab = current.get(i);
-            compacted.add(new OpenCatalogueTab(tab.searchId(), i, tab.searchQuery()));
-        }
-        tabs.replaceAll(compacted);
-    }
-
-    private static String normalizeQuery(String query) {
-        return query == null ? "" : query.trim();
-    }
+ private final CatalogueRepository catalogue; private final OpenCatalogueTabRepository tabs;
+ public CatalogueTabService(CatalogueRepository catalogue,OpenCatalogueTabRepository tabs){this.catalogue=Objects.requireNonNull(catalogue);this.tabs=Objects.requireNonNull(tabs);}
+ public List<OpenCatalogueTab> restoreOpenTabs(){return tabs.findAllOrdered();}
+ public OpenCatalogueTab open(Season season,int year,String query){CatalogueSearch s=catalogue.findOrCreate(Objects.requireNonNull(season),year);return openSearch(s.searchId(),query);}
+ /** Reopens a known historical search without resetting an existing tab's query or order. */
+ public OpenCatalogueTab openSearch(long id){return openSearch(id,null);}
+ private OpenCatalogueTab openSearch(long id,String query){
+  CatalogueSearch search=catalogue.findById(id).orElseThrow(()->new IllegalArgumentException("Unknown catalogue search: "+id));
+  List<OpenCatalogueTab> current=tabs.findAllOrdered();
+  for(OpenCatalogueTab tab:current)if(tab.searchId()==id){
+   if(query==null)return tab;
+   OpenCatalogueTab updated=new OpenCatalogueTab(id,tab.tabOrder(),normalize(query));tabs.save(updated);return updated;
+  }
+  OpenCatalogueTab created=new OpenCatalogueTab(id,current.size(),query==null?"":normalize(query));tabs.save(created);return created;
+ }
+ public boolean updateQuery(long id,String query){for(OpenCatalogueTab tab:tabs.findAllOrdered())if(tab.searchId()==id){tabs.save(new OpenCatalogueTab(id,tab.tabOrder(),normalize(query)));return true;}return false;}
+ public boolean close(long id){boolean removed=tabs.close(id);if(removed)compactOrder(tabs.findAllOrdered());return removed;}
+ public void reorder(List<Long> ids){
+  Objects.requireNonNull(ids);List<OpenCatalogueTab> current=tabs.findAllOrdered();Set<Long> existing=new HashSet<>();current.forEach(t->existing.add(t.searchId()));Set<Long> requested=new HashSet<>(ids);
+  if(ids.size()!=requested.size()||!existing.equals(requested))throw new IllegalArgumentException("Tab order must contain every open tab exactly once.");
+  List<OpenCatalogueTab> reordered=new ArrayList<>();for(int i=0;i<ids.size();i++){long id=ids.get(i);OpenCatalogueTab old=current.stream().filter(t->t.searchId()==id).findFirst().orElseThrow();reordered.add(new OpenCatalogueTab(id,i,old.searchQuery()));}tabs.replaceAll(reordered);
+ }
+ private void compactOrder(List<OpenCatalogueTab> current){List<OpenCatalogueTab> result=new ArrayList<>();for(int i=0;i<current.size();i++){OpenCatalogueTab t=current.get(i);result.add(new OpenCatalogueTab(t.searchId(),i,t.searchQuery()));}tabs.replaceAll(result);}
+ private static String normalize(String q){return q==null?"":q.trim();}
 }
