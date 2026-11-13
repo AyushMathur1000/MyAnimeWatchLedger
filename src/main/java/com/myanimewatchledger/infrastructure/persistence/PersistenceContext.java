@@ -13,6 +13,7 @@ public final class PersistenceContext {
  private final CatalogueRepository catalogueRepository;
  private final AnimeMetadataRepository animeMetadataRepository;
  private final OpenCatalogueTabRepository openCatalogueTabRepository;
+ private final OpenAnimeDetailTabRepository openAnimeDetailTabRepository;
 
  public PersistenceContext(DatabaseManager databaseManager){
   Objects.requireNonNull(databaseManager,"databaseManager");
@@ -21,6 +22,7 @@ public final class PersistenceContext {
   catalogueRepository=new JdbcCatalogueRepository(transactions);
   animeMetadataRepository=new JdbcAnimeMetadataRepository(transactions);
   openCatalogueTabRepository=new JdbcOpenCatalogueTabRepository(transactions);
+  openAnimeDetailTabRepository=new JdbcOpenAnimeDetailTabRepository(transactions);
  }
 
  public DatabaseTransactionManager transactions(){return transactions;}
@@ -28,4 +30,5 @@ public final class PersistenceContext {
  public CatalogueRepository catalogue(){return catalogueRepository;}
  public AnimeMetadataRepository animeMetadata(){return animeMetadataRepository;}
  public OpenCatalogueTabRepository openCatalogueTabs(){return openCatalogueTabRepository;}
+ public OpenAnimeDetailTabRepository openAnimeDetailTabs(){return openAnimeDetailTabRepository;}
 }

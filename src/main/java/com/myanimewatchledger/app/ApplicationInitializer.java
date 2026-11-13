@@ -25,6 +25,7 @@ public final class ApplicationInitializer implements AutoCloseable {
    LedgerService ledger=new LedgerService(persistence.ledger());
    CatalogueService catalogue=new CatalogueService(persistence.catalogue());
    CatalogueTabService tabs=new CatalogueTabService(persistence.catalogue(),persistence.openCatalogueTabs());
+   AnimeDetailTabService detailTabs=new AnimeDetailTabService(persistence.openAnimeDetailTabs());
    MalApiClient malClient=createMalClient();
    MalResponseMapper mapper=new MalResponseMapper();
    CatalogueRefreshService refresh=malClient==null?null:new CatalogueRefreshService(
@@ -32,7 +33,7 @@ public final class ApplicationInitializer implements AutoCloseable {
     persistence.animeMetadata(),mapper,persistence.ledger(),persistence.transactions());
    AnimeDetailService details=new AnimeDetailService(persistence.animeMetadata(),
     malClient==null?null:new MalApiAnimeDetailGateway(malClient,mapper),mapper);
-   services=new ApplicationServices(ledger,catalogue,tabs,refresh,details,background);
+   services=new ApplicationServices(ledger,catalogue,tabs,refresh,details,detailTabs,background);
    LOG.info("Application services initialized. MAL configured: "+services.isMalConfigured());
   }catch(IOException|SQLException|RuntimeException failure){close();throw failure;}
  }

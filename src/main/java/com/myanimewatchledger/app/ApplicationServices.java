@@ -12,17 +12,21 @@ public final class ApplicationServices {
  private final CatalogueTabService tabs;
  private final CatalogueRefreshService refresh;
  private final AnimeDetailService animeDetails;
+ private final AnimeDetailTabService animeDetailTabs;
  private final BackgroundTaskExecutor background;
 
  ApplicationServices(LedgerService l,CatalogueService c,CatalogueTabService t,
-                     CatalogueRefreshService r,AnimeDetailService d,BackgroundTaskExecutor b){
+                     CatalogueRefreshService r,AnimeDetailService d,AnimeDetailTabService detailTabs,
+                     BackgroundTaskExecutor b){
   ledger=Objects.requireNonNull(l);catalogue=Objects.requireNonNull(c);tabs=Objects.requireNonNull(t);
-  refresh=r;animeDetails=Objects.requireNonNull(d);background=Objects.requireNonNull(b);
+  refresh=r;animeDetails=Objects.requireNonNull(d);animeDetailTabs=Objects.requireNonNull(detailTabs);
+  background=Objects.requireNonNull(b);
  }
  public LedgerService ledger(){return ledger;}
  public CatalogueService catalogue(){return catalogue;}
  public CatalogueTabService catalogueTabs(){return tabs;}
  public AnimeDetailService animeDetails(){return animeDetails;}
+ public AnimeDetailTabService animeDetailTabs(){return animeDetailTabs;}
  public boolean isMalConfigured(){return refresh!=null;}
  /** Completion executes on a worker; presentation code must marshal UI changes to JavaFX. */
  public CompletableFuture<CatalogueRefreshOutcome> refreshSeasonAsync(Season season,int year){
