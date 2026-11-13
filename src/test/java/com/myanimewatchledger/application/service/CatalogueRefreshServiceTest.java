@@ -1,6 +1,7 @@
 package com.myanimewatchledger.application.service;
 
 import com.myanimewatchledger.application.port.AnimeMetadataRepository;
+import com.myanimewatchledger.application.port.CatalogueRepository;
 import com.myanimewatchledger.application.port.MalCatalogueGateway;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
