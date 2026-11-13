@@ -34,8 +34,8 @@ public final class CatalogueRefreshService {
     private final LedgerRepository ledger;
     private final TransactionRunner transactions;
     private final Clock clock;
-    private final Set<Long> refreshingSearchIds = ConcurrentHashMap.newKeySet();
-    private final Semaphore malRequestPermit = new Semaphore(1);
+    private static final Set<Long> REFRESHING_SEARCH_IDS = ConcurrentHashMap.newKeySet();
+    private static final Semaphore MAL_REQUEST_PERMIT = new Semaphore(1);
 
     public CatalogueRefreshService(
             MalCatalogueGateway gateway,
@@ -68,11 +68,11 @@ public final class CatalogueRefreshService {
         CatalogueSearch search = catalogue.findOrCreate(
                 Objects.requireNonNull(season, "season"), year);
 
-        if (!refreshingSearchIds.add(search.searchId())) {
+        if (!REFRESHING_SEARCH_IDS.add(search.searchId())) {
             throw new IllegalStateException("This seasonal catalogue is already being refreshed.");
         }
-        if (!malRequestPermit.tryAcquire()) {
-            refreshingSearchIds.remove(search.searchId());
+        if (!MAL_REQUEST_PERMIT.tryAcquire()) {
+            REFRESHING_SEARCH_IDS.remove(search.searchId());
             throw new IllegalStateException("Another MAL catalogue request is already in progress.");
         }
 
@@ -121,7 +121,7 @@ public final class CatalogueRefreshService {
             }
             throw failure;
         } finally {
-            malRequestPermit.release();
+            MAL_REQUEST_PERMIT.release();
             refreshingSearchIds.remove(search.searchId());
         }
     }
