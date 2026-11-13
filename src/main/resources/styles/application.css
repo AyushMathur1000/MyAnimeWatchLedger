@@ -236,3 +236,15 @@
 .settings-section-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #f1f2f5 !important; }
 .settings-description, .settings-feedback { -fx-font-size: 11px; -fx-text-fill: #aeb4c0 !important; }
 .settings-workspace .check-box { -fx-text-fill: #d7dce5; }
+
+
+/* Clear, full-width primary action on catalogue cards */
+
+.anime-card .anime-card-details-action {
+    -fx-background-color: #405a80;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+.anime-card .anime-card-details-action:hover { -fx-background-color: #4d6b96; }
+.anime-card .button { -fx-font-size: 10px; -fx-padding: 7px 6px; }
+.anime-card .anime-card-details-action { -fx-font-size: 12px; -fx-padding: 8px 10px; }
