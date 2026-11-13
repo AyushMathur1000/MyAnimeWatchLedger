@@ -76,7 +76,7 @@ public final class CatalogueView extends BorderPane {
                     controller.findSearch(tab.searchId()).ifPresent(search ->
                             createTab(search, tab.searchQuery(), false));
                 }
-                if (!tabs.getTabs().isEmpty()) tabs.getSelectionModel().selectLast();
+                if (!tabs.getTabs().isEmpty()) tabs.getSelectionModel().selectFirst();
             }
         } finally {
             restoring = false;
