@@ -122,7 +122,7 @@ public final class CatalogueRefreshService {
             throw failure;
         } finally {
             MAL_REQUEST_PERMIT.release();
-            refreshingSearchIds.remove(search.searchId());
+            REFRESHING_SEARCH_IDS.remove(search.searchId());
         }
     }
 
