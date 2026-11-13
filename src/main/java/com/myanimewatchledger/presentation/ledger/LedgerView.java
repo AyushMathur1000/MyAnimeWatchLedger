@@ -83,7 +83,7 @@ public final class LedgerView extends VBox {
 
     private void configureTable() {
         table.setId("ledger-table");
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.getStyleClass().add("ledger-table");
 
         TableColumn<LedgerEntry, String> title = new TableColumn<>("Anime");
@@ -140,10 +140,31 @@ public final class LedgerView extends VBox {
         actions.setPrefWidth(96);
         actions.setMaxWidth(110);
         table.getColumns().setAll(title, status, added, modified, actions);
+        table.widthProperty().addListener((observable, oldWidth, newWidth) ->
+                applyColumnWidths(newWidth.doubleValue(), title, status, added, modified, actions));
+        table.sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (newScene != null) javafx.application.Platform.runLater(() ->
+                    applyColumnWidths(table.getWidth(), title, status, added, modified, actions));
+        });
         SortedList<LedgerEntry> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);
         table.getSortOrder().add(title);
+    }
+
+    private void applyColumnWidths(double tableWidth,
+                                   TableColumn<LedgerEntry, String> title,
+                                   TableColumn<LedgerEntry, LedgerStatus> status,
+                                   TableColumn<LedgerEntry, java.time.Instant> added,
+                                   TableColumn<LedgerEntry, java.time.Instant> modified,
+                                   TableColumn<LedgerEntry, LedgerEntry> actions) {
+        if (tableWidth <= 0) return;
+        double usableWidth = Math.max(0, tableWidth - 18);
+        title.setPrefWidth(usableWidth * 0.645);
+        status.setPrefWidth(usableWidth * 0.093);
+        added.setPrefWidth(usableWidth * 0.103);
+        modified.setPrefWidth(usableWidth * 0.105);
+        actions.setPrefWidth(usableWidth * 0.052);
     }
 
     private ComboBox<LedgerStatus> statusCombo() {
