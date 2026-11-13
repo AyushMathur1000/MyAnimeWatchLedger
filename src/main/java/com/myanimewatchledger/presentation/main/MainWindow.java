@@ -3,6 +3,8 @@ package com.myanimewatchledger.presentation.main;
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.presentation.ledger.LedgerController;
 import com.myanimewatchledger.presentation.ledger.LedgerView;
+import com.myanimewatchledger.presentation.catalogue.CatalogueController;
+import com.myanimewatchledger.presentation.catalogue.CatalogueView;
 import com.myanimewatchledger.presentation.navigation.NavigationSidebar;
 import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
@@ -99,6 +101,10 @@ public final class MainWindow {
     }
 
     private void renderWorkspace() {
+        if (activeNavigation == MainNavigation.CATALOGUE) {
+            root.setCenter(new CatalogueView(new CatalogueController(services)));
+            return;
+        }
         if (activeNavigation == MainNavigation.MY_LEDGER) {
             root.setCenter(new LedgerView(new LedgerController(services.ledger())));
             return;

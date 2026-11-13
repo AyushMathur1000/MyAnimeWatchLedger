@@ -56,3 +56,38 @@
 .status-hold { -fx-text-fill: #c3a4ed !important; }
 
 .status-watch_later { -fx-text-fill: #8fd3c1 !important; }
+
+
+/* Seasonal catalogue */
+.catalogue-workspace { -fx-background-color: #17191f; }
+.catalogue-workspace .label { -fx-text-fill: #d7dce5; }
+.catalogue-season-bar .button, .catalogue-workspace .button {
+    -fx-background-color: #303642; -fx-text-fill: #e0e4eb; -fx-background-radius: 5px;
+    -fx-padding: 7px 10px;
+}
+.catalogue-season-bar .combo-box, .catalogue-season-bar .spinner,
+.catalogue-workspace .text-field {
+    -fx-background-color: #252934; -fx-text-fill: #f1f2f5; -fx-prompt-text-fill: #8992a2;
+    -fx-border-color: #3b414e; -fx-border-radius: 4px; -fx-background-radius: 4px;
+}
+.catalogue-feedback { -fx-text-fill: #aeb4c0; -fx-font-size: 11px; }
+.catalogue-scroll, .catalogue-scroll > .viewport { -fx-background-color: #17191f; }
+.catalogue-scroll { -fx-border-color: transparent; }
+.catalogue-workspace .tab-pane .tab-header-area .tab-header-background { -fx-background-color: #20232b; }
+.catalogue-workspace .tab { -fx-background-color: #252934; }
+.catalogue-workspace .tab-label { -fx-text-fill: #d7dce5; }
+.catalogue-workspace .tab:selected { -fx-background-color: #394b69; }
+.anime-card {
+    -fx-background-color: #20242d; -fx-background-radius: 8px; -fx-border-color: #343945;
+    -fx-border-radius: 8px; -fx-padding: 12px; -fx-spacing: 8px;
+}
+.anime-poster-frame {
+    -fx-background-color: #292e38; -fx-background-radius: 5px; -fx-min-width: 190px;
+    -fx-min-height: 250px; -fx-alignment: CENTER;
+}
+.anime-poster-frame .label { -fx-text-fill: #8992a2; -fx-font-size: 11px; }
+.anime-card-title { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #f1f2f5 !important; }
+.anime-card-details { -fx-font-size: 10px; -fx-text-fill: #aebbd0 !important; }
+.anime-card-synopsis { -fx-font-size: 11px; -fx-text-fill: #c5cad4 !important; }
+.anime-card-ledger { -fx-font-size: 10px; -fx-text-fill: #8fd3c1 !important; }
+.catalogue-empty { -fx-text-fill: #aeb4c0; -fx-padding: 24px; }
