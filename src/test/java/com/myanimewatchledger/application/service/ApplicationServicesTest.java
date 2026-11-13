@@ -77,7 +77,7 @@ class ApplicationServicesTest {
         persistence.animeMetadata().upsert(new AnimeMetadataCache(
                 2001, "Alpha Beta", "{\"title\":\"Alpha Beta\"}", "alpha beta fantasy", Instant.now()));
         persistence.animeMetadata().upsert(new AnimeMetadataCache(
-                2002, "Alpha Gamma", "{\"title\":\"Alpha Gamma\"}", "alpha gamma fantasy", Instant.now()));
+                2002, "Alpha Gamma", "{\"title\":\"Alpha Gamma\"}", "alpha gamma science fiction", Instant.now()));
         persistence.catalogue().replaceMembership(season.searchId(), List.of(2001L, 2002L));
 
         assertEquals(List.of(2001L), catalogue.getAnime(season.searchId(), " ALPHA   fantasy alpha ")
