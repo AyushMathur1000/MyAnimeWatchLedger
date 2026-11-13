@@ -40,17 +40,8 @@ public final class AnimeDetailsView extends BorderPane {
 
         Label title = new Label("Anime Details");
         title.getStyleClass().add("workspace-title");
-        Button moveLeft = new Button("← Move tab");
-        Button moveRight = new Button("Move tab →");
-        moveLeft.setOnAction(event -> moveSelectedTab(-1));
-        moveRight.setOnAction(event -> moveSelectedTab(1));
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox actions = new HBox(8, title, spacer, moveLeft, moveRight);
-        actions.setAlignment(Pos.CENTER_LEFT);
-
         feedback.getStyleClass().add("anime-details-feedback");
-        setTop(new VBox(9, actions, feedback));
+        setTop(new VBox(9, title, feedback));
         StackPane center = new StackPane(tabs, emptyState);
         tabs.getTabs().addListener((ListChangeListener<Tab>) change ->
                 emptyState.setVisible(tabs.getTabs().isEmpty()));
@@ -318,18 +309,6 @@ public final class AnimeDetailsView extends BorderPane {
         return Arrays.stream(lower.split(" "))
                 .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
                 .reduce((a, b) -> a + " " + b).orElse(lower);
-    }
-
-    private void moveSelectedTab(int direction) {
-        int index = tabs.getSelectionModel().getSelectedIndex();
-        int target = index + direction;
-        if (index < 0 || target < 0 || target >= tabs.getTabs().size()) return;
-        Collections.swap(tabs.getTabs(), index, target);
-        tabs.getSelectionModel().select(target);
-        List<Long> order = tabs.getTabs().stream().map(tab -> (Long) tab.getUserData()).toList();
-        controller.reorderTabs(order).whenComplete((ignored, failure) -> Platform.runLater(() -> {
-            if (failure != null) feedback.setText("Could not save tab order: " + safeMessage(unwrap(failure)));
-        }));
     }
 
     private static StackPane emptyPlaceholder() {
