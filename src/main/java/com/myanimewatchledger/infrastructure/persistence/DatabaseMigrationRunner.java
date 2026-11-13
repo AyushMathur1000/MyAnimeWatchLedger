@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -26,10 +27,17 @@ public final class DatabaseMigrationRunner {
     );
 
     private final DatabaseManager databaseManager;
+    private final List<Migration> migrations;
 
     public DatabaseMigrationRunner(DatabaseManager databaseManager) {
+        this(databaseManager, MIGRATIONS);
+    }
+
+    // Package-private constructor permits isolated migration-failure tests.
+    DatabaseMigrationRunner(DatabaseManager databaseManager, List<Migration> migrations) {
         this.databaseManager = Objects.requireNonNull(databaseManager, "databaseManager");
-        validateMigrationSequence();
+        this.migrations = List.copyOf(migrations);
+        validateMigrationSequence(this.migrations);
     }
 
     public void migrate() {
@@ -50,7 +58,7 @@ public final class DatabaseMigrationRunner {
                 );
             }
 
-            for (Migration migration : MIGRATIONS) {
+            for (Migration migration : migrations) {
                 if (migration.version() > currentVersion) {
                     applyMigration(connection, migration);
                 }
@@ -126,9 +134,8 @@ public final class DatabaseMigrationRunner {
     }
 
     /**
-     * Executes this project's migration scripts. Scripts are trusted resources,
-     * never user input. Statements are separated by semicolons outside SQL
-     * string literals and comments.
+     * Executes trusted, version-controlled SQL resources. Semicolons inside
+     * quoted strings and SQL comments do not split statements.
      */
     private static void executeScript(Connection connection, String script) throws SQLException {
         for (String sql : splitStatements(script)) {
@@ -141,7 +148,7 @@ public final class DatabaseMigrationRunner {
     }
 
     private static List<String> splitStatements(String script) {
-        List<String> statements = new java.util.ArrayList<>();
+        List<String> statements = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean singleQuoted = false;
         boolean doubleQuoted = false;
@@ -234,13 +241,13 @@ public final class DatabaseMigrationRunner {
         }
     }
 
-    private static int latestSupportedVersion() {
-        return MIGRATIONS.getLast().version();
+    private int latestSupportedVersion() {
+        return migrations.isEmpty() ? 0 : migrations.getLast().version();
     }
 
-    private static void validateMigrationSequence() {
+    private static void validateMigrationSequence(List<Migration> migrations) {
         int previous = 0;
-        for (Migration migration : MIGRATIONS) {
+        for (Migration migration : migrations) {
             if (migration.version() <= previous) {
                 throw new IllegalStateException(
                         "Migration versions must be strictly increasing."
@@ -250,5 +257,12 @@ public final class DatabaseMigrationRunner {
         }
     }
 
-    private record Migration(int version, String resourceName) { }
+    record Migration(int version, String resourceName) {
+        Migration {
+            if (version < 1) {
+                throw new IllegalArgumentException("Migration version must be positive.");
+            }
+            Objects.requireNonNull(resourceName, "resourceName");
+        }
+    }
 }
