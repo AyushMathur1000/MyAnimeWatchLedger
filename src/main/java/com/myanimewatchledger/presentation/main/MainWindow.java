@@ -1,6 +1,8 @@
 package com.myanimewatchledger.presentation.main;
 
 import com.myanimewatchledger.app.ApplicationServices;
+import com.myanimewatchledger.presentation.ledger.LedgerController;
+import com.myanimewatchledger.presentation.ledger.LedgerView;
 import com.myanimewatchledger.presentation.navigation.NavigationSidebar;
 import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
@@ -28,8 +30,6 @@ public final class MainWindow {
     private final BorderPane root = new BorderPane();
     private final ContextualToolbar toolbar = new ContextualToolbar();
     private final NavigationSidebar sidebar = new NavigationSidebar(this::navigate);
-    private final Label workspaceTitle = new Label();
-    private final Label workspaceMessage = new Label();
     private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
     private double lastWindowedWidth = WindowState.defaults().width();
     private double lastWindowedHeight = WindowState.defaults().height();
@@ -49,7 +49,6 @@ public final class MainWindow {
         root.getStyleClass().add("app-root");
         root.setLeft(sidebar);
         root.setTop(createHeaderAndToolbar());
-        root.setCenter(createWorkspace());
         root.setBottom(new ApplicationStatusBar(services.isMalConfigured()));
 
         Scene scene = new Scene(root);
@@ -87,21 +86,9 @@ public final class MainWindow {
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(12, 18, 10, 18));
         header.getStyleClass().add("application-header");
-
         VBox top = new VBox(header, toolbar);
         toolbar.showFor(activeNavigation);
         return top;
-    }
-
-    private VBox createWorkspace() {
-        workspaceTitle.getStyleClass().add("workspace-title");
-        workspaceMessage.getStyleClass().add("workspace-message");
-        VBox workspace = new VBox(10, workspaceTitle, workspaceMessage);
-        workspace.setAlignment(Pos.TOP_LEFT);
-        workspace.setPadding(new Insets(26));
-        workspace.getStyleClass().add("main-workspace");
-        renderWorkspace();
-        return workspace;
     }
 
     private void navigate(MainNavigation navigation) {
@@ -113,10 +100,20 @@ public final class MainWindow {
     }
 
     private void renderWorkspace() {
-        workspaceTitle.setText(activeNavigation.label());
-        workspaceMessage.setText(activeNavigation == MainNavigation.MY_LEDGER
-                ? "Your anime ledger will appear here."
-                : activeNavigation.label() + " workspace will be available in its implementation milestone.");
+        if (activeNavigation == MainNavigation.MY_LEDGER) {
+            root.setCenter(new LedgerView(new LedgerController(services.ledger())));
+            return;
+        }
+        Label title = new Label(activeNavigation.label());
+        title.getStyleClass().add("workspace-title");
+        Label message = new Label(activeNavigation.label()
+                + " workspace will be available in its implementation milestone.");
+        message.getStyleClass().add("workspace-message");
+        VBox workspace = new VBox(10, title, message);
+        workspace.setAlignment(Pos.TOP_LEFT);
+        workspace.setPadding(new Insets(26));
+        workspace.getStyleClass().add("main-workspace");
+        root.setCenter(workspace);
     }
 
     private void saveWindowState(Stage stage) {
