@@ -97,7 +97,9 @@ public final class LedgerView extends VBox {
         status.setCellFactory(column -> new TableCell<>() {
             private final ComboBox<LedgerStatus> choice = statusCombo();
             {
-                choice.setMaxWidth(Double.MAX_VALUE);
+                choice.setPrefWidth(132);
+                choice.setMinWidth(132);
+                choice.setMaxWidth(132);
                 choice.setOnAction(event -> {
                     LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
                     LedgerStatus next = choice.getValue();
@@ -107,7 +109,7 @@ public final class LedgerView extends VBox {
             @Override protected void updateItem(LedgerStatus item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) setGraphic(null);
-                else { choice.setValue(item); setGraphic(choice); }
+                else { choice.setValue(item); applyStatusStyle(choice, item); setGraphic(choice); }
             }
         });
         status.setMinWidth(155);
@@ -143,11 +145,37 @@ public final class LedgerView extends VBox {
 
     private ComboBox<LedgerStatus> statusCombo() {
         ComboBox<LedgerStatus> choice = new ComboBox<>(FXCollections.observableArrayList(LedgerStatus.values()));
+        choice.getStyleClass().add("ledger-status-choice");
+        choice.setCellFactory(list -> new ListCell<>() {
+            @Override protected void updateItem(LedgerStatus item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : displayStatus(item));
+                getStyleClass().removeIf(style -> style.startsWith("status-"));
+                if (!empty && item != null) getStyleClass().add(statusStyle(item));
+            }
+        });
+        choice.setButtonCell(new ListCell<>() {
+            @Override protected void updateItem(LedgerStatus item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : displayStatus(item));
+                getStyleClass().removeIf(style -> style.startsWith("status-"));
+                if (!empty && item != null) getStyleClass().add(statusStyle(item));
+            }
+        });
         choice.setConverter(new StringConverter<>() {
             @Override public String toString(LedgerStatus value) { return value == null ? "" : displayStatus(value); }
             @Override public LedgerStatus fromString(String value) { return null; }
         });
         return choice;
+    }
+
+    private static void applyStatusStyle(ComboBox<LedgerStatus> choice, LedgerStatus status) {
+        choice.getStyleClass().removeIf(style -> style.startsWith("status-"));
+        choice.getStyleClass().add(statusStyle(status));
+    }
+
+    private static String statusStyle(LedgerStatus status) {
+        return "status-" + status.name().toLowerCase(java.util.Locale.ROOT);
     }
 
     private TableColumn<LedgerEntry, java.time.Instant> dateColumn(

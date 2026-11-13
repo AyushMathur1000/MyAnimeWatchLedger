@@ -149,3 +149,36 @@
 .ledger-table .ledger-destructive-action { -fx-padding: 5px 9px; }
 .anime-card { -fx-min-height: 510px; -fx-pref-height: 510px; }
 .anime-card .button { -fx-min-height: 30px; }
+
+
+/* Compact, colour-coded inline ledger status selector */
+.ledger-table .ledger-status-choice {
+    -fx-pref-width: 132px;
+    -fx-min-width: 132px;
+    -fx-max-width: 132px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-border-width: 1px;
+}
+.ledger-table .ledger-status-choice .list-cell {
+    -fx-background-color: transparent;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 4px 7px;
+}
+.ledger-table .ledger-status-choice.status-watched { -fx-background-color: #214b39; -fx-border-color: #347958; }
+.ledger-table .ledger-status-choice.status-watched .list-cell { -fx-text-fill: #a9f0c6; }
+.ledger-table .ledger-status-choice.status-watching { -fx-background-color: #203f60; -fx-border-color: #356a9d; }
+.ledger-table .ledger-status-choice.status-watching .list-cell { -fx-text-fill: #b5dcff; }
+.ledger-table .ledger-status-choice.status-abandoned { -fx-background-color: #594321; -fx-border-color: #96703a; }
+.ledger-table .ledger-status-choice.status-abandoned .list-cell { -fx-text-fill: #ffe0a6; }
+.ledger-table .ledger-status-choice.status-blacklisted { -fx-background-color: #592d35; -fx-border-color: #984653; }
+.ledger-table .ledger-status-choice.status-blacklisted .list-cell { -fx-text-fill: #ffc0c7; }
+.ledger-table .ledger-status-choice.status-hold { -fx-background-color: #44305f; -fx-border-color: #73519d; }
+.ledger-table .ledger-status-choice.status-hold .list-cell { -fx-text-fill: #dfc4ff; }
+.ledger-table .ledger-status-choice.status-watch_later { -fx-background-color: #204b50; -fx-border-color: #347d83; }
+.ledger-table .ledger-status-choice.status-watch_later .list-cell { -fx-text-fill: #a8edf0; }
+.ledger-table .ledger-status-choice .arrow { -fx-background-color: #e0e4eb; }
+.ledger-table .ledger-status-choice .arrow-button { -fx-background-color: rgba(0,0,0,0.12); }
+.ledger-table .ledger-status-choice .list-cell:filled:selected,
+.ledger-table .ledger-status-choice .list-cell:filled:hover { -fx-background-color: #394b69; -fx-text-fill: #ffffff; }
