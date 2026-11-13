@@ -22,7 +22,7 @@ class ApplicationInitializerTest {
  @Test void invalidMalConfigurationDoesNotPreventOfflineStartup() throws Exception {
   var configFile=temp.resolve("invalid/app.properties");
   java.nio.file.Files.createDirectories(configFile.getParent());
-  java.nio.file.Files.writeString(configFile,"mal.client-id=\\\\u0001");
+  java.nio.file.Files.writeString(configFile,"mal.client-id=" + (char) 1);
   var store=new MalClientConfigurationStore(configFile);
   try(var app=new ApplicationInitializer(temp.resolve("invalid.db"),store)){
    app.initialize();assertNotNull(app.services());assertFalse(app.services().isMalConfigured());

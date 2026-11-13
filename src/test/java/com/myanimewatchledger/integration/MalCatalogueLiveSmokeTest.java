@@ -3,7 +3,6 @@ package com.myanimewatchledger.integration;
 import com.myanimewatchledger.application.service.CatalogueRefreshService;
 import com.myanimewatchledger.application.service.CatalogueService;
 import com.myanimewatchledger.application.service.SeasonNavigator;
-import com.myanimewatchledger.config.ApplicationPaths;
 import com.myanimewatchledger.config.MalApiConfiguration;
 import com.myanimewatchledger.config.MalClientConfigurationStore;
 import com.myanimewatchledger.infrastructure.mal.MalApiCatalogueGateway;
