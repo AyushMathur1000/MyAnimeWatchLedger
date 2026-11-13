@@ -5,7 +5,6 @@ import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,17 +53,6 @@ public final class JdbcOpenAnimeDetailTabRepository implements OpenAnimeDetailTa
                 return null;
             });
             return null;
-        });
-    }
-
-    @Override
-    public boolean close(long malId) {
-        return transactions.withConnection(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "DELETE FROM open_anime_detail_tab WHERE mal_id = ?")) {
-                statement.setLong(1, malId);
-                return statement.executeUpdate() > 0;
-            }
         });
     }
 }

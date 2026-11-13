@@ -17,12 +17,12 @@ public final class AnimeDetailTabService {
         this.tabs = Objects.requireNonNull(tabs, "tabs");
     }
 
-    public List<OpenAnimeDetailTab> restoreOpenTabs() {
+    public synchronized List<OpenAnimeDetailTab> restoreOpenTabs() {
         return tabs.findAllOrdered();
     }
 
     /** Opens an anime or returns its existing tab without creating a duplicate. */
-    public OpenAnimeDetailTab open(long malId) {
+    public synchronized OpenAnimeDetailTab open(long malId) {
         requireValidMalId(malId);
         List<OpenAnimeDetailTab> current = tabs.findAllOrdered();
         for (OpenAnimeDetailTab tab : current) {
@@ -35,15 +35,23 @@ public final class AnimeDetailTabService {
         return created;
     }
 
-    /** Closing a tab affects only the saved tab list, never metadata or ledger data. */
-    public boolean close(long malId) {
+    /** Closing a tab atomically updates only saved tab state, never metadata or ledger data. */
+    public synchronized boolean close(long malId) {
         requireValidMalId(malId);
-        boolean removed = tabs.close(malId);
-        if (removed) compactOrder(tabs.findAllOrdered());
-        return removed;
+        List<OpenAnimeDetailTab> current = tabs.findAllOrdered();
+        List<OpenAnimeDetailTab> remaining = current.stream()
+                .filter(tab -> tab.malId() != malId)
+                .toList();
+        if (remaining.size() == current.size()) return false;
+        List<OpenAnimeDetailTab> compacted = new ArrayList<>();
+        for (int i = 0; i < remaining.size(); i++) {
+            compacted.add(new OpenAnimeDetailTab(remaining.get(i).malId(), i));
+        }
+        tabs.replaceAll(compacted);
+        return true;
     }
 
-    public void reorder(List<Long> malIds) {
+    public synchronized void reorder(List<Long> malIds) {
         Objects.requireNonNull(malIds, "malIds");
         List<OpenAnimeDetailTab> current = tabs.findAllOrdered();
         Set<Long> existing = new HashSet<>();
@@ -58,14 +66,6 @@ public final class AnimeDetailTabService {
             reordered.add(new OpenAnimeDetailTab(malIds.get(i), i));
         }
         tabs.replaceAll(reordered);
-    }
-
-    private void compactOrder(List<OpenAnimeDetailTab> current) {
-        List<OpenAnimeDetailTab> compacted = new ArrayList<>();
-        for (int i = 0; i < current.size(); i++) {
-            compacted.add(new OpenAnimeDetailTab(current.get(i).malId(), i));
-        }
-        tabs.replaceAll(compacted);
     }
 
     private static void requireValidMalId(long malId) {
