@@ -183,8 +183,12 @@ public final class LedgerView extends VBox {
     }
 
     private void applyFilters() {
-        filtered.setPredicate(entry -> LedgerFilter.apply(
-                java.util.List.of(entry), searchField.getText(), Set.copyOf(selectedStatuses)).size() == 1);
+        String query = searchField.getText() == null ? "" :
+                searchField.getText().trim().toLowerCase(java.util.Locale.ROOT);
+        Set<LedgerStatus> statuses = Set.copyOf(selectedStatuses);
+        filtered.setPredicate(entry ->
+                (query.isEmpty() || entry.title().toLowerCase(java.util.Locale.ROOT).contains(query))
+                        && (statuses.isEmpty() || statuses.contains(entry.status())));
         emptyLabel.setText(source.isEmpty()
                 ? "Your anime ledger is empty. Add anime from the Catalogue."
                 : "No entries match the current search and filters.");
