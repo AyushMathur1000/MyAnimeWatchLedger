@@ -91,3 +91,47 @@
 .anime-card-synopsis { -fx-font-size: 11px; -fx-text-fill: #c5cad4 !important; }
 .anime-card-ledger { -fx-font-size: 10px; -fx-text-fill: #8fd3c1 !important; }
 .catalogue-empty { -fx-text-fill: #aeb4c0; -fx-padding: 24px; }
+
+
+/* Shared dark styling for controls and popup surfaces across all workspaces. */
+.root {
+    -fx-base: #252934;
+    -fx-background: #17191f;
+    -fx-control-inner-background: #252934;
+    -fx-control-inner-background-alt: #20242d;
+    -fx-text-background-color: #d7dce5;
+    -fx-accent: #526b91;
+    -fx-focus-color: #526b91;
+    -fx-faint-focus-color: transparent;
+}
+.context-menu, .menu, .combo-box-popup .list-view, .list-view, .choice-box {
+    -fx-background-color: #252934;
+    -fx-control-inner-background: #252934;
+    -fx-text-fill: #e0e4eb;
+}
+.context-menu .label, .menu .label, .list-cell { -fx-text-fill: #e0e4eb; }
+.list-cell:filled:hover, .list-cell:filled:selected { -fx-background-color: #394b69; }
+.text-input { -fx-text-fill: #f1f2f5; -fx-prompt-text-fill: #8992a2; }
+.button, .toggle-button {
+    -fx-background-color: #303642; -fx-text-fill: #e0e4eb;
+}
+.button:hover, .toggle-button:hover { -fx-background-color: #3b4658; }
+.combo-box-base, .choice-box, .spinner, .date-picker {
+    -fx-background-color: #303642; -fx-text-fill: #e0e4eb;
+}
+.table-view, .tree-view, .tree-table-view {
+    -fx-background-color: #1c1f27; -fx-control-inner-background: #1c1f27;
+}
+.scroll-bar, .scroll-bar .track { -fx-background-color: #20232b; }
+.scroll-bar .thumb { -fx-background-color: #505968; }
+.app-dialog, .app-dialog:header .header-panel {
+    -fx-background-color: #20232b;
+}
+.app-dialog .label { -fx-text-fill: #e0e4eb; }
+.app-dialog .content { -fx-text-fill: #d7dce5; }
+.app-dialog .button-bar .button {
+    -fx-background-color: #303642; -fx-text-fill: #e0e4eb;
+}
+.app-dialog .text-field, .app-dialog .combo-box {
+    -fx-background-color: #252934; -fx-text-fill: #f1f2f5;
+}

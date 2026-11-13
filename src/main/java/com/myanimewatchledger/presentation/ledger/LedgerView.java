@@ -1,6 +1,7 @@
 package com.myanimewatchledger.presentation.ledger;
 
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.presentation.DarkDialogStyler;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -237,6 +238,7 @@ public final class LedgerView extends VBox {
         confirmation.setHeaderText("Remove “" + selected.title() + "” from your ledger?");
         confirmation.setContentText("This permanently removes the ledger record. It does not delete catalogue cache data.");
         confirmation.getButtonTypes().setAll(ButtonType.CANCEL, ButtonType.OK);
+        DarkDialogStyler.apply(confirmation);
         confirmation.showAndWait().filter(ButtonType.OK::equals).ifPresent(button -> {
             try {
                 if (controller.remove(selected.malId())) {

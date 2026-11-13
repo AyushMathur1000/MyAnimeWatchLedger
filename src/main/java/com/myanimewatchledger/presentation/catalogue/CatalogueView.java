@@ -243,8 +243,9 @@ public final class CatalogueView extends BorderPane {
                 : "Ledger: " + displayStatus(item.ledgerStatus());
         Label ledger = new Label(ledgerText);
         ledger.getStyleClass().add("anime-card-ledger");
-        Button ledgerAction = new Button(item.ledgerStatus() == null ? "＋ Add to ledger" : "Change status");
-        ledgerAction.setOnAction(e -> manageLedger(item, ledgerAction, ledger));
+        Button ledgerAction = new Button(item.ledgerStatus() == null ? "＋ Add to ledger" : "In My Ledger");
+        ledgerAction.setDisable(item.ledgerStatus() != null);
+        ledgerAction.setOnAction(e -> addToLedger(item, ledgerAction, ledger));
         Button mal = new Button("Open MAL ↗");
         mal.setOnAction(e -> openMal(item.malId()));
         HBox actions = new HBox(7, ledgerAction, mal);
@@ -253,36 +254,16 @@ public final class CatalogueView extends BorderPane {
         return card;
     }
 
-    private void manageLedger(CatalogueAnime anime, Button action, Label ledgerLabel) {
-        Optional<com.myanimewatchledger.domain.ledger.LedgerEntry> existing =
-                controller.findLedgerEntry(anime.malId());
-        LedgerStatus initial = existing.map(e -> e.status()).orElse(LedgerStatus.WATCH_LATER);
-        List<String> statusLabels = Arrays.stream(LedgerStatus.values())
-                .map(CatalogueView::displayStatus).toList();
-        ChoiceDialog<String> dialog = new ChoiceDialog<>(displayStatus(initial), statusLabels);
-        dialog.setTitle(existing.isPresent() ? "Change ledger status" : "Add to My Ledger");
-        dialog.setHeaderText(anime.preferredTitle());
-        dialog.setContentText("Select status:");
-        dialog.showAndWait().ifPresent(selectedLabel -> {
-            LedgerStatus status = Arrays.stream(LedgerStatus.values())
-                    .filter(candidate -> displayStatus(candidate).equals(selectedLabel))
-                    .findFirst().orElseThrow();
-            try {
-                if (existing.isPresent()) controller.changeStatus(anime.malId(), status);
-                else controller.add(anime, status);
-                if (status == LedgerStatus.BLACKLISTED) {
-                    // The repository excludes blacklisted MAL IDs, so refresh every open
-                    // season view rather than leaving stale cards in background tabs.
-                    openTabs.values().forEach(this::loadCards);
-                } else {
-                    ledgerLabel.setText("Ledger: " + displayStatus(status));
-                    action.setText("Change status");
-                }
-                feedback.setText("Ledger updated: " + displayStatus(status) + ".");
-            } catch (RuntimeException failure) {
-                feedback.setText("Could not update ledger: " + safeMessage(failure));
-            }
-        });
+    private void addToLedger(CatalogueAnime anime, Button action, Label ledgerLabel) {
+        try {
+            controller.add(anime, LedgerStatus.WATCH_LATER);
+            ledgerLabel.setText("Ledger: Watch Later");
+            action.setText("In My Ledger");
+            action.setDisable(true);
+            feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as Watch Later.");
+        } catch (RuntimeException failure) {
+            feedback.setText("Could not add anime: " + safeMessage(failure));
+        }
     }
 
     private static void openMal(long malId) {
