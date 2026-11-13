@@ -20,4 +20,8 @@ public final class ApplicationPaths {
     public static Path databaseFile() {
         return dataDirectory().resolve(DATABASE_FILE);
     }
+
+    public static Path configurationFile() {
+        return dataDirectory().resolve("config").resolve("app.properties");
+    }
 }

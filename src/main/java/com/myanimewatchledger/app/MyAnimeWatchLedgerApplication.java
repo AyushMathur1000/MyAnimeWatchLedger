@@ -17,7 +17,7 @@ public final class MyAnimeWatchLedgerApplication extends Application {
     public void start(Stage primaryStage) {
         try {
             initializer.initialize();
-            new MainWindow().show(primaryStage);
+            new MainWindow(initializer.services()).show(primaryStage);
         } catch (Exception exception) {
             LOGGER.log(Level.SEVERE, "Application startup failed.", exception);
             initializer.close();
