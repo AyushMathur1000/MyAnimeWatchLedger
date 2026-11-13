@@ -259,15 +259,23 @@ public final class CatalogueView extends BorderPane {
                 : "Ledger: " + displayStatus(item.ledgerStatus());
         Label ledger = new Label(ledgerText);
         ledger.getStyleClass().add("anime-card-ledger");
-        Button ledgerAction = new Button(item.ledgerStatus() == null ? "＋ Add to Ledger" : "In Ledger");
+        Button detailsAction = new Button("ⓘ");
+        detailsAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-details-action");
+        detailsAction.setTooltip(new Tooltip("View anime details"));
+        detailsAction.setAccessibleText("View anime details");
+        detailsAction.setOnAction(e -> onOpenDetails.accept(item.malId()));
+
+        Button ledgerAction = new Button(item.ledgerStatus() == null ? "＋" : "✓");
+        ledgerAction.getStyleClass().add("anime-card-icon-action");
+        ledgerAction.setTooltip(new Tooltip(item.ledgerStatus() == null
+                ? "Add to My Ledger as Watch Later" : "Already in My Ledger"));
+        ledgerAction.setAccessibleText(item.ledgerStatus() == null
+                ? "Add to My Ledger as Watch Later" : "Already in My Ledger");
         ledgerAction.setDisable(item.ledgerStatus() != null);
         ledgerAction.setOnAction(e -> addToLedger(item, ledgerAction, ledger));
-        Button detailsAction = new Button("View Details");
-        detailsAction.getStyleClass().add("anime-card-details-action");
-        detailsAction.setMaxWidth(Double.MAX_VALUE);
-        detailsAction.setOnAction(e -> onOpenDetails.accept(item.malId()));
-        ledgerAction.setMaxWidth(Double.MAX_VALUE);
-        VBox actions = new VBox(6, detailsAction, ledgerAction);
+
+        HBox actions = new HBox(8, detailsAction, ledgerAction);
+        actions.setAlignment(Pos.CENTER_RIGHT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
         card.setMinHeight(510);
@@ -280,7 +288,9 @@ public final class CatalogueView extends BorderPane {
         try {
             controller.add(anime, LedgerStatus.WATCH_LATER);
             ledgerLabel.setText("Ledger: Watch Later");
-            action.setText("In My Ledger");
+            action.setText("✓");
+            action.setTooltip(new Tooltip("Already in My Ledger"));
+            action.setAccessibleText("Already in My Ledger");
             action.setDisable(true);
             feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as Watch Later.");
         } catch (RuntimeException failure) {

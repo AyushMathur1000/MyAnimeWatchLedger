@@ -248,3 +248,24 @@
 .anime-card .anime-card-details-action:hover { -fx-background-color: #4d6b96; }
 .anime-card .button { -fx-font-size: 10px; -fx-padding: 7px 6px; }
 .anime-card .anime-card-details-action { -fx-font-size: 12px; -fx-padding: 8px 10px; }
+
+
+/* Compact icon-only catalogue actions with tooltip labels */
+
+.anime-card .anime-card-icon-action {
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-max-width: 36px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-padding: 4px;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px;
+}
+.anime-card .anime-card-details-action {
+    -fx-background-color: #405a80;
+    -fx-text-fill: #ffffff;
+}
+.anime-card .anime-card-details-action:hover { -fx-background-color: #4d6b96; }
