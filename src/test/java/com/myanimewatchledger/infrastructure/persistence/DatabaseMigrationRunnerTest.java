@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,9 +39,7 @@ class DatabaseMigrationRunnerTest {
                 Set<String> actualTables = new java.util.HashSet<>();
 
                 try (ResultSet result = statement.executeQuery("""
-                        SELECT name
-                        FROM sqlite_master
-                        WHERE type = 'table'
+                        SELECT name FROM sqlite_master WHERE type = 'table'
                         """)) {
                     while (result.next()) {
                         actualTables.add(result.getString("name"));
@@ -48,7 +47,7 @@ class DatabaseMigrationRunnerTest {
                 }
 
                 assertTrue(actualTables.containsAll(expectedTables));
-                assertEquals(0, countRows(statement, "PRAGMA foreign_key_check"));
+                assertEquals(0, rowCount(statement, "PRAGMA foreign_key_check"));
             }
         }
     }
@@ -65,7 +64,7 @@ class DatabaseMigrationRunnerTest {
             try (Connection connection = manager.getConnection();
                  Statement statement = connection.createStatement()) {
                 assertEquals(1, pragmaInt(statement, "PRAGMA user_version"));
-                assertEquals(1, countRows(statement,
+                assertEquals(1, scalarInt(statement,
                         "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ledger_entry'"));
             }
         }
@@ -85,6 +84,71 @@ class DatabaseMigrationRunnerTest {
         }
     }
 
+    @Test
+    void rollsBackSchemaChangesAndVersionWhenMigrationFails() throws Exception {
+        DatabaseManager manager = initializedManager();
+
+        try (manager) {
+            DatabaseMigrationRunner runner = new DatabaseMigrationRunner(
+                    manager,
+                    List.of(new DatabaseMigrationRunner.Migration(
+                            1, "V999__failing_test_migration.sql"))
+            );
+
+            assertThrows(DatabaseException.class, runner::migrate);
+
+            try (Connection connection = manager.getConnection();
+                 Statement statement = connection.createStatement()) {
+                assertEquals(0, pragmaInt(statement, "PRAGMA user_version"));
+                assertEquals(0, scalarInt(statement,
+                        "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='should_rollback'"));
+            }
+        }
+    }
+
+    @Test
+    void cacheTablesCanBeClearedWithoutAffectingLedger() throws Exception {
+        DatabaseManager manager = initializedManager();
+
+        try (manager) {
+            new DatabaseMigrationRunner(manager).migrate();
+
+            try (Connection connection = manager.getConnection();
+                 Statement statement = connection.createStatement()) {
+                statement.executeUpdate("""
+                        INSERT INTO ledger_entry
+                            (mal_id, title, status, date_added, last_modified)
+                        VALUES (101, 'Test Anime', 'WATCHING', 1, 1)
+                        """);
+                statement.executeUpdate("""
+                        INSERT INTO catalogue_search (search_id, season, year, fetch_status)
+                        VALUES (1, 'WINTER', 2026, 'SUCCESS')
+                        """);
+                statement.executeUpdate("""
+                        INSERT INTO anime_metadata_cache
+                            (mal_id, preferred_title, metadata_json, searchable_text, cached_at)
+                        VALUES (101, 'Test Anime', '{}', 'test anime', 1)
+                        """);
+                statement.executeUpdate("""
+                        INSERT INTO catalogue_search_anime (search_id, mal_id, display_order)
+                        VALUES (1, 101, 0)
+                        """);
+                statement.executeUpdate("""
+                        INSERT INTO open_catalogue_tab (search_id, tab_order, search_query)
+                        VALUES (1, 0, '')
+                        """);
+
+                statement.executeUpdate("DELETE FROM open_catalogue_tab");
+                statement.executeUpdate("DELETE FROM catalogue_search_anime");
+                statement.executeUpdate("DELETE FROM catalogue_search");
+                statement.executeUpdate("DELETE FROM anime_metadata_cache");
+
+                assertEquals(1, scalarInt(statement,
+                        "SELECT COUNT(*) FROM ledger_entry WHERE mal_id = 101"));
+            }
+        }
+    }
+
     private DatabaseManager initializedManager() throws Exception {
         DatabaseManager manager =
                 new DatabaseManager(temporaryDirectory.resolve("ledger.db"));
@@ -99,10 +163,20 @@ class DatabaseMigrationRunnerTest {
         }
     }
 
-    private static int countRows(Statement statement, String sql) throws Exception {
+    private static int scalarInt(Statement statement, String sql) throws Exception {
         try (ResultSet result = statement.executeQuery(sql)) {
             assertTrue(result.next());
             return result.getInt(1);
         }
+    }
+
+    private static int rowCount(Statement statement, String sql) throws Exception {
+        int count = 0;
+        try (ResultSet result = statement.executeQuery(sql)) {
+            while (result.next()) {
+                count++;
+            }
+        }
+        return count;
     }
 }
