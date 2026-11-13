@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.logging.*;
+
 /** Coordinates startup resources and application service wiring. */
 public final class ApplicationInitializer implements AutoCloseable {
  private static final Logger LOG=Logger.getLogger(ApplicationInitializer.class.getName());
@@ -24,26 +25,27 @@ public final class ApplicationInitializer implements AutoCloseable {
    LedgerService ledger=new LedgerService(persistence.ledger());
    CatalogueService catalogue=new CatalogueService(persistence.catalogue());
    CatalogueTabService tabs=new CatalogueTabService(persistence.catalogue(),persistence.openCatalogueTabs());
-   CatalogueRefreshService refresh=createRefreshService();
-   services=new ApplicationServices(ledger,catalogue,tabs,refresh,background);
+   MalApiClient malClient=createMalClient();
+   MalResponseMapper mapper=new MalResponseMapper();
+   CatalogueRefreshService refresh=malClient==null?null:new CatalogueRefreshService(
+    new MalApiCatalogueGateway(malClient,malClient.baseUri()),persistence.catalogue(),
+    persistence.animeMetadata(),mapper,persistence.ledger(),persistence.transactions());
+   AnimeDetailService details=new AnimeDetailService(persistence.animeMetadata(),
+    malClient==null?null:new MalApiAnimeDetailGateway(malClient,mapper),mapper);
+   services=new ApplicationServices(ledger,catalogue,tabs,refresh,details,background);
    LOG.info("Application services initialized. MAL configured: "+services.isMalConfigured());
   }catch(IOException|SQLException|RuntimeException failure){close();throw failure;}
  }
- private CatalogueRefreshService createRefreshService() throws IOException {
+ private MalApiClient createMalClient() throws IOException {
   try {
-   var id = configStore.loadClientId();
-   if (id.isEmpty()) {
-    LOG.info("MAL Client ID is not configured; online catalogue refresh is unavailable.");
+   var id=configStore.loadClientId();
+   if(id.isEmpty()){
+    LOG.info("MAL Client ID is not configured; online MAL features are unavailable.");
     return null;
    }
-   MalApiConfiguration cfg = MalApiConfiguration.defaults(id.orElseThrow());
-   MalApiClient client = new MalApiClient(cfg);
-   MalResponseMapper mapper = new MalResponseMapper();
-   return new CatalogueRefreshService(new MalApiCatalogueGateway(client, client.baseUri()),
-    persistence.catalogue(), persistence.animeMetadata(), mapper,
-    persistence.ledger(), persistence.transactions());
-  } catch (IllegalArgumentException invalid) {
-   LOG.log(Level.WARNING, "MAL configuration is invalid; online catalogue refresh is unavailable.", invalid);
+   return new MalApiClient(MalApiConfiguration.defaults(id.orElseThrow()));
+  }catch(IllegalArgumentException invalid){
+   LOG.log(Level.WARNING,"MAL configuration is invalid; online MAL features are unavailable.",invalid);
    return null;
   }
  }
@@ -52,11 +54,8 @@ public final class ApplicationInitializer implements AutoCloseable {
  public synchronized ApplicationServices services(){if(services==null)throw new IllegalStateException("Application has not been initialized.");return services;}
  @Override public synchronized void close(){
   services=null;persistence=null;
-  try {
-   if (background != null) { background.close(); background = null; }
-  } finally {
-   if (database != null) { database.close(); database = null; }
-  }
+  try{if(background!=null){background.close();background=null;}}
+  finally{if(database!=null){database.close();database=null;}}
   LOG.info("Application resources shut down.");
  }
 }
