@@ -261,7 +261,7 @@ public final class CatalogueView extends BorderPane {
         dialog.setTitle(existing.isPresent() ? "Change ledger status" : "Add to My Ledger");
         dialog.setHeaderText(anime.preferredTitle());
         dialog.setContentText("Select status:");
-        dialog.setConverter(new javafx.util.StringConverter<>() {
+        dialog.setConverter(new javafx.util.StringConverter<LedgerStatus>() {
             public String toString(LedgerStatus status) { return status == null ? "" : displayStatus(status); }
             public LedgerStatus fromString(String value) { return null; }
         });
