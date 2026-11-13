@@ -257,15 +257,16 @@ public final class CatalogueView extends BorderPane {
         Optional<com.myanimewatchledger.domain.ledger.LedgerEntry> existing =
                 controller.findLedgerEntry(anime.malId());
         LedgerStatus initial = existing.map(e -> e.status()).orElse(LedgerStatus.WATCH_LATER);
-        ChoiceDialog<LedgerStatus> dialog = new ChoiceDialog<>(initial, List.of(LedgerStatus.values()));
+        List<String> statusLabels = Arrays.stream(LedgerStatus.values())
+                .map(CatalogueView::displayStatus).toList();
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(displayStatus(initial), statusLabels);
         dialog.setTitle(existing.isPresent() ? "Change ledger status" : "Add to My Ledger");
         dialog.setHeaderText(anime.preferredTitle());
         dialog.setContentText("Select status:");
-        dialog.setConverter(new javafx.util.StringConverter<LedgerStatus>() {
-            public String toString(LedgerStatus status) { return status == null ? "" : displayStatus(status); }
-            public LedgerStatus fromString(String value) { return null; }
-        });
-        dialog.showAndWait().ifPresent(status -> {
+        dialog.showAndWait().ifPresent(selectedLabel -> {
+            LedgerStatus status = Arrays.stream(LedgerStatus.values())
+                    .filter(candidate -> displayStatus(candidate).equals(selectedLabel))
+                    .findFirst().orElseThrow();
             try {
                 if (existing.isPresent()) controller.changeStatus(anime.malId(), status);
                 else controller.add(anime, status);
