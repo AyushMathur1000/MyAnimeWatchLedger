@@ -199,3 +199,40 @@
 .history-status-success { -fx-text-fill: #83c995 !important; }
 .history-status-failed { -fx-text-fill: #ef8989 !important; }
 .history-status-neutral { -fx-text-fill: #aeb4c0 !important; }
+
+
+/* Shared Anime Details workspace */
+.anime-details-workspace { -fx-background-color: #17191f; }
+.anime-details-workspace .label { -fx-text-fill: #d7dce5; }
+.anime-details-workspace .button {
+    -fx-background-color: #303642; -fx-text-fill: #e0e4eb; -fx-background-radius: 5px;
+    -fx-padding: 7px 10px;
+}
+.anime-details-workspace .button:hover { -fx-background-color: #3b4658; }
+.anime-details-workspace .tab-pane .tab-header-area .tab-header-background { -fx-background-color: #20232b; }
+.anime-details-workspace .tab { -fx-background-color: #252934; }
+.anime-details-workspace .tab-label { -fx-text-fill: #d7dce5; }
+.anime-details-workspace .tab:selected { -fx-background-color: #394b69; }
+.anime-details-scroll, .anime-details-scroll > .viewport { -fx-background-color: #17191f; }
+.anime-details-scroll { -fx-border-color: transparent; }
+.anime-details-feedback, .anime-details-message { -fx-text-fill: #aeb4c0 !important; -fx-font-size: 11px; }
+.anime-details-empty { -fx-text-fill: #aeb4c0; -fx-padding: 28px; }
+.anime-details-poster {
+    -fx-background-color: #292e38; -fx-background-radius: 6px; -fx-alignment: CENTER;
+    -fx-min-width: 220px; -fx-min-height: 310px;
+}
+.anime-details-no-poster { -fx-text-fill: #8992a2 !important; -fx-font-size: 11px; }
+.anime-details-summary { -fx-padding: 2px 4px 12px 0; }
+.anime-details-title { -fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #f1f2f5 !important; }
+.anime-details-canonical { -fx-font-size: 13px; -fx-text-fill: #aeb4c0 !important; }
+.anime-details-fact-label { -fx-font-size: 11px; -fx-text-fill: #8992a2 !important; }
+.anime-details-fact-value { -fx-font-size: 12px; -fx-text-fill: #e0e4eb !important; }
+.anime-details-section { -fx-background-color: #20242d; -fx-background-radius: 7px; -fx-padding: 14px; }
+.anime-details-section-title { -fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #f1f2f5 !important; }
+.anime-details-long-text { -fx-font-size: 12px; -fx-text-fill: #c5cad4 !important; }
+.anime-details-ledger-status { -fx-text-fill: #8fd3c1 !important; -fx-font-size: 11px; -fx-padding: 4px 12px; }
+.settings-workspace { -fx-background-color: #17191f; }
+.settings-workspace .label { -fx-text-fill: #d7dce5; }
+.settings-section-title { -fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #f1f2f5 !important; }
+.settings-description, .settings-feedback { -fx-font-size: 11px; -fx-text-fill: #aeb4c0 !important; }
+.settings-workspace .check-box { -fx-text-fill: #d7dce5; }

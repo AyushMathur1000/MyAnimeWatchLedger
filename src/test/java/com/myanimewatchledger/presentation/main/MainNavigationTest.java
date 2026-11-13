@@ -6,10 +6,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MainNavigationTest {
     @Test
-    void exposesExactlyTheFourApprovedPrimaryDestinations() {
+    void exposesTheApprovedPrimaryDestinationsIncludingAnimeDetails() {
         assertArrayEquals(new MainNavigation[]{
                 MainNavigation.MY_LEDGER,
                 MainNavigation.CATALOGUE,
+                MainNavigation.ANIME_DETAILS,
                 MainNavigation.SEARCH_HISTORY,
                 MainNavigation.SETTINGS
         }, MainNavigation.values());

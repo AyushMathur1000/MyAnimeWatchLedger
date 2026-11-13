@@ -4,6 +4,7 @@ package com.myanimewatchledger.presentation.main;
 public enum MainNavigation {
     MY_LEDGER("My Ledger", "▤"),
     CATALOGUE("Catalogue", "▦"),
+    ANIME_DETAILS("Anime Details", "▣"),
     SEARCH_HISTORY("Search History", "◷"),
     SETTINGS("Settings", "⚙");
 

@@ -19,11 +19,13 @@ import java.net.URI;
 import java.time.Clock;
 import java.util.*;
 import java.util.concurrent.CompletionException;
+import java.util.function.LongConsumer;
 
 /** Seasonal catalogue workspace with restorable tabs, local search and ledger actions. */
 public final class CatalogueView extends BorderPane {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final CatalogueController controller;
+    private final LongConsumer onOpenDetails;
     private final TabPane tabs = new TabPane();
     private final ComboBox<Season> seasonChoice = new ComboBox<>();
     private final Spinner<Integer> yearChoice = new Spinner<>(1900, 9999, java.time.Year.now().getValue());
@@ -32,12 +34,17 @@ public final class CatalogueView extends BorderPane {
     private boolean restoring;
 
     public CatalogueView(CatalogueController controller) {
-        this(controller, null);
+        this(controller, null, malId -> { });
     }
 
-    /** Creates the catalogue and optionally selects a specific restored search tab. */
     public CatalogueView(CatalogueController controller, Long selectedSearchId) {
+        this(controller, selectedSearchId, malId -> { });
+    }
+
+    /** Creates the catalogue and routes detail actions to the shared Anime Details workspace. */
+    public CatalogueView(CatalogueController controller, Long selectedSearchId, LongConsumer onOpenDetails) {
         this.controller = Objects.requireNonNull(controller);
+        this.onOpenDetails = Objects.requireNonNull(onOpenDetails);
         getStyleClass().add("catalogue-workspace");
         setPadding(new Insets(18, 22, 20, 22));
         seasonChoice.getItems().setAll(Season.values());
@@ -257,9 +264,11 @@ public final class CatalogueView extends BorderPane {
         Button ledgerAction = new Button(item.ledgerStatus() == null ? "＋ Add to ledger" : "In My Ledger");
         ledgerAction.setDisable(item.ledgerStatus() != null);
         ledgerAction.setOnAction(e -> addToLedger(item, ledgerAction, ledger));
-        Button mal = new Button("Open MAL ↗");
+        Button details = new Button("Details");
+        details.setOnAction(e -> onOpenDetails.accept(item.malId()));
+        Button mal = new Button("MAL ↗");
         mal.setOnAction(e -> openMal(item.malId()));
-        HBox actions = new HBox(7, ledgerAction, mal);
+        HBox actions = new HBox(6, ledgerAction, details, mal);
         actions.setAlignment(Pos.CENTER_LEFT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);

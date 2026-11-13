@@ -19,11 +19,14 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.Objects;
+import java.util.function.LongConsumer;
 
 /** Table-oriented My Ledger workspace. Row actions update entries directly. */
 public final class LedgerView extends VBox {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
     private final LedgerController controller;
+    private final LongConsumer onOpenDetails;
     private final ObservableList<LedgerEntry> source = FXCollections.observableArrayList();
     private final FilteredList<LedgerEntry> filtered = new FilteredList<>(source, entry -> true);
     private final TableView<LedgerEntry> table = new TableView<>();
@@ -35,7 +38,12 @@ public final class LedgerView extends VBox {
     private final Label feedbackLabel = new Label();
 
     public LedgerView(LedgerController controller) {
-        this.controller = controller;
+        this(controller, malId -> { });
+    }
+
+    public LedgerView(LedgerController controller, LongConsumer onOpenDetails) {
+        this.controller = Objects.requireNonNull(controller, "controller");
+        this.onOpenDetails = Objects.requireNonNull(onOpenDetails, "onOpenDetails");
         getStyleClass().add("ledger-workspace");
         setSpacing(14);
         setPadding(new Insets(26));
@@ -123,8 +131,15 @@ public final class LedgerView extends VBox {
         actions.setSortable(false);
         actions.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyObjectWrapper<>(data.getValue()));
         actions.setCellFactory(column -> new TableCell<>() {
+            private final Button details = new Button("Details");
             private final Button remove = new Button("Remove");
+            private final HBox buttons = new HBox(5, details, remove);
             {
+                details.setOnAction(event -> {
+                    LedgerEntry entry = getItem();
+                    if (entry != null) onOpenDetails.accept(entry.malId());
+                });
+                details.setTooltip(new Tooltip("Open anime details"));
                 remove.getStyleClass().add("ledger-destructive-action");
                 remove.setOnAction(event -> {
                     LedgerEntry entry = getItem();
@@ -133,12 +148,12 @@ public final class LedgerView extends VBox {
             }
             @Override protected void updateItem(LedgerEntry item, boolean empty) {
                 super.updateItem(item, empty);
-                setGraphic(empty || item == null ? null : remove);
+                setGraphic(empty || item == null ? null : buttons);
             }
         });
-        actions.setMinWidth(88);
-        actions.setPrefWidth(96);
-        actions.setMaxWidth(110);
+        actions.setMinWidth(150);
+        actions.setPrefWidth(160);
+        actions.setMaxWidth(180);
         table.getColumns().setAll(title, status, added, modified, actions);
         table.widthProperty().addListener((observable, oldWidth, newWidth) ->
                 applyColumnWidths(newWidth.doubleValue(), title, status, added, modified, actions));
@@ -160,11 +175,11 @@ public final class LedgerView extends VBox {
                                    TableColumn<LedgerEntry, LedgerEntry> actions) {
         if (tableWidth <= 0) return;
         double usableWidth = Math.max(0, tableWidth - 18);
-        title.setPrefWidth(usableWidth * 0.645);
-        status.setPrefWidth(usableWidth * 0.093);
-        added.setPrefWidth(usableWidth * 0.103);
-        modified.setPrefWidth(usableWidth * 0.105);
-        actions.setPrefWidth(usableWidth * 0.052);
+        title.setPrefWidth(usableWidth * 0.58);
+        status.setPrefWidth(usableWidth * 0.10);
+        added.setPrefWidth(usableWidth * 0.10);
+        modified.setPrefWidth(usableWidth * 0.10);
+        actions.setPrefWidth(Math.max(150, usableWidth * 0.12));
     }
 
     private ComboBox<LedgerStatus> statusCombo() {
