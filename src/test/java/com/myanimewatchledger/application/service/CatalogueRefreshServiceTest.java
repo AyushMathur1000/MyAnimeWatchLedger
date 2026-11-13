@@ -154,6 +154,62 @@ class CatalogueRefreshServiceTest {
     }
 
     @Test
+    void failureAfterLedgerSynchronizationRollsBackTheEntireRefresh() {
+        CatalogueSearch search = persistence.catalogue().findOrCreate(Season.FALL, 2021);
+        Instant addedAt = Instant.parse("2022-02-03T00:00:00Z");
+        Instant previousSuccess = Instant.parse("2026-09-01T00:00:00Z");
+        persistence.ledger().add(new LedgerEntry(4101, "Old Ledger Title", LedgerStatus.WATCHING, addedAt, addedAt));
+        persistence.animeMetadata().upsert(item(4101, "Old Ledger Title"));
+        persistence.catalogue().replaceMembership(search.searchId(), List.of(4101L));
+        persistence.catalogue().markFetchSucceeded(search.searchId(), previousSuccess);
+
+        CatalogueRepository failingCatalogue = new CatalogueRepository() {
+            @Override public CatalogueSearch findOrCreate(Season season, int year) {
+                return persistence.catalogue().findOrCreate(season, year);
+            }
+            @Override public java.util.Optional<CatalogueSearch> findById(long id) {
+                return persistence.catalogue().findById(id);
+            }
+            @Override public List<CatalogueSearch> findAll() {
+                return persistence.catalogue().findAll();
+            }
+            @Override public void markFetchSucceeded(long id, Instant at) {
+                throw new IllegalStateException("Simulated failure after ledger synchronization.");
+            }
+            @Override public void markFetchFailed(long id, Instant at, String error) {
+                persistence.catalogue().markFetchFailed(id, at, error);
+            }
+            @Override public void replaceMembership(long id, List<Long> ids) {
+                persistence.catalogue().replaceMembership(id, ids);
+            }
+            @Override public List<CatalogueAnime> findEligibleAnime(long id, List<String> tokens) {
+                return persistence.catalogue().findEligibleAnime(id, tokens);
+            }
+            @Override public void clearCache() {
+                persistence.catalogue().clearCache();
+            }
+        };
+
+        CatalogueRefreshService service = new CatalogueRefreshService(
+                (season, year) -> new SeasonalCatalogue(List.of(item(4101, "New MAL Title")), 0, List.of()),
+                failingCatalogue, persistence.animeMetadata(), mapper, persistence.ledger(),
+                persistence.transactions(), Clock.fixed(completedAt, ZoneOffset.UTC));
+
+        assertThrows(IllegalStateException.class, () -> service.refresh(Season.FALL, 2021));
+
+        LedgerEntry restoredLedger = persistence.ledger().findByMalId(4101).orElseThrow();
+        assertEquals("Old Ledger Title", restoredLedger.title());
+        assertEquals(LedgerStatus.WATCHING, restoredLedger.status());
+        assertEquals(addedAt, restoredLedger.dateAdded());
+        assertEquals("Old Ledger Title", persistence.animeMetadata().findByMalId(4101).orElseThrow().preferredTitle());
+        assertEquals(List.of(4101L), persistence.catalogue().findEligibleAnime(search.searchId(), List.of())
+                .stream().map(CatalogueAnime::malId).toList());
+        CatalogueSearch failed = persistence.catalogue().findById(search.searchId()).orElseThrow();
+        assertEquals(FetchStatus.FAILED, failed.fetchStatus());
+        assertEquals(previousSuccess, failed.lastSuccessfulFetchAt());
+    }
+
+    @Test
     void refreshDoesNotChangeLedgerWhenPreferredTitleIsUnchanged() {
         Instant addedAt = Instant.parse("2024-02-03T00:00:00Z");
         LedgerEntry original = new LedgerEntry(5001, "Same Title", LedgerStatus.HOLD, addedAt, addedAt);
