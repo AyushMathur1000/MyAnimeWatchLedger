@@ -12,37 +12,57 @@ import java.util.Objects;
 public final class DatabaseTransactionManager {
  @FunctionalInterface public interface TransactionWork<T> { T execute(); }
  @FunctionalInterface interface SqlWork<T> { T execute(Connection connection) throws SQLException; }
+
+ private static final class TransactionContext {
+  private final Connection connection;
+  private boolean rollbackOnly;
+  private TransactionContext(Connection connection){this.connection=connection;}
+ }
  private final DatabaseManager databaseManager;
- private final ThreadLocal<Connection> currentConnection=new ThreadLocal<>();
+ private final ThreadLocal<TransactionContext> current=new ThreadLocal<>();
 
  public DatabaseTransactionManager(DatabaseManager databaseManager){this.databaseManager=Objects.requireNonNull(databaseManager);}
 
  public <T> T executeInTransaction(TransactionWork<T> work){
   Objects.requireNonNull(work);
-  if(currentConnection.get()!=null)return work.execute();
+  TransactionContext joined=current.get();
+  if(joined!=null){
+   try{return work.execute();}
+   catch(RuntimeException|Error failure){joined.rollbackOnly=true;throw failure;}
+  }
   try(Connection connection=databaseManager.getConnection()){
-   connection.setAutoCommit(false);currentConnection.set(connection);
+   connection.setAutoCommit(false);
+   TransactionContext context=new TransactionContext(connection);
+   current.set(context);
    try{
     T result=work.execute();
+    if(context.rollbackOnly)throw new DatabaseException("Transaction was marked rollback-only by a failed repository operation.");
     connection.commit();
     return result;
    }catch(RuntimeException|Error failure){
-    try{connection.rollback();}catch(SQLException rollbackFailure){failure.addSuppressed(rollbackFailure);}
+    rollback(connection,failure);
     throw failure;
-   }finally{
-    currentConnection.remove();
-    if(!connection.isClosed())connection.setAutoCommit(true);
-   }
-  }catch(SQLException exception){throw new DatabaseException("Database transaction failed.",exception);}
+   }catch(SQLException failure){
+    rollback(connection,failure);
+    throw new DatabaseException("Unable to commit database transaction.",failure);
+   }finally{current.remove();}
+  }catch(SQLException exception){throw new DatabaseException("Unable to start database transaction.",exception);}
  }
 
  <T> T withConnection(SqlWork<T> work){
-  Connection active=currentConnection.get();
-  if(active!=null){
-   try{return work.execute(active);}
-   catch(SQLException exception){throw new DatabaseException("Database operation failed inside a transaction.",exception);}
+  TransactionContext context=current.get();
+  if(context!=null){
+   try{return work.execute(context.connection);}
+   catch(SQLException exception){
+    context.rollbackOnly=true;
+    throw new DatabaseException("Database operation failed inside a transaction.",exception);
+   }
   }
   try(Connection connection=databaseManager.getConnection()){return work.execute(connection);}
   catch(SQLException exception){throw new DatabaseException("Database operation failed.",exception);}
+ }
+
+ private static void rollback(Connection connection,Throwable original){
+  try{connection.rollback();}catch(SQLException rollbackFailure){original.addSuppressed(rollbackFailure);}
  }
 }
