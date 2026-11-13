@@ -18,7 +18,7 @@ import java.util.logging.*;
 public final class MainWindow {
  private static final Logger LOGGER=Logger.getLogger(MainWindow.class.getName());
  private final ApplicationServices services;private final WindowStateStore windowStateStore;private final BorderPane root=new BorderPane();private final NavigationSidebar sidebar=new NavigationSidebar(this::navigate);
- private MainNavigation activeNavigation=MainNavigation.MY_LEDGER;private double lastWindowedWidth=WindowState.defaults().width(),lastWindowedHeight=WindowState.defaults().height();
+ private MainNavigation activeNavigation=MainNavigation.MY_LEDGER;private Long requestedCatalogueSearchId;private double lastWindowedWidth=WindowState.defaults().width(),lastWindowedHeight=WindowState.defaults().height();
  public MainWindow(ApplicationServices services){this(services,new WindowStateStore(com.myanimewatchledger.config.ApplicationPaths.dataDirectory().resolve("config").resolve("ui.properties")));}
  public MainWindow(ApplicationServices services,WindowStateStore store){this.services=Objects.requireNonNull(services);windowStateStore=Objects.requireNonNull(store);}
  public void show(Stage stage){
@@ -32,9 +32,9 @@ public final class MainWindow {
  }
  private HBox createHeader(){Label title=new Label("MyAnimeWatchLedger");title.getStyleClass().add("app-title");HBox header=new HBox(title);header.setAlignment(Pos.CENTER_LEFT);header.setPadding(new Insets(12,18,10,18));header.getStyleClass().add("application-header");return header;}
  private void navigate(MainNavigation navigation){if(activeNavigation==navigation)return;activeNavigation=navigation;sidebar.select(navigation);renderWorkspace();}
- private void openHistoricalSearch(long id){services.catalogueTabs().openSearch(id);navigate(MainNavigation.CATALOGUE);}
+ private void openHistoricalSearch(long id){services.catalogueTabs().openSearch(id);requestedCatalogueSearchId=id;navigate(MainNavigation.CATALOGUE);}
  private void renderWorkspace(){
-  if(activeNavigation==MainNavigation.CATALOGUE){root.setCenter(new CatalogueView(new CatalogueController(services)));return;}
+  if(activeNavigation==MainNavigation.CATALOGUE){Long requestedId=requestedCatalogueSearchId;requestedCatalogueSearchId=null;root.setCenter(new CatalogueView(new CatalogueController(services),requestedId));return;}
   if(activeNavigation==MainNavigation.MY_LEDGER){root.setCenter(new LedgerView(new LedgerController(services.ledger())));return;}
   if(activeNavigation==MainNavigation.SEARCH_HISTORY){root.setCenter(new SearchHistoryView(new SearchHistoryController(services),this::openHistoricalSearch));return;}
   Label title=new Label(activeNavigation.label());title.getStyleClass().add("workspace-title");Label message=new Label(activeNavigation.label()+" workspace will be available in its implementation milestone.");message.getStyleClass().add("workspace-message");VBox workspace=new VBox(10,title,message);workspace.setAlignment(Pos.TOP_LEFT);workspace.setPadding(new Insets(26));workspace.getStyleClass().add("main-workspace");root.setCenter(workspace);

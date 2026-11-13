@@ -32,6 +32,11 @@ public final class CatalogueView extends BorderPane {
     private boolean restoring;
 
     public CatalogueView(CatalogueController controller) {
+        this(controller, null);
+    }
+
+    /** Creates the catalogue and optionally selects a specific restored search tab. */
+    public CatalogueView(CatalogueController controller, Long selectedSearchId) {
         this.controller = Objects.requireNonNull(controller);
         getStyleClass().add("catalogue-workspace");
         setPadding(new Insets(18, 22, 20, 22));
@@ -61,10 +66,10 @@ public final class CatalogueView extends BorderPane {
             }
         });
         setCenter(tabs);
-        restoreOrOpenCurrent();
+        restoreOrOpenCurrent(selectedSearchId);
     }
 
-    private void restoreOrOpenCurrent() {
+    private void restoreOrOpenCurrent(Long selectedSearchId) {
         restoring = true;
         try {
             List<OpenCatalogueTab> saved = controller.restoreTabs();
@@ -76,7 +81,13 @@ public final class CatalogueView extends BorderPane {
                     controller.findSearch(tab.searchId()).ifPresent(search ->
                             createTab(search, tab.searchQuery(), false));
                 }
-                if (!tabs.getTabs().isEmpty()) tabs.getSelectionModel().selectFirst();
+                if (selectedSearchId != null) {
+                    SeasonTab requested = openTabs.get(selectedSearchId);
+                    if (requested != null) tabs.getSelectionModel().select(requested.tab);
+                    else if (!tabs.getTabs().isEmpty()) tabs.getSelectionModel().selectFirst();
+                } else if (!tabs.getTabs().isEmpty()) {
+                    tabs.getSelectionModel().selectFirst();
+                }
             }
         } finally {
             restoring = false;
