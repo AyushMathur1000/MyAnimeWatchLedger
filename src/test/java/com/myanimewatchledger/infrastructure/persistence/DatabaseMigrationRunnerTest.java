@@ -27,14 +27,15 @@ class DatabaseMigrationRunnerTest {
 
             try (Connection connection = manager.getConnection();
                  Statement statement = connection.createStatement()) {
-                assertEquals(2, pragmaInt(statement, "PRAGMA user_version"));
+                assertEquals(3, pragmaInt(statement, "PRAGMA user_version"));
 
                 Set<String> expectedTables = Set.of(
                         "ledger_entry",
                         "catalogue_search",
                         "anime_metadata_cache",
                         "catalogue_search_anime",
-                        "open_catalogue_tab"
+                        "open_catalogue_tab",
+                        "open_anime_detail_tab"
                 );
                 Set<String> actualTables = new java.util.HashSet<>();
 
