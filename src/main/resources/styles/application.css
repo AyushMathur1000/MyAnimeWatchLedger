@@ -2,12 +2,75 @@
     -fx-background-color: #17191f;
     -fx-font-family: "Segoe UI", sans-serif;
 }
+.application-header {
+    -fx-background-color: #20232b;
+}
 .app-title {
-    -fx-font-size: 28px;
+    -fx-font-size: 19px;
     -fx-font-weight: bold;
     -fx-text-fill: #f1f2f5;
 }
-.app-subtitle {
-    -fx-font-size: 14px;
+.navigation-sidebar {
+    -fx-background-color: #20232b;
+    -fx-pref-width: 190px;
+    -fx-min-width: 170px;
+}
+.navigation-button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 6px;
+    -fx-text-fill: #c5cad4;
+    -fx-font-size: 13px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10px 12px;
+    -fx-cursor: hand;
+}
+.navigation-button:hover {
+    -fx-background-color: #303642;
+    -fx-text-fill: #ffffff;
+}
+.navigation-button.selected {
+    -fx-background-color: #394b69;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+.contextual-toolbar {
+    -fx-background-color: #252934;
+    -fx-border-color: #343945;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 7px 12px;
+}
+.toolbar-action {
+    -fx-background-color: #303642;
+    -fx-background-radius: 5px;
+    -fx-text-fill: #e0e4eb;
+    -fx-font-size: 12px;
+    -fx-padding: 7px 10px;
+}
+.toolbar-action:disabled {
+    -fx-opacity: 0.55;
+}
+.main-workspace {
+    -fx-background-color: #17191f;
+}
+.workspace-title {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #f1f2f5;
+}
+.workspace-message {
+    -fx-font-size: 13px;
     -fx-text-fill: #aeb4c0;
+}
+.application-status-bar {
+    -fx-background-color: #20232b;
+    -fx-border-color: #343945;
+    -fx-border-width: 1px 0 0 0;
+}
+.status-ready {
+    -fx-text-fill: #83c995;
+    -fx-font-size: 11px;
+}
+.status-muted {
+    -fx-text-fill: #aeb4c0;
+    -fx-font-size: 11px;
 }

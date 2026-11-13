@@ -1,48 +1,126 @@
 package com.myanimewatchledger.presentation.main;
 
 import com.myanimewatchledger.app.ApplicationServices;
+import com.myanimewatchledger.presentation.navigation.NavigationSidebar;
+import com.myanimewatchledger.presentation.state.WindowState;
+import com.myanimewatchledger.presentation.state.WindowStateStore;
+import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
+import com.myanimewatchledger.presentation.toolbar.ContextualToolbar;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.IOException;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-/** Initial presentation shell; feature screens are introduced in the UI implementation phase. */
+/** Main application shell with persistent global regions and replaceable workspace. */
 public final class MainWindow {
+    private static final Logger LOGGER = Logger.getLogger(MainWindow.class.getName());
     private final ApplicationServices services;
+    private final WindowStateStore windowStateStore;
+    private final BorderPane root = new BorderPane();
+    private final ContextualToolbar toolbar = new ContextualToolbar();
+    private final NavigationSidebar sidebar = new NavigationSidebar(this::navigate);
+    private final Label workspaceTitle = new Label();
+    private final Label workspaceMessage = new Label();
+    private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
+    private double lastWindowedWidth = WindowState.defaults().width();
+    private double lastWindowedHeight = WindowState.defaults().height();
 
     public MainWindow(ApplicationServices services) {
+        this(services, new WindowStateStore(
+                com.myanimewatchledger.config.ApplicationPaths.dataDirectory()
+                        .resolve("config").resolve("ui.properties")));
+    }
+
+    public MainWindow(ApplicationServices services, WindowStateStore windowStateStore) {
         this.services = Objects.requireNonNull(services, "services");
+        this.windowStateStore = Objects.requireNonNull(windowStateStore, "windowStateStore");
     }
 
     public void show(Stage stage) {
-        Label title = new Label("MyAnimeWatchLedger");
-        title.getStyleClass().add("app-title");
-        Label subtitle = new Label("Application services are ready.");
-        subtitle.getStyleClass().add("app-subtitle");
-        Label malStatus = new Label(services.isMalConfigured()
-                ? "MAL API configured"
-                : "MAL API not configured — add a Client ID in Settings when available");
-        malStatus.getStyleClass().add("app-subtitle");
-
-        VBox content = new VBox(10, title, subtitle, malStatus);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(32));
-
-        BorderPane root = new BorderPane(content);
         root.getStyleClass().add("app-root");
-        Scene scene = new Scene(root, 1000, 680);
+        root.setLeft(sidebar);
+        root.setTop(createHeaderAndToolbar());
+        root.setCenter(createWorkspace());
+        root.setBottom(new ApplicationStatusBar(services.isMalConfigured()));
+
+        Scene scene = new Scene(root);
         var stylesheet = getClass().getResource("/styles/application.css");
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
 
+        WindowState saved = windowStateStore.load();
+        lastWindowedWidth = saved.width();
+        lastWindowedHeight = saved.height();
         stage.setTitle("MyAnimeWatchLedger");
         stage.setMinWidth(800);
         stage.setMinHeight(560);
+        stage.setWidth(saved.width());
+        stage.setHeight(saved.height());
+        stage.widthProperty().addListener((observable, oldValue, newValue) -> {
+            if (!stage.isMaximized() && newValue.doubleValue() >= 800) lastWindowedWidth = newValue.doubleValue();
+        });
+        stage.heightProperty().addListener((observable, oldValue, newValue) -> {
+            if (!stage.isMaximized() && newValue.doubleValue() >= 560) lastWindowedHeight = newValue.doubleValue();
+        });
         stage.setScene(scene);
+        stage.setOnHiding(event -> saveWindowState(stage));
         stage.show();
+        stage.setMaximized(saved.maximized());
+    }
+
+    private VBox createHeaderAndToolbar() {
+        Label title = new Label("MyAnimeWatchLedger");
+        title.getStyleClass().add("app-title");
+        HBox header = new HBox(title);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(12, 18, 10, 18));
+        header.getStyleClass().add("application-header");
+
+        VBox top = new VBox(header, toolbar);
+        toolbar.showFor(activeNavigation);
+        return top;
+    }
+
+    private VBox createWorkspace() {
+        workspaceTitle.getStyleClass().add("workspace-title");
+        workspaceMessage.getStyleClass().add("workspace-message");
+        VBox workspace = new VBox(10, workspaceTitle, workspaceMessage);
+        workspace.setAlignment(Pos.TOP_LEFT);
+        workspace.setPadding(new Insets(26));
+        workspace.getStyleClass().add("main-workspace");
+        renderWorkspace();
+        return workspace;
+    }
+
+    private void navigate(MainNavigation navigation) {
+        if (activeNavigation == navigation) return;
+        activeNavigation = navigation;
+        sidebar.select(navigation);
+        toolbar.showFor(navigation);
+        renderWorkspace();
+    }
+
+    private void renderWorkspace() {
+        workspaceTitle.setText(activeNavigation.label());
+        workspaceMessage.setText(activeNavigation == MainNavigation.MY_LEDGER
+                ? "Your anime ledger will appear here."
+                : activeNavigation.label() + " workspace will be available in its implementation milestone.");
+    }
+
+    private void saveWindowState(Stage stage) {
+        try {
+            windowStateStore.save(new WindowState(
+                    lastWindowedWidth, lastWindowedHeight, stage.isMaximized()));
+        } catch (IOException | IllegalArgumentException exception) {
+            LOGGER.log(Level.WARNING, "Could not save main window preferences.", exception);
+        }
     }
 }
