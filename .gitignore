@@ -1,0 +1,26 @@
+# Maven
+/target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Local application configuration and secrets
+/config/app.properties
+/config/*.local.properties
+
+# Local database and SQLite sidecars
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Logs
+/logs/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
