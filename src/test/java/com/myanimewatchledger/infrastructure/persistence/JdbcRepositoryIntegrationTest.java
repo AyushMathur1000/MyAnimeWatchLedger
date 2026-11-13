@@ -73,4 +73,29 @@ class JdbcRepositoryIntegrationTest {
   assertThrows(IllegalArgumentException.class,()->metadata.upsert(new AnimeMetadataCache(5001,"Bad","not-json","bad",Instant.now())));
   assertTrue(metadata.findByMalId(5001).isEmpty());
  }
+
+ @Test void failedRefreshPreservesLastSuccessfulFetchAndMembership(){
+  var search=catalogue.findOrCreate(Season.WINTER,2023);
+  Instant success=Instant.parse("2026-01-01T00:00:00Z");
+  metadata.upsert(new AnimeMetadataCache(6001,"Cached Anime","{\"title\":\"Cached Anime\"}","cached anime",success));
+  catalogue.replaceMembership(search.searchId(),List.of(6001L));
+  catalogue.markFetchSucceeded(search.searchId(),success);
+  Instant failed=success.plusSeconds(3600);
+  catalogue.markFetchFailed(search.searchId(),failed,"Network unavailable");
+  var refreshed=catalogue.findById(search.searchId()).orElseThrow();
+  assertEquals(FetchStatus.FAILED,refreshed.fetchStatus());
+  assertEquals(success,refreshed.lastSuccessfulFetchAt());
+  assertEquals("Network unavailable",refreshed.lastError());
+  assertEquals(1,catalogue.findEligibleAnime(search.searchId(),List.of()).size());
+ }
+ @Test void caughtNestedFailureStillMarksOuterTransactionRollbackOnly(){
+  Instant now=Instant.now();
+  assertThrows(DatabaseException.class,()->transactions.executeInTransaction(()->{
+   ledger.add(new LedgerEntry(7001,"Must Roll Back",LedgerStatus.HOLD,now,now));
+   try{transactions.executeInTransaction(()->{throw new IllegalStateException("nested failure");});}
+   catch(IllegalStateException ignored){/* caller deliberately catches nested failure */}
+   return null;
+  }));
+  assertTrue(ledger.findByMalId(7001).isEmpty());
+ }
 }
