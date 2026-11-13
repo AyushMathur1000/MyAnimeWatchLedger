@@ -264,11 +264,11 @@ public final class CatalogueView extends BorderPane {
         Button ledgerAction = new Button(item.ledgerStatus() == null ? "＋ Add to ledger" : "In My Ledger");
         ledgerAction.setDisable(item.ledgerStatus() != null);
         ledgerAction.setOnAction(e -> addToLedger(item, ledgerAction, ledger));
-        Button details = new Button("Details");
-        details.setOnAction(e -> onOpenDetails.accept(item.malId()));
+        Button detailsAction = new Button("Details");
+        detailsAction.setOnAction(e -> onOpenDetails.accept(item.malId()));
         Button mal = new Button("MAL ↗");
         mal.setOnAction(e -> openMal(item.malId()));
-        HBox actions = new HBox(6, ledgerAction, details, mal);
+        HBox actions = new HBox(6, ledgerAction, detailsAction, mal);
         actions.setAlignment(Pos.CENTER_LEFT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
