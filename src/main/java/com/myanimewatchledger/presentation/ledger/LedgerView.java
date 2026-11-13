@@ -18,7 +18,6 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /** Table-oriented My Ledger workspace. All persistence is delegated to LedgerController. */
 public final class LedgerView extends VBox {
@@ -30,12 +29,10 @@ public final class LedgerView extends VBox {
     private final TableView<LedgerEntry> table = new TableView<>();
     private final TextField searchField = new TextField();
     private final Label countLabel = new Label();
-    private final Label emptyLabel = new Label("Your anime ledger is empty. Add anime from the Catalogue.");
     private final ComboBox<LedgerStatus> statusChoice = new ComboBox<>();
     private final Button applyStatusButton = new Button("Apply status");
     private final Button removeButton = new Button("Remove");
     private final EnumSet<LedgerStatus> selectedStatuses = EnumSet.noneOf(LedgerStatus.class);
-    private final Set<CheckBox> statusChecks = new java.util.LinkedHashSet<>();
 
     public LedgerView(LedgerController controller) {
         this.controller = controller;
@@ -45,28 +42,18 @@ public final class LedgerView extends VBox {
 
         Label title = new Label("My Ledger");
         title.getStyleClass().add("workspace-title");
-
         HBox heading = new HBox(14, title, countLabel);
         heading.setAlignment(Pos.BASELINE_LEFT);
 
         searchField.setPromptText("Search anime titles…");
         searchField.setPrefWidth(300);
         searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
-
-        HBox filters = createStatusFilters();
-        HBox searchRow = new HBox(12, searchField, filters);
+        HBox searchRow = new HBox(12, searchField, createStatusFilters());
         searchRow.setAlignment(Pos.CENTER_LEFT);
 
         configureTable();
-        HBox actions = createRowActions();
-
-        emptyLabel.getStyleClass().add("ledger-empty");
-        emptyLabel.setVisible(false);
-        emptyLabel.setManaged(false);
-        table.setPlaceholder(emptyLabel);
         VBox.setVgrow(table, Priority.ALWAYS);
-
-        getChildren().addAll(heading, searchRow, actions, table);
+        getChildren().addAll(heading, searchRow, createRowActions(), table);
         load();
         updateCount();
     }
@@ -85,7 +72,6 @@ public final class LedgerView extends VBox {
                 else selectedStatuses.remove(status);
                 applyFilters();
             });
-            statusChecks.add(check);
             filters.getChildren().add(check);
         }
         Button clear = new Button("Clear filters");
@@ -108,8 +94,7 @@ public final class LedgerView extends VBox {
         TableColumn<LedgerEntry, LedgerStatus> status = new TableColumn<>("Status");
         status.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyObjectWrapper<>(data.getValue().status()));
         status.setCellFactory(column -> new TableCell<>() {
-            @Override
-            protected void updateItem(LedgerStatus item, boolean empty) {
+            @Override protected void updateItem(LedgerStatus item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : displayStatus(item));
                 getStyleClass().removeAll("status-watched", "status-watching", "status-abandoned",
@@ -120,14 +105,16 @@ public final class LedgerView extends VBox {
         status.setMinWidth(125);
         status.setMaxWidth(160);
 
-        TableColumn<LedgerEntry, java.time.Instant> added = dateColumn("Date added", LedgerEntry::dateAdded);
-        TableColumn<LedgerEntry, java.time.Instant> modified = dateColumn("Last modified", LedgerEntry::lastModified);
+        TableColumn<LedgerEntry, java.time.Instant> added =
+                dateColumn("Date added", LedgerEntry::dateAdded);
+        TableColumn<LedgerEntry, java.time.Instant> modified =
+                dateColumn("Last modified", LedgerEntry::lastModified);
         table.getColumns().setAll(title, status, added, modified);
 
         SortedList<LedgerEntry> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);
-        table.setSortOrder(javafx.collections.FXCollections.observableArrayList(title));
+        table.getSortOrder().add(title);
     }
 
     private TableColumn<LedgerEntry, java.time.Instant> dateColumn(
@@ -136,8 +123,7 @@ public final class LedgerView extends VBox {
         column.setCellValueFactory(data ->
                 new javafx.beans.property.ReadOnlyObjectWrapper<>(extractor.apply(data.getValue())));
         column.setCellFactory(col -> new TableCell<>() {
-            @Override
-            protected void updateItem(java.time.Instant item, boolean empty) {
+            @Override protected void updateItem(java.time.Instant item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : DATE_FORMAT.format(
                         item.atZone(ZoneId.systemDefault()).toLocalDateTime()));
@@ -182,15 +168,19 @@ public final class LedgerView extends VBox {
     }
 
     private void applyFilters() {
-        String query = searchField.getText() == null ? "" : searchField.getText();
+        String query = searchField.getText() == null ? "" : searchField.getText().trim().toLowerCase(java.util.Locale.ROOT);
         Set<LedgerStatus> statuses = Set.copyOf(selectedStatuses);
-        filtered.setPredicate(entry -> LedgerFilter.apply(java.util.List.of(entry), query, statuses).size() == 1);
+        filtered.setPredicate(entry ->
+                (query.isEmpty() || entry.title().toLowerCase(java.util.Locale.ROOT).contains(query))
+                        && (statuses.isEmpty() || statuses.contains(entry.status())));
         updateCount();
     }
 
     private void clearFilters() {
         searchField.clear();
-        for (CheckBox check : statusChecks) check.setSelected(false);
+        for (javafx.scene.Node node : ((HBox) getChildren().get(1)).getChildren()) {
+            if (node instanceof CheckBox check) check.setSelected(false);
+        }
         selectedStatuses.clear();
         applyFilters();
     }
