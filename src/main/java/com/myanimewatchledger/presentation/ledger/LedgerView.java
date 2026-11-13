@@ -89,7 +89,8 @@ public final class LedgerView extends VBox {
         TableColumn<LedgerEntry, String> title = new TableColumn<>("Anime");
         title.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyStringWrapper(data.getValue().title()));
         title.setComparator(String.CASE_INSENSITIVE_ORDER);
-        title.setMinWidth(220);
+        title.setMinWidth(280);
+        title.setPrefWidth(520);
 
         TableColumn<LedgerEntry, LedgerStatus> status = new TableColumn<>("Status");
         status.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyObjectWrapper<>(data.getValue().status()));
@@ -113,6 +114,7 @@ public final class LedgerView extends VBox {
             }
         });
         status.setMinWidth(155);
+        status.setPrefWidth(175);
 
         TableColumn<LedgerEntry, java.time.Instant> added = dateColumn("Date added", LedgerEntry::dateAdded);
         TableColumn<LedgerEntry, java.time.Instant> modified = dateColumn("Last modified", LedgerEntry::lastModified);
@@ -134,7 +136,8 @@ public final class LedgerView extends VBox {
                 setGraphic(empty || item == null ? null : remove);
             }
         });
-        actions.setMinWidth(95);
+        actions.setMinWidth(88);
+        actions.setPrefWidth(96);
         actions.setMaxWidth(110);
         table.getColumns().setAll(title, status, added, modified, actions);
         SortedList<LedgerEntry> sorted = new SortedList<>(filtered);
@@ -189,7 +192,8 @@ public final class LedgerView extends VBox {
                 setText(empty || item == null ? null : DATE_FORMAT.format(item.atZone(ZoneId.systemDefault()).toLocalDateTime()));
             }
         });
-        column.setMinWidth(165);
+        column.setMinWidth(175);
+        column.setPrefWidth(205);
         return column;
     }
 
