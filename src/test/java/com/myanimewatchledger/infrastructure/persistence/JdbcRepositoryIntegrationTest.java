@@ -27,7 +27,7 @@ class JdbcRepositoryIntegrationTest {
  @AfterEach void tearDown(){if(database!=null)database.close();}
 
  @Test void ledgerCrudAndTitleSearchWork(){
-  Instant now=Instant.now();LedgerEntry entry=new LedgerEntry(1001,"Steins;Gate",LedgerStatus.WATCHING,now,now);
+  Instant now=Instant.ofEpochMilli(Instant.now().toEpochMilli());LedgerEntry entry=new LedgerEntry(1001,"Steins;Gate",LedgerStatus.WATCHING,now,now);
   ledger.add(entry);assertEquals(entry,ledger.findByMalId(1001).orElseThrow());
   assertEquals(1,ledger.searchByTitle("steins").size());assertTrue(ledger.updateStatus(1001,LedgerStatus.WATCHED));
   assertEquals(LedgerStatus.WATCHED,ledger.findByMalId(1001).orElseThrow().status());
