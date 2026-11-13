@@ -133,7 +133,7 @@ public final class MalResponseMapper {
     }
 
     private static long positiveLong(JsonNode value) {
-        if (value == null || !value.canConvertToLong() || value.asLong() <= 0) {
+        if (value == null || !value.isIntegralNumber() || !value.canConvertToLong() || value.asLong() <= 0) {
             throw new MalResponseMappingException("MAL anime record is missing a valid positive id.");
         }
         return value.asLong();
@@ -179,7 +179,7 @@ public final class MalResponseMapper {
                 String name = text(item, "name");
                 if (name == null) continue;
                 JsonNode idNode = item.get("id");
-                Long id = idNode != null && idNode.canConvertToLong() && idNode.asLong() > 0
+                Long id = idNode != null && idNode.isIntegralNumber() && idNode.canConvertToLong() && idNode.asLong() > 0
                         ? idNode.asLong() : null;
                 values.add(new AnimeMetadata.NamedValue(id, name));
             }

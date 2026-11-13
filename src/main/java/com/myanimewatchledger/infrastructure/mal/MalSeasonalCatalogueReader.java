@@ -80,6 +80,7 @@ public final class MalSeasonalCatalogueReader {
         if (root == null || !root.isObject() || !root.path("data").isArray()) {
             throw new MalResponseMappingException("MAL seasonal response is missing its data array.");
         }
+
         List<JsonNode> nodes = new ArrayList<>();
         for (JsonNode item : root.path("data")) {
             JsonNode node = item != null && item.isObject() ? item.get("node") : null;
@@ -124,7 +125,15 @@ public final class MalSeasonalCatalogueReader {
         }
     }
 
-    private static boolean isWithinApiPath(String path, String basePath) {\n        if (path == null || basePath == null || !path.startsWith(basePath)) return false;\n        for (String segment : path.split("/")) {\n            if ("..".equals(segment)) return false;\n        }\n        return true;\n    }\n\n    private static int effectivePort(URI uri) {
+    private static boolean isWithinApiPath(String path, String basePath) {
+        if (path == null || basePath == null || !path.startsWith(basePath)) return false;
+        for (String segment : path.split("/")) {
+            if ("..".equals(segment)) return false;
+        }
+        return true;
+    }
+
+    private static int effectivePort(URI uri) {
         return uri.getPort() >= 0 ? uri.getPort() : 443;
     }
 
