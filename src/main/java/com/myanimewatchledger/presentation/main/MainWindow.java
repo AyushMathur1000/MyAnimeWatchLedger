@@ -57,6 +57,10 @@ public final class MainWindow {
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
 
         WindowState saved = windowStateStore.load();
+        activeNavigation = saved.lastNavigation();
+        sidebar.select(activeNavigation);
+        toolbar.showFor(activeNavigation);
+        renderWorkspace();
         lastWindowedWidth = saved.width();
         lastWindowedHeight = saved.height();
         stage.setTitle("MyAnimeWatchLedger");
@@ -118,7 +122,7 @@ public final class MainWindow {
     private void saveWindowState(Stage stage) {
         try {
             windowStateStore.save(new WindowState(
-                    lastWindowedWidth, lastWindowedHeight, stage.isMaximized()));
+                    lastWindowedWidth, lastWindowedHeight, stage.isMaximized(), activeNavigation));
         } catch (IOException | IllegalArgumentException exception) {
             LOGGER.log(Level.WARNING, "Could not save main window preferences.", exception);
         }

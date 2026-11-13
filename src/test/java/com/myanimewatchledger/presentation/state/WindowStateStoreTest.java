@@ -1,5 +1,6 @@
 package com.myanimewatchledger.presentation.state;
 
+import com.myanimewatchledger.presentation.main.MainNavigation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -16,9 +17,9 @@ class WindowStateStoreTest {
     }
 
     @Test
-    void savesAndRestoresWindowGeometry() throws Exception {
+    void savesAndRestoresWindowGeometryAndLastWorkspace() throws Exception {
         var store = new WindowStateStore(temp.resolve("config/ui.properties"));
-        var expected = new WindowState(1360, 900, false);
+        var expected = new WindowState(1360, 900, false, MainNavigation.CATALOGUE);
 
         store.save(expected);
 
@@ -27,6 +28,7 @@ class WindowStateStoreTest {
 
     @Test
     void rejectsUnsupportedWindowDimensions() {
-        assertThrows(IllegalArgumentException.class, () -> new WindowState(640, 480, false));
+        assertThrows(IllegalArgumentException.class,
+                () -> new WindowState(640, 480, false, MainNavigation.MY_LEDGER));
     }
 }
