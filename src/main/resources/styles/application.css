@@ -54,3 +54,5 @@
 .status-abandoned { -fx-text-fill: #e5b66e !important; }
 .status-blacklisted { -fx-text-fill: #ef8989 !important; }
 .status-hold { -fx-text-fill: #c3a4ed !important; }
+
+.status-watch_later { -fx-text-fill: #8fd3c1 !important; }

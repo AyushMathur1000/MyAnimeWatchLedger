@@ -23,7 +23,8 @@ public final class DatabaseMigrationRunner {
     private static final String MIGRATION_DIRECTORY = "/db/migration/";
 
     private static final List<Migration> MIGRATIONS = List.of(
-            new Migration(1, "V001__initial_schema.sql")
+            new Migration(1, "V001__initial_schema.sql"),
+            new Migration(2, "V002__add_watch_later_status.sql")
     );
 
     private final DatabaseManager databaseManager;

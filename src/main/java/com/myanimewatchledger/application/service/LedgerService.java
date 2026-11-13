@@ -42,6 +42,11 @@ public final class LedgerService {
         return ledger.findByMalId(malId);
     }
 
+    /** Adds a catalogue anime using Watch Later as the default initial status. */
+    public LedgerEntry add(CatalogueAnime anime) {
+        return add(anime, LedgerStatus.WATCH_LATER);
+    }
+
     /** Adds a catalogue anime to the permanent ledger using the selected status. */
     public LedgerEntry add(CatalogueAnime anime, LedgerStatus status) {
         Objects.requireNonNull(anime, "anime");

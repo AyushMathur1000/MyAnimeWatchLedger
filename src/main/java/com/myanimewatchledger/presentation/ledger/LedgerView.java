@@ -102,8 +102,7 @@ public final class LedgerView extends VBox {
             @Override protected void updateItem(LedgerStatus item, boolean empty) {
                 super.updateItem(item, empty);
                 setText(empty || item == null ? null : displayStatus(item));
-                getStyleClass().removeAll("status-watched", "status-watching", "status-abandoned",
-                        "status-blacklisted", "status-hold");
+                getStyleClass().removeIf(style -> style.startsWith("status-"));
                 if (!empty && item != null) getStyleClass().add("status-" + item.name().toLowerCase());
             }
         });
@@ -229,7 +228,9 @@ public final class LedgerView extends VBox {
 
     private static String displayStatus(LedgerStatus status) {
         String lower = status.name().toLowerCase().replace('_', ' ');
-        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+        return java.util.Arrays.stream(lower.split(" "))
+                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+                .collect(java.util.stream.Collectors.joining(" "));
     }
 
     private static void showError(String message) {
