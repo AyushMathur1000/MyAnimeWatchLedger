@@ -75,7 +75,7 @@ class DatabaseMigrationRunnerTest {
 
             try (Connection connection = manager.getConnection();
                  Statement statement = connection.createStatement()) {
-                assertEquals(2, pragmaInt(statement, "PRAGMA user_version"));
+                assertEquals(3, pragmaInt(statement, "PRAGMA user_version"));
                 try (ResultSet result = statement.executeQuery("""
                         SELECT mal_id, title, status, date_added, last_modified
                         FROM ledger_entry WHERE mal_id = 8123
@@ -115,7 +115,7 @@ class DatabaseMigrationRunnerTest {
 
             try (Connection connection = manager.getConnection();
                  Statement statement = connection.createStatement()) {
-                assertEquals(2, pragmaInt(statement, "PRAGMA user_version"));
+                assertEquals(3, pragmaInt(statement, "PRAGMA user_version"));
                 assertEquals(1, scalarInt(statement,
                         "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ledger_entry'"));
             }
