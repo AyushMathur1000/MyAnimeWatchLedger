@@ -23,8 +23,9 @@ public final class ContextualToolbar extends ToolBar {
         getItems().clear();
         // Catalogue owns its season/search/refresh controls in its workspace header.
         // Hide the generic toolbar there instead of showing disabled duplicate actions.
-        setVisible(screen != MainNavigation.CATALOGUE);
-        setManaged(screen != MainNavigation.CATALOGUE);
+        boolean toolbarVisible = screen != MainNavigation.CATALOGUE && screen != MainNavigation.ANIME_DETAILS;
+        setVisible(toolbarVisible);
+        setManaged(toolbarVisible);
         List<String[]> groups = switch (screen) {
             case MY_LEDGER -> List.of(
                     new String[]{"＋ Add anime"},
@@ -34,6 +35,7 @@ public final class ContextualToolbar extends ToolBar {
                     new String[]{"← Previous season", "Season / Year", "Next season →"},
                     new String[]{"⟳ Refresh"},
                     new String[]{"⌕ Search", "Clear cache"});
+            case ANIME_DETAILS -> List.of();
             case SEARCH_HISTORY -> List.of(
                     new String[]{"⌕ Search history"},
                     new String[]{"↗ Reopen search", "Clear cache"});
