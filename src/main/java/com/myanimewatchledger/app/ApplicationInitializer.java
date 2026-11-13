@@ -29,24 +29,34 @@ public final class ApplicationInitializer implements AutoCloseable {
    LOG.info("Application services initialized. MAL configured: "+services.isMalConfigured());
   }catch(IOException|SQLException|RuntimeException failure){close();throw failure;}
  }
- private CatalogueRefreshService createRefreshService() throws IOException{
-  var id=configStore.loadClientId();
-  if(id.isEmpty()){LOG.info("MAL Client ID is not configured; online catalogue refresh is unavailable.");return null;}
-  try{
-   MalApiConfiguration cfg=MalApiConfiguration.defaults(id.orElseThrow());
-   MalApiClient client=new MalApiClient(cfg);MalResponseMapper mapper=new MalResponseMapper();
-   return new CatalogueRefreshService(new MalApiCatalogueGateway(client,client.baseUri()),
-    persistence.catalogue(),persistence.animeMetadata(),mapper,persistence.ledger(),persistence.transactions());
-  }catch(IllegalArgumentException invalid){
-   LOG.log(Level.WARNING,"MAL configuration is invalid; online catalogue refresh is unavailable.",invalid);return null;
+ private CatalogueRefreshService createRefreshService() throws IOException {
+  try {
+   var id = configStore.loadClientId();
+   if (id.isEmpty()) {
+    LOG.info("MAL Client ID is not configured; online catalogue refresh is unavailable.");
+    return null;
+   }
+   MalApiConfiguration cfg = MalApiConfiguration.defaults(id.orElseThrow());
+   MalApiClient client = new MalApiClient(cfg);
+   MalResponseMapper mapper = new MalResponseMapper();
+   return new CatalogueRefreshService(new MalApiCatalogueGateway(client, client.baseUri()),
+    persistence.catalogue(), persistence.animeMetadata(), mapper,
+    persistence.ledger(), persistence.transactions());
+  } catch (IllegalArgumentException invalid) {
+   LOG.log(Level.WARNING, "MAL configuration is invalid; online catalogue refresh is unavailable.", invalid);
+   return null;
   }
  }
+
  public synchronized PersistenceContext persistence(){if(persistence==null)throw new IllegalStateException("Application has not been initialized.");return persistence;}
  public synchronized ApplicationServices services(){if(services==null)throw new IllegalStateException("Application has not been initialized.");return services;}
  @Override public synchronized void close(){
   services=null;persistence=null;
-  if(background!=null){background.close();background=null;}
-  if(database!=null){database.close();database=null;}
+  try {
+   if (background != null) { background.close(); background = null; }
+  } finally {
+   if (database != null) { database.close(); database = null; }
+  }
   LOG.info("Application resources shut down.");
  }
 }
