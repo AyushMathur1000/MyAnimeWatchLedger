@@ -12,33 +12,23 @@ public final class JdbcAnimeMetadataRepository implements AnimeMetadataRepositor
  private final DatabaseTransactionManager transactions;
  private final ObjectMapper mapper=new ObjectMapper();
  public JdbcAnimeMetadataRepository(DatabaseTransactionManager transactions){this.transactions=Objects.requireNonNull(transactions);}
-
- @Override public void upsert(AnimeMetadataCache item) {
+ @Override public void upsert(AnimeMetadataCache item){
   validateJson(item.metadataJson());
-  transactions.withConnection(c -> {
-   try(PreparedStatement s=c.prepareStatement(upsertSql())){bind(s,item);s.executeUpdate();} return null;
-  });
+  transactions.withConnection(c->{try(PreparedStatement s=c.prepareStatement(upsertSql())){bind(s,item);s.executeUpdate();}return null;});
  }
- @Override public void upsertAll(Collection<AnimeMetadataCache> items) {
-  Objects.requireNonNull(items);
-  for(AnimeMetadataCache item:items)validateJson(item.metadataJson());
-  transactions.withConnection(c -> {
-   try(PreparedStatement s=c.prepareStatement(upsertSql())){
-    for(AnimeMetadataCache item:items){bind(s,item);s.addBatch();}
-    s.executeBatch();
-   } return null;
-  });
+ @Override public void upsertAll(Collection<AnimeMetadataCache> items){
+  Objects.requireNonNull(items);for(AnimeMetadataCache item:items)validateJson(item.metadataJson());
+  transactions.executeInTransaction(()->{transactions.withConnection(c->{
+   try(PreparedStatement s=c.prepareStatement(upsertSql())){for(AnimeMetadataCache item:items){bind(s,item);s.addBatch();}s.executeBatch();}return null;
+  });return null;});
  }
- @Override public Optional<AnimeMetadataCache> findByMalId(long id) {
-  return transactions.withConnection(c -> {
-   try(PreparedStatement s=c.prepareStatement("SELECT mal_id,preferred_title,metadata_json,searchable_text,cached_at FROM anime_metadata_cache WHERE mal_id=?")){
-    s.setLong(1,id);try(ResultSet r=s.executeQuery()){
-     if(!r.next())return Optional.empty();
-     return Optional.of(new AnimeMetadataCache(r.getLong("mal_id"),r.getString("preferred_title"),r.getString("metadata_json"),
-      r.getString("searchable_text"),Instant.ofEpochMilli(r.getLong("cached_at"))));
-    }
-   }
-  });
+ @Override public Optional<AnimeMetadataCache> findByMalId(long id){
+  return transactions.withConnection(c->{try(PreparedStatement s=c.prepareStatement(
+   "SELECT mal_id,preferred_title,metadata_json,searchable_text,cached_at FROM anime_metadata_cache WHERE mal_id=?")){
+   s.setLong(1,id);try(ResultSet r=s.executeQuery()){if(!r.next())return Optional.empty();
+    return Optional.of(new AnimeMetadataCache(r.getLong("mal_id"),r.getString("preferred_title"),r.getString("metadata_json"),
+     r.getString("searchable_text"),Instant.ofEpochMilli(r.getLong("cached_at"))));}
+  }});
  }
  @Override public void deleteAll(){transactions.withConnection(c->{try(Statement s=c.createStatement()){s.executeUpdate("DELETE FROM anime_metadata_cache");}return null;});}
  private void validateJson(String json){
