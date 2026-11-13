@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,9 +27,7 @@ class MalApiClientTest {
 
     @AfterEach
     void stopServer() {
-        if (server != null) {
-            server.stop(0);
-        }
+        if (server != null) server.stop(0);
     }
 
     @Test
@@ -66,10 +63,7 @@ class MalApiClientTest {
     @Test
     void mapsRejectedClientIdResponsesWithoutExposingResponseBody() {
         respond(401, "private diagnostic response containing nothing useful");
-
-        MalApiException exception = assertThrows(MalApiException.class,
-                () -> client().get("anime/1"));
-
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
         assertEquals(MalApiErrorCategory.REJECTED_CREDENTIALS, exception.category());
         assertEquals(401, exception.statusCode());
         assertFalse(exception.getMessage().contains("private diagnostic"));
@@ -79,10 +73,7 @@ class MalApiClientTest {
     @Test
     void mapsRateLimitResponses() {
         respond(429, "rate limited");
-
-        MalApiException exception = assertThrows(MalApiException.class,
-                () -> client().get("anime/1"));
-
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
         assertEquals(MalApiErrorCategory.RATE_LIMITED, exception.category());
         assertEquals(429, exception.statusCode());
     }
@@ -90,10 +81,7 @@ class MalApiClientTest {
     @Test
     void mapsServiceFailures() {
         respond(503, "maintenance");
-
-        MalApiException exception = assertThrows(MalApiException.class,
-                () -> client().get("anime/1"));
-
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
         assertEquals(MalApiErrorCategory.SERVICE_ERROR, exception.category());
         assertEquals(503, exception.statusCode());
     }
@@ -101,10 +89,20 @@ class MalApiClientTest {
     @Test
     void rejectsAbsoluteOrHostEscapingEndpointsBeforeSending() {
         MalApiClient client = client();
-
         assertThrows(IllegalArgumentException.class, () -> client.get("https://example.com/steal"));
         assertThrows(IllegalArgumentException.class, () -> client.get("../outside"));
         assertThrows(IllegalArgumentException.class, () -> client.get("/anime/1"));
+    }
+
+    @Test
+    void rejectsUnsafeNextPageUrlsBeforeSending() {
+        MalApiClient client = client();
+        assertThrows(IllegalArgumentException.class,
+                () -> client.getNextPage(URI.create("http://127.0.0.1/v2/page")));
+        assertThrows(IllegalArgumentException.class,
+                () -> client.getNextPage(URI.create("https://example.com/v2/page")));
+        assertThrows(IllegalArgumentException.class,
+                () -> client.getNextPage(URI.create("https://127.0.0.1/v2/../outside")));
     }
 
     @Test
@@ -121,13 +119,11 @@ class MalApiClientTest {
                 exchange.close();
             }
         });
-
         MalApiException exception = assertThrows(MalApiException.class, () -> {
             MalApiConfiguration configuration = new MalApiConfiguration(
                     "test-client-id", baseUri, Duration.ofSeconds(1), Duration.ofMillis(75));
             new MalApiClient(configuration).get("slow");
         });
-
         assertEquals(MalApiErrorCategory.TIMEOUT, exception.category());
     }
 
