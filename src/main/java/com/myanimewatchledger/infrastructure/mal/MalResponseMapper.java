@@ -3,6 +3,7 @@ package com.myanimewatchledger.infrastructure.mal;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.myanimewatchledger.application.port.AnimeMetadataCacheMerger;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadata;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.SearchTextNormalizer;
@@ -10,11 +11,10 @@ import com.myanimewatchledger.domain.catalogue.SearchTextNormalizer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.StringJoiner;
 
 /** Converts MAL JSON nodes into application-owned metadata and cache projections. */
-public final class MalResponseMapper {
+public final class MalResponseMapper implements AnimeMetadataCacheMerger {
     private final ObjectMapper objectMapper;
 
     public MalResponseMapper() {
@@ -74,8 +74,27 @@ public final class MalResponseMapper {
     }
 
     /**
+     * Merges a fresh list/detail projection with the previously cached metadata.
+     * Missing or null scalar fields and empty collections do not erase useful
+     * cached values until MAL's deletion semantics are known.
+     */
+    @Override
+    public AnimeMetadataCache merge(AnimeMetadataCache existing, AnimeMetadataCache incoming) {
+        if (existing.malId() != incoming.malId()) {
+            throw new IllegalArgumentException("Cannot merge metadata for different MAL IDs.");
+        }
+        try {
+            AnimeMetadata oldMetadata = objectMapper.readValue(existing.metadataJson(), AnimeMetadata.class);
+            AnimeMetadata newMetadata = objectMapper.readValue(incoming.metadataJson(), AnimeMetadata.class);
+            return toCache(merge(oldMetadata, newMetadata));
+        } catch (JsonProcessingException exception) {
+            throw new MalResponseMappingException("Cached MAL metadata could not be read for merging.", exception);
+        }
+    }
+
+    /**
      * Conservative merge: non-null incoming scalar values replace cached values;
-     * empty incoming collections do not erase previously known collection values.
+     * empty incoming collections do not erase existing values.
      */
     public AnimeMetadata merge(AnimeMetadata existing, AnimeMetadata incoming) {
         if (existing.malId() != incoming.malId()) {
@@ -85,7 +104,8 @@ public final class MalResponseMapper {
         String english = pick(incoming.englishTitle(), existing.englishTitle());
         String romanized = pick(incoming.romanizedTitle(), existing.romanizedTitle());
         String japanese = pick(incoming.japaneseTitle(), existing.japaneseTitle());
-        String preferred = firstNonBlank(english, romanized, japanese, canonical, existing.preferredTitle());
+        String preferred = firstNonBlank(
+                english, romanized, japanese, canonical, incoming.preferredTitle(), existing.preferredTitle());
         return new AnimeMetadata(
                 existing.malId(), canonical, english, romanized, japanese,
                 pickList(incoming.synonyms(), existing.synonyms()), preferred,

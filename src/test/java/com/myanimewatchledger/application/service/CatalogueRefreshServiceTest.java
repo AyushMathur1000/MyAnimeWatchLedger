@@ -1,9 +1,11 @@
 package com.myanimewatchledger.application.service;
 
+import com.myanimewatchledger.application.port.AnimeMetadataRepository;
 import com.myanimewatchledger.application.port.MalCatalogueGateway;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.infrastructure.mal.MalResponseMapper;
 import com.myanimewatchledger.infrastructure.persistence.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +17,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,6 +27,7 @@ class CatalogueRefreshServiceTest {
     private DatabaseManager database;
     private PersistenceContext persistence;
     private final Instant completedAt = Instant.parse("2026-11-14T00:00:00Z");
+    private final MalResponseMapper mapper = new MalResponseMapper();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -83,7 +85,6 @@ class CatalogueRefreshServiceTest {
         assertTrue(persistence.catalogue().findEligibleAnime(search.searchId(), List.of()).isEmpty());
         assertEquals(FetchStatus.SUCCESS,
                 persistence.catalogue().findById(search.searchId()).orElseThrow().fetchStatus());
-        // The metadata cache is shared and may retain unreferenced rows until cache maintenance.
         assertTrue(persistence.animeMetadata().findByMalId(2001).isPresent());
     }
 
@@ -120,7 +121,7 @@ class CatalogueRefreshServiceTest {
         persistence.animeMetadata().upsert(item(4001, "Old Cache"));
         persistence.catalogue().replaceMembership(search.searchId(), List.of(4001L));
 
-        var failingMetadata = new com.myanimewatchledger.application.port.AnimeMetadataRepository() {
+        AnimeMetadataRepository failingMetadata = new AnimeMetadataRepository() {
             @Override public void upsert(AnimeMetadataCache value) {
                 persistence.animeMetadata().upsert(value);
                 throw new IllegalStateException("Simulated persistence failure.");
@@ -137,7 +138,7 @@ class CatalogueRefreshServiceTest {
         CatalogueRefreshService service = new CatalogueRefreshService(
                 (season, year) -> new SeasonalCatalogue(
                         List.of(item(4001, "New Cache"), item(4002, "New Anime")), 0, List.of()),
-                persistence.catalogue(), failingMetadata, persistence.ledger(),
+                persistence.catalogue(), failingMetadata, mapper, persistence.ledger(),
                 persistence.transactions(), Clock.fixed(completedAt, ZoneOffset.UTC));
 
         assertThrows(IllegalStateException.class,
@@ -178,14 +179,40 @@ class CatalogueRefreshServiceTest {
                 .stream().map(CatalogueAnime::malId).toList());
     }
 
+    @Test
+    void cachedOptionalMetadataSurvivesARefreshThatOmitsIt() throws Exception {
+        var oldNode = mapperNode("""
+                {"id":7001,"title":"Example","synopsis":"Previously known synopsis",
+                 "genres":[{"id":1,"name":"Drama"}]}
+                """);
+        var newNode = mapperNode("""
+                {"id":7001,"title":"Example","synopsis":null,"genres":[]}
+                """);
+        AnimeMetadataCache oldCache = mapper.mapToCache(oldNode);
+        AnimeMetadataCache freshCache = mapper.mapToCache(newNode);
+        persistence.animeMetadata().upsert(oldCache);
+
+        service((season, year) -> new SeasonalCatalogue(List.of(freshCache), 0, List.of()))
+                .refresh(Season.SPRING, 2026);
+
+        AnimeMetadataCache merged = persistence.animeMetadata().findByMalId(7001).orElseThrow();
+        assertTrue(merged.metadataJson().contains("Previously known synopsis"));
+        assertTrue(merged.searchableText().contains("previously known synopsis"));
+        assertTrue(merged.metadataJson().contains("Drama"));
+    }
+
     private CatalogueRefreshService service(MalCatalogueGateway gateway) {
         return new CatalogueRefreshService(gateway, persistence.catalogue(), persistence.animeMetadata(),
-                persistence.ledger(), persistence.transactions(),
+                mapper, persistence.ledger(), persistence.transactions(),
                 Clock.fixed(completedAt, ZoneOffset.UTC));
     }
 
     private static AnimeMetadataCache item(long id, String title) {
         String json = "{\"malId\":" + id + ",\"preferredTitle\":\"" + title + "\"}";
         return new AnimeMetadataCache(id, title, json, SearchTextNormalizer.normalize(title), Instant.EPOCH);
+    }
+
+    private static com.fasterxml.jackson.databind.JsonNode mapperNode(String json) throws Exception {
+        return new com.fasterxml.jackson.databind.ObjectMapper().readTree(json);
     }
 }
