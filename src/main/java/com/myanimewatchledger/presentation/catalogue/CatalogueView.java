@@ -93,12 +93,14 @@ public final class CatalogueView extends BorderPane {
 
     private void openSeason(Season season, int year, String query, boolean select) {
         if (season == null) return;
-        OpenCatalogueTab saved = controller.open(season, year, query);
-        SeasonTab existing = openTabs.get(saved.searchId());
+        SeasonTab existing = openTabs.values().stream()
+                .filter(tab -> tab.search.season() == season && tab.search.year() == year)
+                .findFirst().orElse(null);
         if (existing != null) {
             if (select) tabs.getSelectionModel().select(existing.tab);
             return;
         }
+        OpenCatalogueTab saved = controller.open(season, year, query);
         CatalogueSearch search = controller.findSearch(saved.searchId()).orElseThrow();
         SeasonTab created = createTab(search, query, select);
         if (search.lastSuccessfulFetchAt() == null) refresh(created, false);
@@ -219,8 +221,10 @@ public final class CatalogueView extends BorderPane {
             try { poster.setImage(new Image(metadata.pictureMedium(), 190, 250, true, true, true)); }
             catch (IllegalArgumentException ignored) { }
         }
-        StackPane posterFrame = new StackPane(poster, new Label("No poster available"));
+        Label noPoster = new Label("No poster available");
+        StackPane posterFrame = new StackPane(poster, noPoster);
         posterFrame.getStyleClass().add("anime-poster-frame");
+        noPoster.setVisible(metadata.pictureMedium() == null || metadata.pictureMedium().isBlank());
         posterFrame.setMinHeight(250);
         posterFrame.setMaxHeight(250);
         Label title = new Label(item.preferredTitle());
@@ -266,8 +270,9 @@ public final class CatalogueView extends BorderPane {
                 if (existing.isPresent()) controller.changeStatus(anime.malId(), status);
                 else controller.add(anime, status);
                 if (status == LedgerStatus.BLACKLISTED) {
-                    SeasonTab selected = selectedTab();
-                    if (selected != null) loadCards(selected);
+                    // The repository excludes blacklisted MAL IDs, so refresh every open
+                    // season view rather than leaving stale cards in background tabs.
+                    openTabs.values().forEach(this::loadCards);
                 } else {
                     ledgerLabel.setText("Ledger: " + displayStatus(status));
                     action.setText("Change status");
