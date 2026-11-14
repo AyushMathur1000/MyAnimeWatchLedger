@@ -47,8 +47,10 @@ public final class ApplicationInitializer implements AutoCloseable {
                     persistence.catalogue(), persistence.openCatalogueTabs());
             AnimeDetailTabService detailTabs = new AnimeDetailTabService(persistence.openAnimeDetailTabs());
 
-            SwitchableMalApiTransport transport = new SwitchableMalApiTransport();
-            MalApiConnection malConnection = new MalApiConnection(configStore, transport);
+            SwitchableMalApiTransport switchableTransport = new SwitchableMalApiTransport();
+            ResilientMalApiTransport malTransport = new ResilientMalApiTransport(switchableTransport);
+            MalApiConnection malConnection = new MalApiConnection(
+                    configStore, switchableTransport, malTransport);
             try {
                 malConnection.load();
             } catch (IllegalArgumentException invalid) {
@@ -61,11 +63,11 @@ public final class ApplicationInitializer implements AutoCloseable {
 
             MalResponseMapper mapper = new MalResponseMapper();
             CatalogueRefreshService refresh = new CatalogueRefreshService(
-                    new MalApiCatalogueGateway(transport, MalApiConfiguration.DEFAULT_BASE_URI),
+                    new MalApiCatalogueGateway(malTransport, MalApiConfiguration.DEFAULT_BASE_URI),
                     persistence.catalogue(), persistence.animeMetadata(), mapper,
                     persistence.ledger(), persistence.transactions());
             AnimeDetailService details = new AnimeDetailService(
-                    persistence.animeMetadata(), new MalApiAnimeDetailGateway(transport, mapper), mapper);
+                    persistence.animeMetadata(), new MalApiAnimeDetailGateway(malTransport, mapper), mapper);
 
             services = new ApplicationServices(
                     ledger, catalogue, tabs, refresh, details, detailTabs, background, malConnection);
