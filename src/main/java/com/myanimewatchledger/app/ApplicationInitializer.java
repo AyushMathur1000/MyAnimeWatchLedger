@@ -70,7 +70,7 @@ public final class ApplicationInitializer implements AutoCloseable {
                     persistence.animeMetadata(), new MalApiAnimeDetailGateway(malTransport, mapper), mapper);
 
             services = new ApplicationServices(
-                    ledger, catalogue, tabs, refresh, details, detailTabs, background, malConnection);
+                    ledger, catalogue, tabs, refresh, details, detailTabs, background, malConnection,\n                    new DatabaseBackupService(database));
             LOG.info("Application services initialized. MAL configured: " + services.isMalConfigured());
         } catch (IOException | SQLException | RuntimeException failure) {
             close();
