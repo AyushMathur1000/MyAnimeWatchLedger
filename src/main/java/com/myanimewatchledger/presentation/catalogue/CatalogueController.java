@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.catalogue;
 
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.application.service.CatalogueRefreshOutcome;
+import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
@@ -9,6 +10,7 @@ import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /** Thin presentation boundary for seasonal catalogue and ledger actions. */
 public final class CatalogueController {
@@ -32,5 +34,8 @@ public final class CatalogueController {
     public LedgerEntry add(CatalogueAnime anime, LedgerStatus status) { return services.ledger().add(anime, status); }
     public boolean changeStatus(long malId, LedgerStatus status) {
         return services.ledger().changeStatus(malId, status);
+    }
+    public AutoCloseable subscribeToLedgerChanges(Consumer<LedgerChangeEvent> listener) {
+        return services.ledger().subscribe(listener);
     }
 }

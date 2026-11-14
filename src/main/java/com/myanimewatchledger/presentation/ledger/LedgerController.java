@@ -1,5 +1,6 @@
 package com.myanimewatchledger.presentation.ledger;
 
+import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.LedgerService;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
@@ -7,6 +8,7 @@ import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 /** Thin presentation controller for permanent ledger operations. */
 public final class LedgerController {
@@ -30,5 +32,9 @@ public final class LedgerController {
 
     public boolean remove(long malId) {
         return service.remove(malId);
+    }
+
+    public AutoCloseable subscribeToLedgerChanges(Consumer<LedgerChangeEvent> listener) {
+        return service.subscribe(listener);
     }
 }

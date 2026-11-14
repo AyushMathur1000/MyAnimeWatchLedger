@@ -10,11 +10,17 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /** Coordinates user-facing ledger operations without exposing persistence details. */
 public final class LedgerService {
+    private static final Logger LOG = Logger.getLogger(LedgerService.class.getName());
     private final LedgerRepository ledger;
     private final Clock clock;
+    private final List<Consumer<LedgerChangeEvent>> listeners = new CopyOnWriteArrayList<>();
 
     public LedgerService(LedgerRepository ledger) {
         this(ledger, Clock.systemUTC());
@@ -23,6 +29,13 @@ public final class LedgerService {
     public LedgerService(LedgerRepository ledger, Clock clock) {
         this.ledger = Objects.requireNonNull(ledger, "ledger");
         this.clock = Objects.requireNonNull(clock, "clock");
+    }
+
+    /** Registers a listener and returns a handle that removes it when the workspace is disposed. */
+    public AutoCloseable subscribe(Consumer<LedgerChangeEvent> listener) {
+        Consumer<LedgerChangeEvent> registered = Objects.requireNonNull(listener, "listener");
+        listeners.add(registered);
+        return () -> listeners.remove(registered);
     }
 
     public List<LedgerEntry> getAll() {
@@ -57,12 +70,22 @@ public final class LedgerService {
         Instant now = clock.instant();
         LedgerEntry entry = new LedgerEntry(anime.malId(), anime.preferredTitle(), status, now, now);
         ledger.add(entry);
+        publish(new LedgerChangeEvent(LedgerChangeEvent.Type.ADDED, anime.malId(), entry, null));
         return entry;
     }
 
     public boolean changeStatus(long malId, LedgerStatus status) {
         requireValidMalId(malId);
-        return ledger.updateStatus(malId, Objects.requireNonNull(status, "status"));
+        Objects.requireNonNull(status, "status");
+        Optional<LedgerEntry> before = ledger.findByMalId(malId);
+        if (before.isEmpty()) return false;
+        LedgerStatus previous = before.orElseThrow().status();
+        if (previous == status) return true;
+        if (!ledger.updateStatus(malId, status)) return false;
+        LedgerEntry updated = ledger.findByMalId(malId).orElseThrow(
+                () -> new IllegalStateException("Updated ledger entry could not be found."));
+        publish(new LedgerChangeEvent(LedgerChangeEvent.Type.STATUS_CHANGED, malId, updated, previous));
+        return true;
     }
 
     public boolean rename(long malId, String preferredTitle) {
@@ -75,7 +98,21 @@ public final class LedgerService {
 
     public boolean remove(long malId) {
         requireValidMalId(malId);
-        return ledger.remove(malId);
+        Optional<LedgerEntry> before = ledger.findByMalId(malId);
+        if (before.isEmpty() || !ledger.remove(malId)) return false;
+        publish(new LedgerChangeEvent(LedgerChangeEvent.Type.REMOVED, malId, null,
+                before.orElseThrow().status()));
+        return true;
+    }
+
+    private void publish(LedgerChangeEvent event) {
+        for (Consumer<LedgerChangeEvent> listener : listeners) {
+            try {
+                listener.accept(event);
+            } catch (RuntimeException failure) {
+                LOG.log(Level.WARNING, "A ledger change listener failed.", failure);
+            }
+        }
     }
 
     private static void requireValidMalId(long malId) {
