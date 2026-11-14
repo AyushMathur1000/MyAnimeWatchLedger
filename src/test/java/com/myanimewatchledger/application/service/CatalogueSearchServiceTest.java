@@ -31,9 +31,22 @@ class CatalogueSearchServiceTest {
     }
 
     @Test
-    void rejectsInvalidSearchIdentity() {
-        assertThrows(IllegalArgumentException.class,
-                () -> new CatalogueSearchService(new RecordingRepository()).search(0, "test"));
+    void nullQueryIsEquivalentToBlankQueryAndReturnsUnfilteredResults() {
+        RecordingRepository repository = new RecordingRepository();
+        CatalogueSearchService service = new CatalogueSearchService(repository);
+
+        service.search(7, null);
+        assertEquals(List.of(), repository.tokens);
+
+        service.search(7, "   ");
+        assertEquals(List.of(), repository.tokens);
+    }
+
+    @Test
+    void rejectsNonPositiveSearchIdentities() {
+        CatalogueSearchService service = new CatalogueSearchService(new RecordingRepository());
+        assertThrows(IllegalArgumentException.class, () -> service.search(0, "test"));
+        assertThrows(IllegalArgumentException.class, () -> service.search(-1, "test"));
     }
 
     private static final class RecordingRepository implements CatalogueRepository {
