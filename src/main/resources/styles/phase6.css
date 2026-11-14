@@ -57,10 +57,10 @@
 .anime-card .anime-card-blacklist-action:hover {
     -fx-background-color: #59343b;
 }
-.ledger-current-season-action {
-    -fx-min-width: 72px;
-    -fx-pref-width: 72px;
-    -fx-max-width: 72px;
+ .ledger-current-season-action {
+    -fx-min-width: 104px;
+    -fx-pref-width: 104px;
+    -fx-max-width: 104px;
     -fx-min-height: 32px;
     -fx-pref-height: 32px;
     -fx-max-height: 32px;
