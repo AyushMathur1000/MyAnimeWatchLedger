@@ -58,6 +58,37 @@ class MalSeasonalCatalogueReaderTest {
     }
 
     @Test
+    void rejectsANonEmptyPageWhenEveryAnimeRecordIsUnusable() {
+        StubTransport transport = new StubTransport();
+        transport.responses.add("""
+                {"data":[{"node":{"title":"Missing identity"}},{"node":{"id":0,"title":"Invalid identity"}}],
+                 "paging":{}}
+                """);
+
+        MalResponseMappingException failure = assertThrows(MalResponseMappingException.class,
+                () -> reader(transport).read("anime/season/2026/fall"));
+
+        assertTrue(failure.getMessage().contains("no usable anime records"));
+    }
+
+    @Test
+    void rejectsPaginationUrlsWithUnsafePathVariants() {
+        for (String next : new String[] {
+                "https://api.myanimelist.net/v2evil/page",
+                "https://user@api.myanimelist.net/v2/page",
+                "https://api.myanimelist.net:444/v2/page",
+                "https://api.myanimelist.net/v2/%2e%2e/private",
+                "https://api.myanimelist.net/v2/anime%2f..%2fprivate"
+        }) {
+            StubTransport transport = new StubTransport();
+            transport.responses.add("{\"data\":[],\"paging\":{\"next\":\"" + next + "\"}}");
+            assertThrows(MalResponseMappingException.class,
+                    () -> reader(transport).read("anime/season/2026/fall"), next);
+            assertEquals(0, transport.nextPageCalls, next);
+        }
+    }
+
+    @Test
     void failsMalformedPageStructureAndInvalidJson() {
         StubTransport missingData = new StubTransport();
         missingData.responses.add("{\"paging\":{}}");
