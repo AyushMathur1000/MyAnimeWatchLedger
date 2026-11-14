@@ -7,6 +7,9 @@ import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.catalogue.Season;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.infrastructure.persistence.DatabaseBackupService;
+
+import java.nio.file.Path;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,6 +27,7 @@ public final class ApplicationServices {
     private final AnimeDetailTabService animeDetailTabs;
     private final BackgroundTaskExecutor background;
     private final MalApiConnection malConnection;
+    private final DatabaseBackupService databaseBackup;
 
     ApplicationServices(
             LedgerService ledger,
@@ -33,7 +37,8 @@ public final class ApplicationServices {
             AnimeDetailService animeDetails,
             AnimeDetailTabService animeDetailTabs,
             BackgroundTaskExecutor background,
-            MalApiConnection malConnection) {
+            MalApiConnection malConnection,
+            DatabaseBackupService databaseBackup) {
         this.ledger = Objects.requireNonNull(ledger);
         this.catalogue = Objects.requireNonNull(catalogue);
         this.tabs = Objects.requireNonNull(tabs);
@@ -42,6 +47,7 @@ public final class ApplicationServices {
         this.animeDetailTabs = Objects.requireNonNull(animeDetailTabs);
         this.background = Objects.requireNonNull(background);
         this.malConnection = Objects.requireNonNull(malConnection);
+        this.databaseBackup = Objects.requireNonNull(databaseBackup);
     }
 
     public LedgerService ledger() { return ledger; }
@@ -50,6 +56,24 @@ public final class ApplicationServices {
     public AnimeDetailService animeDetails() { return animeDetails; }
     public AnimeDetailTabService animeDetailTabs() { return animeDetailTabs; }
     public boolean isMalConfigured() { return malConnection.isConfigured(); }
+
+    public CompletableFuture<Path> createDatabaseBackupAsync(Path destination) {
+        return background.submit(() -> {
+            try { return databaseBackup.createBackup(destination); }
+            catch (java.io.IOException | java.sql.SQLException failure) {
+                throw new IllegalStateException("Database backup failed: " + failure.getMessage(), failure);
+            }
+        });
+    }
+
+    public CompletableFuture<Void> restoreDatabaseBackupAsync(Path source) {
+        return background.submit(() -> {
+            try { databaseBackup.restoreBackup(source); return null; }
+            catch (java.io.IOException | java.sql.SQLException failure) {
+                throw new IllegalStateException("Database restore failed: " + failure.getMessage(), failure);
+            }
+        });
+    }
 
     /** Persists and activates the supplied Client ID away from the JavaFX thread. */
     public CompletableFuture<Void> saveMalClientIdAsync(String clientId) {
