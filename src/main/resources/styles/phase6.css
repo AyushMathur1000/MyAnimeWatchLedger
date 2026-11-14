@@ -1,18 +1,26 @@
 /* Phase 6: restrained, consistent interaction styling. */
 .navigation-sidebar {
-    -fx-pref-width: 164px;
-    -fx-min-width: 164px;
-    -fx-max-width: 164px;
+    -fx-pref-width: 64px;
+    -fx-min-width: 64px;
+    -fx-max-width: 64px;
     -fx-alignment: TOP_CENTER;
 }
 .navigation-button {
-    -fx-alignment: CENTER_LEFT;
-    -fx-padding: 10px 14px;
-    -fx-font-size: 13px;
-    -fx-font-weight: 600;
-    -fx-background-radius: 7px;
+    -fx-alignment: CENTER;
+    -fx-padding: 0;
+    -fx-background-radius: 10px;
     -fx-cursor: hand;
 }
+.navigation-icon {
+    -fx-fill: transparent;
+    -fx-stroke: #c5cad4;
+    -fx-stroke-width: 1.8;
+    -fx-stroke-line-cap: ROUND;
+    -fx-stroke-line-join: ROUND;
+}
+.navigation-button:hover .navigation-icon { -fx-stroke: #ffffff; }
+.navigation-button.selected .navigation-icon { -fx-stroke: #ffffff; -fx-stroke-width: 2.1; }
+.navigation-button:focused .navigation-icon { -fx-stroke: #ffffff; }
 .navigation-button:hover {
     -fx-background-color: #303b4d;
 }
