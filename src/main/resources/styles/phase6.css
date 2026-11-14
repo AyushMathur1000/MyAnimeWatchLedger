@@ -163,16 +163,12 @@
     -fx-border-color: transparent transparent #91b7ed transparent;
     -fx-text-base-color: #ffffff;
 }
+.catalogue-workspace .tab-pane .tab-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #aeb8c8;
+}
 .catalogue-workspace .tab-pane .tab:selected .tab-label {
     -fx-text-fill: #ffffff;
     -fx-font-weight: bold;
 }
-.catalogue-workspace .tab-pane .tab:not:selected .tab-label {
-    -fx-text-fill: #aeb8c8;
-}
-.catalogue-workspace .tab-pane .tab:focused {
-    -fx-background-insets: 0;
-    -fx-border-color: transparent transparent #91b7ed transparent;
-}
-.catalogue-workspace .tab-pane .tab-label { -fx-font-size: 12px; }
 .catalogue-workspace .tab-pane .tab-content-area { -fx-padding: 0; }
