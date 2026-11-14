@@ -105,6 +105,97 @@ class DatabaseMigrationRunnerTest {
     }
 
     @Test
+    void preservesAllOriginalStatusesAndPersistsAllSixStatuses() throws Exception {
+        DatabaseManager manager = initializedManager();
+
+        try (manager) {
+            new DatabaseMigrationRunner(manager, List.of(
+                    new DatabaseMigrationRunner.Migration(1, "V001__initial_schema.sql")
+            )).migrate();
+
+            List<String> originalStatuses = List.of(
+                    "WATCHED", "WATCHING", "ABANDONED", "BLACKLISTED", "HOLD"
+            );
+            try (Connection connection = manager.getConnection();
+                 var insert = connection.prepareStatement("""
+                         INSERT INTO ledger_entry
+                             (mal_id, title, status, date_added, last_modified)
+                         VALUES (?, ?, ?, ?, ?)
+                         """)) {
+                long id = 8200;
+                for (String status : originalStatuses) {
+                    insert.setLong(1, id);
+                    insert.setString(2, "Original " + status);
+                    insert.setString(3, status);
+                    insert.setLong(4, id * 10);
+                    insert.setLong(5, id * 10 + 1);
+                    insert.executeUpdate();
+                    id++;
+                }
+            }
+
+            new DatabaseMigrationRunner(manager).migrate();
+
+            try (Connection connection = manager.getConnection();
+                 Statement statement = connection.createStatement()) {
+                long id = 8200;
+                for (String status : originalStatuses) {
+                    try (ResultSet result = statement.executeQuery(
+                            "SELECT mal_id, title, status, date_added, last_modified "
+                                    + "FROM ledger_entry WHERE mal_id = " + id)) {
+                        assertTrue(result.next());
+                        assertEquals(id, result.getLong("mal_id"));
+                        assertEquals("Original " + status, result.getString("title"));
+                        assertEquals(status, result.getString("status"));
+                        assertEquals(id * 10, result.getLong("date_added"));
+                        assertEquals(id * 10 + 1, result.getLong("last_modified"));
+                    }
+                    id++;
+                }
+
+                try (var insert = connection.prepareStatement("""
+                        INSERT INTO ledger_entry
+                            (mal_id, title, status, date_added, last_modified)
+                        VALUES (?, ?, ?, ?, ?)
+                        """)) {
+                    long nextId = 9100;
+                    for (com.myanimewatchledger.domain.ledger.LedgerStatus status
+                            : com.myanimewatchledger.domain.ledger.LedgerStatus.values()) {
+                        insert.setLong(1, nextId);
+                        insert.setString(2, "Round-trip " + status.name());
+                        insert.setString(3, status.name());
+                        insert.setLong(4, nextId * 10);
+                        insert.setLong(5, nextId * 10 + 1);
+                        insert.executeUpdate();
+                        nextId++;
+                    }
+                }
+
+                Set<String> persistedStatuses = new java.util.HashSet<>();
+                try (ResultSet result = statement.executeQuery("""
+                        SELECT DISTINCT status FROM ledger_entry
+                        WHERE mal_id BETWEEN 9100 AND 9199
+                        """)) {
+                    while (result.next()) persistedStatuses.add(result.getString("status"));
+                }
+                assertEquals(
+                        java.util.Arrays.stream(com.myanimewatchledger.domain.ledger.LedgerStatus.values())
+                                .map(Enum::name).collect(java.util.stream.Collectors.toSet()),
+                        persistedStatuses
+                );
+                assertEquals(1, scalarInt(statement, """
+                        SELECT COUNT(*) FROM ledger_entry
+                        WHERE mal_id = 9104 AND status = 'HOLD'
+                        """));
+                assertEquals(1, scalarInt(statement, """
+                        SELECT COUNT(*) FROM ledger_entry
+                        WHERE mal_id = 9105 AND status = 'WATCH_LATER'
+                        """));
+            }
+        }
+    }
+
+    @Test
     void doesNotReapplyAnAlreadyAppliedMigration() throws Exception {
         DatabaseManager manager = initializedManager();
 
