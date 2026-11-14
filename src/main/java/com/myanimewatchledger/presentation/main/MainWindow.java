@@ -2,10 +2,12 @@ package com.myanimewatchledger.presentation.main;
 
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.config.ApplicationPaths;
+import com.myanimewatchledger.application.service.SeasonNavigator;
 import com.myanimewatchledger.presentation.catalogue.CatalogueController;
 import com.myanimewatchledger.presentation.catalogue.CatalogueView;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsController;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsView;
+import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.presentation.history.SearchHistoryController;
 import com.myanimewatchledger.presentation.history.SearchHistoryView;
 import com.myanimewatchledger.presentation.ledger.LedgerController;
@@ -15,13 +17,19 @@ import com.myanimewatchledger.presentation.settings.SettingsView;
 import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
+import javafx.animation.FadeTransition;
+import javafx.event.ActionEvent;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
+import javafx.scene.Node;
+import javafx.scene.control.ButtonBase;
+import javafx.scene.control.ComboBoxBase;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+
+import java.time.Clock;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -57,13 +65,31 @@ public final class MainWindow {
     }
 
     public void show(Stage stage) {
+        SoundFeedback.setEnabled(windowStateStore.loadUiSoundsEnabled());
         root.getStyleClass().add("app-root");
         root.setLeft(sidebar);
-        root.setTop(createHeader());
         root.setBottom(statusBar);
         Scene scene = new Scene(root);
+        scene.addEventFilter(ActionEvent.ACTION, event -> {
+            if (event.getTarget() instanceof ButtonBase || event.getTarget() instanceof ComboBoxBase<?>) {
+                SoundFeedback.playClick();
+            }
+        });
+        scene.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (event.getButton() == MouseButton.PRIMARY && isComboBoxInteraction(event.getTarget())) {
+                SoundFeedback.playClick();
+            }
+        });
+        scene.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() != MouseButton.PRIMARY || event.getTarget() instanceof ButtonBase) return;
+            if (isTabHeaderClick(event.getTarget()) || isCoverPhotoClick(event.getTarget())) {
+                SoundFeedback.playClick();
+            }
+        });
         var stylesheet = getClass().getResource("/styles/application.css");
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
+        var phase6Stylesheet = getClass().getResource("/styles/phase6.css");
+        if (phase6Stylesheet != null) scene.getStylesheets().add(phase6Stylesheet.toExternalForm());
 
         WindowState saved = windowStateStore.load();
         openAnimeDetailsInBackground = windowStateStore.loadOpenAnimeDetailsInBackground();
@@ -91,14 +117,33 @@ public final class MainWindow {
         stage.setMaximized(saved.maximized());
     }
 
-    private HBox createHeader() {
-        Label title = new Label("MyAnimeWatchLedger");
-        title.getStyleClass().add("app-title");
-        HBox header = new HBox(title);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(12, 18, 10, 18));
-        header.getStyleClass().add("application-header");
-        return header;
+    private static boolean isComboBoxInteraction(Object target) {
+        if (!(target instanceof Node node)) return false;
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current instanceof ComboBoxBase<?>) return true;
+        }
+        return false;
+    }
+
+    private static boolean isTabHeaderClick(Object target) {
+        if (!(target instanceof Node node)) return false;
+        boolean insideTab = false;
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current.getStyleClass().contains("tab")) insideTab = true;
+            if (current.getStyleClass().contains("tab-header-area")) return insideTab;
+        }
+        return false;
+    }
+
+    private static boolean isCoverPhotoClick(Object target) {
+        if (!(target instanceof Node node)) return false;
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current.getStyleClass().contains("anime-poster-frame")
+                    || current.getStyleClass().contains("anime-details-poster")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void navigate(MainNavigation navigation) {
@@ -111,6 +156,13 @@ public final class MainWindow {
     private void openHistoricalSearch(long id) {
         services.catalogueTabs().openSearch(id);
         requestedCatalogueSearchId = id;
+        navigate(MainNavigation.CATALOGUE);
+    }
+
+    private void openCurrentSeason() {
+        SeasonNavigator.SeasonYear current = SeasonNavigator.current(Clock.systemDefaultZone());
+        var tab = services.catalogueTabs().open(current.season(), current.year(), "");
+        requestedCatalogueSearchId = tab.searchId();
         navigate(MainNavigation.CATALOGUE);
     }
 
@@ -128,13 +180,22 @@ public final class MainWindow {
                         new CatalogueController(services), requestedId, this::openAnimeDetails));
             }
             case MY_LEDGER -> root.setCenter(
-                    new LedgerView(new LedgerController(services.ledger()), this::openAnimeDetails));
+                    new LedgerView(new LedgerController(services.ledger()),
+                            this::openAnimeDetails, this::openCurrentSeason));
             case ANIME_DETAILS -> root.setCenter(animeDetailsView);
             case SEARCH_HISTORY -> root.setCenter(
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
             case SETTINGS -> root.setCenter(new SettingsView(
                     windowStateStore, enabled -> openAnimeDetailsInBackground = enabled,
                     services, statusBar::setMalConfigured, this::refreshAfterDatabaseRestore));
+        }
+        Node workspace = root.getCenter();
+        if (workspace != null && windowStateStore.loadUiAnimationsEnabled()) {
+            workspace.setOpacity(0);
+            FadeTransition fade = new FadeTransition(Duration.millis(150), workspace);
+            fade.setFromValue(0);
+            fade.setToValue(1);
+            fade.play();
         }
     }
 

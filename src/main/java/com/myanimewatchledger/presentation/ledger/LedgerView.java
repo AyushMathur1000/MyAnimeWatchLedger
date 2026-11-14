@@ -4,6 +4,7 @@ import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.presentation.DarkDialogStyler;
+import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
@@ -11,6 +12,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -28,6 +30,7 @@ public final class LedgerView extends VBox {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
     private final LedgerController controller;
     private final LongConsumer onOpenDetails;
+    private final Runnable onOpenCurrentSeason;
     private final ObservableList<LedgerEntry> source = FXCollections.observableArrayList();
     private final FilteredList<LedgerEntry> filtered = new FilteredList<>(source, entry -> true);
     private final TableView<LedgerEntry> table = new TableView<>();
@@ -40,28 +43,41 @@ public final class LedgerView extends VBox {
     private AutoCloseable ledgerSubscription;
 
     public LedgerView(LedgerController controller) {
-        this(controller, malId -> { });
+        this(controller, malId -> { }, () -> { });
     }
 
     public LedgerView(LedgerController controller, LongConsumer onOpenDetails) {
+        this(controller, onOpenDetails, () -> { });
+    }
+
+    public LedgerView(LedgerController controller, LongConsumer onOpenDetails, Runnable onOpenCurrentSeason) {
         this.controller = Objects.requireNonNull(controller, "controller");
         this.onOpenDetails = Objects.requireNonNull(onOpenDetails, "onOpenDetails");
+        this.onOpenCurrentSeason = Objects.requireNonNull(onOpenCurrentSeason, "onOpenCurrentSeason");
         getStyleClass().add("ledger-workspace");
         setSpacing(14);
-        setPadding(new Insets(26));
+        setPadding(new Insets(18, 20, 18, 20));
         Label title = new Label("My Ledger");
         title.getStyleClass().add("workspace-title");
-        HBox heading = new HBox(14, title, countLabel);
+        Button currentSeason = new Button("Add anime…");
+        currentSeason.getStyleClass().add("ledger-current-season-action");
+        currentSeason.setTooltip(new Tooltip("Open the current season in Catalogue"));
+        currentSeason.setAccessibleText("Open the current season in Catalogue");
+        currentSeason.setOnAction(event -> this.onOpenCurrentSeason.run());
+        HBox heading = new HBox(12, title, currentSeason, countLabel);
         heading.setAlignment(Pos.BASELINE_LEFT);
         searchField.setPromptText("Search anime titles…");
         searchField.setPrefWidth(300);
         searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
-        HBox searchRow = new HBox(12, searchField, createStatusFilters());
+        HBox searchRow = new HBox(10, searchField, createStatusFilters());
         searchRow.setAlignment(Pos.CENTER_LEFT);
         configureTable();
         emptyLabel.getStyleClass().add("ledger-empty");
         feedbackLabel.getStyleClass().add("ledger-feedback");
         table.setPlaceholder(emptyLabel);
+        table.getSelectionModel().selectedItemProperty().addListener((observable, previous, selected) -> {
+            if (selected != null && previous != selected && table.isFocused()) SoundFeedback.playClick();
+        });
         VBox.setVgrow(table, Priority.ALWAYS);
         getChildren().addAll(heading, searchRow, feedbackLabel, table);
         load();
@@ -161,6 +177,8 @@ public final class LedgerView extends VBox {
         actions.setPrefWidth(160);
         actions.setMaxWidth(180);
         table.getColumns().setAll(title, status, added, modified, actions);
+        modified.setSortType(TableColumn.SortType.DESCENDING);
+        title.setSortType(TableColumn.SortType.ASCENDING);
         table.widthProperty().addListener((observable, oldWidth, newWidth) ->
                 applyColumnWidths(newWidth.doubleValue(), title, status, added, modified, actions));
         table.sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -170,7 +188,7 @@ public final class LedgerView extends VBox {
         SortedList<LedgerEntry> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);
-        table.getSortOrder().add(title);
+        table.getSortOrder().setAll(modified, title);
     }
 
     private void applyColumnWidths(double tableWidth,

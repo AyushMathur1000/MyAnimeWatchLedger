@@ -9,6 +9,8 @@ import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
+import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
@@ -31,7 +33,6 @@ public final class AnimeDetailsView extends BorderPane {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final AnimeDetailsController controller;
     private final TabPane tabs = new TabPane();
-    private final Label feedback = new Label();
     private final StackPane emptyState = emptyPlaceholder();
     private final Map<Long, DetailTab> openTabs = new LinkedHashMap<>();
     private final Set<Long> openingIds = new HashSet<>();
@@ -47,8 +48,7 @@ public final class AnimeDetailsView extends BorderPane {
 
         Label title = new Label("Anime Details");
         title.getStyleClass().add("workspace-title");
-        feedback.getStyleClass().add("anime-details-feedback");
-        setTop(new VBox(9, title, feedback));
+        setTop(title);
         StackPane center = new StackPane(tabs, emptyState);
         tabs.getTabs().addListener((ListChangeListener<Tab>) change ->
                 emptyState.setVisible(tabs.getTabs().isEmpty()));
@@ -69,15 +69,13 @@ public final class AnimeDetailsView extends BorderPane {
     public void restoreTabs() {
         if (restorationStarted) return;
         restorationStarted = true;
-        feedback.setText("Restoring open anime tabs…");
         controller.restoreTabs().whenComplete((saved, failure) -> Platform.runLater(() -> {
             if (failure != null) {
-                feedback.setText("Could not restore Anime Details tabs: " + safeMessage(unwrap(failure)));
+                ToastNotifications.show(this, "Could not restore Anime Details tabs: " + safeMessage(unwrap(failure)), true);
             } else {
                 for (OpenAnimeDetailTab tab : saved) createTab(tab.malId(), false);
                 if (!tabs.getTabs().isEmpty()) tabs.getSelectionModel().selectFirst();
-                feedback.setText(saved.isEmpty() ? "Open an anime from Catalogue or My Ledger to view its details."
-                        : saved.size() + " anime detail tab(s) restored.");
+                
             }
             restorationFinished = true;
             for (long malId : List.copyOf(pendingOpenIds)) openAnimeAfterRestore(malId);
@@ -88,7 +86,7 @@ public final class AnimeDetailsView extends BorderPane {
     /** Opens or activates one tab. Duplicate requests during persistence are coalesced. */
     public void openAnime(long malId) {
         if (malId <= 0) {
-            feedback.setText("A valid MAL ID is required to open Anime Details.");
+            ToastNotifications.show(this, "A valid MAL ID is required to open Anime Details.", true);
             return;
         }
         if (!restorationStarted) restoreTabs();
@@ -110,11 +108,10 @@ public final class AnimeDetailsView extends BorderPane {
             return;
         }
         if (!openingIds.add(malId)) return;
-        feedback.setText("Opening Anime Details…");
         controller.openTab(malId).whenComplete((saved, failure) -> Platform.runLater(() -> {
             openingIds.remove(malId);
             if (failure != null) {
-                feedback.setText("Could not open anime details: " + safeMessage(unwrap(failure)));
+                ToastNotifications.show(this, "Could not open anime details: " + safeMessage(unwrap(failure)), true);
                 return;
             }
             DetailTab tab = openTabs.get(malId);
@@ -136,7 +133,7 @@ public final class AnimeDetailsView extends BorderPane {
             closingIds.add(malId);
             controller.closeTab(malId).whenComplete((closed, failure) -> Platform.runLater(() -> {
                 closingIds.remove(malId);
-                if (failure != null) feedback.setText("Could not save the closed tab: " + safeMessage(unwrap(failure)));
+                if (failure != null) ToastNotifications.show(this, "Could not save the closed tab: " + safeMessage(unwrap(failure)), true);
                 if (pendingOpenIds.remove(malId)) openAnimeAfterRestore(malId);
             }));
         });
@@ -289,7 +286,7 @@ public final class AnimeDetailsView extends BorderPane {
                         return;
                     }
                     configureLedgerActions(state, entry);
-                    feedback.setText("Added “" + entry.title() + "” to My Ledger.");
+                    ToastNotifications.show(this, "Added “" + entry.title() + "” to My Ledger.", false);
                 }));
     }
 
@@ -311,33 +308,12 @@ public final class AnimeDetailsView extends BorderPane {
                         return;
                     }
                     configureLedgerActions(state, entry);
-                    feedback.setText("Ledger status changed to " + displayStatus(entry.status()) + ".");
+                    ToastNotifications.show(this, "Ledger status changed to " + displayStatus(entry.status()) + ".", false);
                 }));
     }
 
     private static void showPosterPreview(String preferredUrl, String fallbackUrl, String title, Window owner) {
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        ImageView preview = new ImageView();
-        preview.setPreserveRatio(true);
-        preview.setFitWidth(bounds.getWidth() * 0.78);
-        preview.setFitHeight(bounds.getHeight() * 0.78);
-        preview.setSmooth(true);
-        Label placeholder = new Label("No poster available");
-        placeholder.getStyleClass().add("anime-details-no-poster");
-        StackPane frame = new StackPane(preview, placeholder);
-        frame.setPadding(new Insets(12));
-        frame.setStyle("-fx-background-color: #17191f;");
-        MalImageLoader.load(preview, placeholder, preferredUrl, fallbackUrl,
-                bounds.getWidth() * 0.78, bounds.getHeight() * 0.78);
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        if (owner != null) dialog.initOwner(owner);
-        dialog.getDialogPane().getStyleClass().add("app-dialog");
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        dialog.getDialogPane().setContent(frame);
-        dialog.getDialogPane().setPrefSize(bounds.getWidth() * 0.82, bounds.getHeight() * 0.86);
-        dialog.setResizable(true);
-        dialog.showAndWait();
+        PosterPreviewDialog.show(preferredUrl, fallbackUrl, title, owner);
     }
 
     private static int addFact(GridPane grid, int row, String label, String value) {

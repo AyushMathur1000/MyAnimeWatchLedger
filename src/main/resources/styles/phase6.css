@@ -1,0 +1,174 @@
+/* Phase 6: restrained, consistent interaction styling. */
+.navigation-sidebar {
+    -fx-pref-width: 64px;
+    -fx-min-width: 64px;
+    -fx-max-width: 64px;
+    -fx-alignment: TOP_CENTER;
+}
+.navigation-button {
+    -fx-alignment: CENTER;
+    -fx-padding: 0;
+    -fx-background-radius: 10px;
+    -fx-cursor: hand;
+}
+.navigation-icon {
+    -fx-fill: transparent;
+    -fx-stroke: #c5cad4;
+    -fx-stroke-width: 1.8;
+    -fx-stroke-line-cap: ROUND;
+    -fx-stroke-line-join: ROUND;
+}
+.navigation-button:hover .navigation-icon { -fx-stroke: #ffffff; }
+.navigation-button.selected .navigation-icon { -fx-stroke: #ffffff; -fx-stroke-width: 2.1; }
+.navigation-button:focused .navigation-icon { -fx-stroke: #ffffff; }
+.navigation-button:hover {
+    -fx-background-color: #303b4d;
+}
+.navigation-button:selected, .navigation-button.selected {
+    -fx-background-color: #394b69;
+    -fx-border-color: #6f91c2;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-radius: 2px;
+}
+.navigation-button:focused {
+    -fx-border-color: #7da7df;
+    -fx-border-radius: 8px;
+}
+.anime-poster-frame {
+    -fx-cursor: hand;
+    -fx-background-radius: 6px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6px;
+}
+.anime-poster-frame:hover {
+    -fx-border-color: #607da7;
+    -fx-background-color: #303746;
+}
+.anime-card {
+    -fx-border-color: #343945;
+}
+.anime-card:hover {
+    -fx-border-color: #526b91;
+    -fx-background-color: #232936;
+}
+.anime-card .anime-card-blacklist-action {
+    -fx-text-fill: #ef9a9a;
+}
+.anime-card .anime-card-blacklist-action:hover {
+    -fx-background-color: #59343b;
+}
+ .ledger-current-season-action {
+    -fx-min-width: 104px;
+    -fx-pref-width: 104px;
+    -fx-max-width: 104px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-padding: 0 10px;
+    -fx-font-size: 11px;
+    -fx-cursor: hand;
+}
+.button, .toggle-button {
+    -fx-cursor: hand;
+}
+.button:disabled, .toggle-button:disabled {
+    -fx-cursor: default;
+}
+.text-field, .text-area, .text-area .content {
+    -fx-cursor: text;
+}
+
+
+/* Toast notification cards: opaque enough to read, compact, and visually distinct. */
+.app-toast {
+    -fx-background-color: #252b36;
+    -fx-background-radius: 11px;
+    -fx-border-color: #414b5b;
+    -fx-border-width: 1px;
+    -fx-border-radius: 11px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.52), 24, 0.18, 0, 7);
+}
+.app-toast-success { -fx-border-color: #527e68; }
+.app-toast-warning { -fx-border-color: #94713a; }
+.app-toast-error { -fx-border-color: #8c5058; }
+.app-toast-icon-holder {
+    -fx-background-color: #294a3b;
+    -fx-background-radius: 17px;
+    -fx-alignment: CENTER;
+}
+.app-toast-icon-warning { -fx-background-color: #554426; }
+.app-toast-icon-error { -fx-background-color: #58323a; }
+.app-toast-icon {
+    -fx-text-fill: #a9e0bd;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+.app-toast-icon-warning { -fx-text-fill: #f2cd83; }
+.app-toast-icon-error { -fx-text-fill: #ffb0b0; }
+.app-toast-title {
+    -fx-text-fill: #f4f6fa;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.app-toast-message {
+    -fx-text-fill: #c4ccd8;
+    -fx-font-size: 11px;
+}
+
+/* Spacious Catalogue controls without enclosing boxes or heavy tab outlines. */
+.catalogue-season-bar {
+    -fx-spacing: 9px;
+    -fx-padding: 5px 5px 8px 5px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+}
+.catalogue-season-bar .button {
+    -fx-padding: 9px 14px;
+    -fx-min-height: 36px;
+    -fx-font-size: 12px;
+}
+.catalogue-season-bar .combo-box-base,
+.catalogue-season-bar .spinner {
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+}
+.catalogue-season-bar .separator { -fx-padding: 0 3px; }
+.catalogue-workspace .tab-pane .tab-header-area {
+    -fx-padding: 5px 8px 6px 8px;
+    -fx-background-color: #20242d;
+    -fx-background-radius: 7px 7px 0 0;
+    -fx-border-color: transparent;
+}
+.catalogue-workspace .tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #20242d;
+    -fx-background-radius: 7px 7px 0 0;
+}
+.catalogue-workspace .tab-pane .tab-header-area .headers-region { -fx-padding: 0; }
+.catalogue-workspace .tab-pane .tab-header-area .tab {
+    -fx-padding: 8px 14px;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 5px;
+    -fx-border-color: transparent transparent transparent transparent;
+    -fx-border-width: 0 0 2px 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
+}
+.catalogue-workspace .tab-pane .tab:hover {
+    -fx-background-color: #2a303b;
+}
+.catalogue-workspace .tab-pane .tab:selected {
+    -fx-background-color: #394b65;
+    -fx-border-color: transparent transparent #91b7ed transparent;
+    -fx-text-base-color: #ffffff;
+}
+.catalogue-workspace .tab-pane .tab-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #aeb8c8;
+}
+.catalogue-workspace .tab-pane .tab:selected .tab-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+.catalogue-workspace .tab-pane .tab-content-area { -fx-padding: 0; }

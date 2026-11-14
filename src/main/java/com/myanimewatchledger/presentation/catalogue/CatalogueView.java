@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
+import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
@@ -28,7 +30,6 @@ public final class CatalogueView extends BorderPane {
     private final TabPane tabs = new TabPane();
     private final ComboBox<Season> seasonChoice = new ComboBox<>();
     private final Spinner<Integer> yearChoice = new Spinner<>(1900, 9999, java.time.Year.now().getValue());
-    private final Label feedback = new Label();
     private final Map<Long, SeasonTab> openTabs = new LinkedHashMap<>();
     private boolean restoring;
     private AutoCloseable ledgerSubscription;
@@ -63,12 +64,11 @@ public final class CatalogueView extends BorderPane {
         open.setOnAction(e -> openSelectedSeason());
         refresh.setOnAction(e -> refreshSelected());
         clearCache.setOnAction(e -> clearCache());
-        HBox seasonBar = new HBox(9, previous, next, seasonChoice, yearChoice, open,
+        HBox seasonBar = new HBox(7, previous, next, seasonChoice, yearChoice, open,
                 new Separator(), refresh, clearCache);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
-        feedback.getStyleClass().add("catalogue-feedback");
-        VBox top = new VBox(8, seasonBar, feedback);
+        VBox top = new VBox(5, seasonBar);
         setTop(top);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
         tabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
@@ -185,25 +185,25 @@ public final class CatalogueView extends BorderPane {
         if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
 
         setDisable(true);
-        feedback.setText("Clearing catalogue cache...");
+        ToastNotifications.show(this, "Clearing catalogue cache…", false);
         controller.clearCacheAsync().whenComplete((ignored, failure) ->
                 Platform.runLater(() -> {
                     setDisable(false);
                     if (failure != null) {
                         Throwable cause = failure instanceof CompletionException && failure.getCause() != null
                                 ? failure.getCause() : failure;
-                        feedback.setText("Could not clear catalogue cache: " + safeMessage(cause));
+                        ToastNotifications.show(this, "Could not clear catalogue cache: " + safeMessage(cause), true);
                     } else {
                         tabs.getTabs().clear();
                         openTabs.clear();
-                        feedback.setText("Catalogue cache cleared. Open a season to retrieve it again.");
+                        ToastNotifications.show(this, "Catalogue cache cleared.", false);
                     }
                 }));
     }
 
     private void refresh(SeasonTab state, boolean manual) {
         if (!controller.isMalConfigured()) {
-            feedback.setText("Configure a MAL Client ID in Settings before retrieving seasonal anime.");
+            ToastNotifications.show(this, "Configure a MAL Client ID in Settings before retrieving seasonal anime.", true);
             return;
         }
         if (state.refreshing) return;
@@ -220,12 +220,14 @@ public final class CatalogueView extends BorderPane {
                         Throwable cause = failure instanceof CompletionException && failure.getCause() != null
                                 ? failure.getCause() : failure;
                         state.message.setText("Refresh failed. Previously cached results have been preserved.");
-                        feedback.setText("Could not refresh " + label(state.search) + ": " + safeMessage(cause));
+                        ToastNotifications.show(this, "Could not refresh " + label(state.search) + ": " + safeMessage(cause), true);
                     } else {
                         state.message.setText(outcome.animeCount() + " anime loaded"
                                 + (outcome.skippedItems() > 0 ? " · " + outcome.skippedItems() + " skipped" : ""));
-                        feedback.setText(outcome.warnings().isEmpty() ? "Catalogue refreshed successfully."
-                                : "Catalogue refreshed with " + outcome.warnings().size() + " warning(s).");
+                        if (manual) ToastNotifications.show(this, outcome.warnings().isEmpty()
+                                ? "Catalogue refreshed successfully."
+                                : "Catalogue refreshed with " + outcome.warnings().size() + " warning(s).",
+                                !outcome.warnings().isEmpty());
                         controller.findSearch(state.search.searchId()).ifPresent(search -> {
                             state.search = search;
                             state.tab.setText(label(search));
@@ -276,6 +278,18 @@ public final class CatalogueView extends BorderPane {
         StackPane posterFrame = new StackPane(poster, noPoster);
         posterFrame.getStyleClass().add("anime-poster-frame");
         MalImageLoader.load(poster, noPoster, metadata.pictureMedium(), metadata.pictureLarge(), 190, 250);
+        if (MalImageLoader.selectUrl(metadata.pictureLarge(), metadata.pictureMedium()) != null) {
+            posterFrame.setCursor(javafx.scene.Cursor.HAND);
+            posterFrame.setFocusTraversable(true);
+            posterFrame.setAccessibleText("Enlarge cover image");
+            posterFrame.setOnMouseClicked(event -> {
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    PosterPreviewDialog.show(metadata.pictureLarge(), metadata.pictureMedium(),
+                            item.preferredTitle(), posterFrame.getScene() == null
+                                    ? null : posterFrame.getScene().getWindow());
+                }
+            });
+        }
         posterFrame.setMinHeight(250);
         posterFrame.setMaxHeight(250);
         Label title = new Label(item.preferredTitle());
@@ -307,9 +321,18 @@ public final class CatalogueView extends BorderPane {
         ledgerAction.setAccessibleText(item.ledgerStatus() == null
                 ? "Add to My Ledger as Watch Later" : "Already in My Ledger");
         ledgerAction.setDisable(item.ledgerStatus() != null);
-        ledgerAction.setOnAction(e -> addToLedger(item, ledgerAction, ledger));
+        ledgerAction.setOnAction(e -> addToLedger(item, LedgerStatus.WATCH_LATER, ledgerAction, ledger));
 
-        HBox actions = new HBox(8, detailsAction, ledgerAction);
+        Button blacklistAction = new Button("⊘");
+        blacklistAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-blacklist-action");
+        blacklistAction.setTooltip(new Tooltip(item.ledgerStatus() == null
+                ? "Add to My Ledger as Blacklisted" : "Already in My Ledger"));
+        blacklistAction.setAccessibleText(item.ledgerStatus() == null
+                ? "Add to My Ledger as Blacklisted" : "Already in My Ledger");
+        blacklistAction.setDisable(item.ledgerStatus() != null);
+        blacklistAction.setOnAction(e -> addToLedger(item, LedgerStatus.BLACKLISTED, blacklistAction, ledger));
+
+        HBox actions = new HBox(8, detailsAction, ledgerAction, blacklistAction);
         actions.setAlignment(Pos.CENTER_RIGHT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
@@ -332,17 +355,23 @@ public final class CatalogueView extends BorderPane {
         ledgerSubscription = null;
     }
 
-    private void addToLedger(CatalogueAnime anime, Button action, Label ledgerLabel) {
+    private void addToLedger(CatalogueAnime anime, LedgerStatus status, Button action, Label ledgerLabel) {
         try {
-            controller.add(anime, LedgerStatus.WATCH_LATER);
-            ledgerLabel.setText("Ledger: Watch Later");
+            controller.add(anime, status);
+            ledgerLabel.setText("Ledger: " + displayStatus(status));
             action.setText("✓");
             action.setTooltip(new Tooltip("Already in My Ledger"));
             action.setAccessibleText("Already in My Ledger");
             action.setDisable(true);
-            feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as Watch Later.");
+            String confirmation = "Added “" + anime.preferredTitle() + "” to My Ledger as "
+                    + displayStatus(status) + ".";
+            if (status == LedgerStatus.BLACKLISTED) {
+                ToastNotifications.showWarning(this, confirmation);
+            } else {
+                ToastNotifications.show(this, confirmation, false);
+            }
         } catch (RuntimeException failure) {
-            feedback.setText("Could not add anime: " + safeMessage(failure));
+            ToastNotifications.show(this, "Could not add anime: " + safeMessage(failure), true);
         }
     }
 
@@ -381,25 +410,25 @@ public final class CatalogueView extends BorderPane {
         private final ScrollPane scroll = new ScrollPane(cards);
         private final Label message = new Label();
         private final ProgressIndicator progress = new ProgressIndicator();
-        private final VBox content = new VBox(10);
+        private final VBox content = new VBox(6);
         private boolean refreshing;
         private SeasonTab(CatalogueSearch search) {
             this.search = search;
             searchField.setPromptText("Search this season… (AND across words and metadata)");
             searchField.setPrefWidth(360);
-            cards.setPadding(new Insets(8));
+            cards.setPadding(new Insets(5, 6, 8, 6));
             cards.setPrefWrapLength(1050);
             scroll.setFitToWidth(true);
             scroll.getStyleClass().add("catalogue-scroll");
             Button clearSearch = new Button("Clear search");
             clearSearch.setOnAction(event -> searchField.clear());
-            HBox searchRow = new HBox(12, searchField, clearSearch, message, progress);
+            HBox searchRow = new HBox(8, searchField, clearSearch, message, progress);
             searchRow.setAlignment(Pos.CENTER_LEFT);
             progress.setPrefSize(22, 22);
             progress.setVisible(false);
             progress.setManaged(false);
             VBox.setVgrow(scroll, Priority.ALWAYS);
-            content.setPadding(new Insets(10, 2, 2, 2));
+            content.setPadding(new Insets(6, 2, 0, 2));
             content.getChildren().addAll(searchRow, scroll);
         }
     }

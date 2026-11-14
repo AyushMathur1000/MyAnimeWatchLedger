@@ -1,9 +1,9 @@
 # MyAnimeWatchLedger --- Software Requirements Specification
 
 **Document ID:** MALW-SRS-001\
-**Version:** 1.2\
-**Status:** Approved requirements baseline\
-**Last updated:** 2026-11-14\
+**Version:** 1.3\
+**Status:** Approved requirements and implementation reference\
+**Last updated:** 2026-11-15\
 **Project:** MyAnimeWatchLedger\
 **Document role:** Primary requirements reference for this project
 
@@ -185,7 +185,9 @@ status filters shall work together.
 
 **FR-LED-013 --- Ledger sorting**\
 The ledger shall support sorting by title, date added, and last
-modified.
+modified. The default sort order shall be last modified descending
+(newest first), with title ascending (A-Z, case-insensitive) as the
+secondary sort key when modification timestamps are equal.
 
 **FR-LED-014 --- No episode tracking**\
 The application shall not require or maintain watched episode counts or
@@ -701,7 +703,8 @@ The initial release shall satisfy the following:
 2.  All six statuses (Watched, Watching, Abandoned, Blacklisted, Hold, and Watch Later) are supported and mutually exclusive.
 3.  One record per MAL ID is enforced.
 4.  Ledger data survives application restarts.
-5.  The ledger can be searched, filtered, and sorted.
+5.  The ledger can be searched, filtered, and sorted, defaulting to latest
+modified first with alphabetical title tie-breaking.
 6.  No episode progress is required or stored.
 7.  Seasonal anime can be retrieved from MAL by season and year.
 8.  Title preference follows English, Romanized, Japanese fallback
@@ -734,6 +737,11 @@ The initial release shall satisfy the following:
 26. Network operations do not freeze the UI.
 27. The project runs directly from IntelliJ IDEA Community using
     Maven-managed dependencies.
+28. The default Ledger ordering is latest modified first, with title
+    ascending as the tie-breaker.
+29. The UI provides compact icon-first navigation, visible tooltips,
+    preference-controlled interaction sounds and workspace transitions,
+    and transient toast feedback for routine actions and warnings.
 
 ## 12. Approved technology baseline
 
@@ -847,33 +855,103 @@ Change 001 is approved and incorporated in this SRS version. Watch Later is a di
 
 ### Change record
 
-  -----------------------------------------------------------------------
-  Version                 Date                    Description
-  ----------------------- ----------------------- -----------------------
-  1.0                     2026-11-13              Initial SRS baseline.
+| Version | Date | Description |
+|---|---|---|
+| 1.0 | 2026-11-13 | Initial SRS baseline. |
+| 1.1 | 2026-11-13 | Finalized decisions, AND token search semantics, backup/restore, UI defaults, and JavaFX technology baseline. |
+| 1.2 | 2026-11-14 | Approved Change 001: added Watch Later as a distinct sixth status and defined its meaning and Catalogue add default. |
+| 1.3 | 2026-11-15 | Consolidated project reference; recorded default Ledger sort order, implementation baseline, build workflow, and Phase 6 closure gates. |
 
-  1.1                     2026-11-13              Finalized decisions;
-                                                  specified AND token
-                                                  search semantics;
-                                                  included backup/restore
-                                                  and finalized UI
-                                                  defaults; aligned with
-                                                  JavaFX technology
-                                                  baseline.
+---
 
-  1.2                     2026-11-14              Approved Change 001:
-                                                  added Watch Later as a
-                                                  distinct sixth status;
-                                                  defined its meaning and
-                                                  Catalogue add default;
-                                                  preserved Hold as
-                                                  started-but-paused;
-                                                  updated status counts,
-                                                  scope, integrity rules,
-                                                  and acceptance criteria.
-  -----------------------------------------------------------------------
+## 15. Implementation reference and developer workflow
 
-------------------------------------------------------------------------
+### 15.1 Technology and build
 
-**End of document**\
-**MyAnimeWatchLedger --- Primary Requirements Reference**
+The repository is a Maven project using Java 25, JavaFX 25.0.5, SQLite JDBC,
+Jackson, and JUnit Jupiter 5. The UI is built programmatically with standard
+JavaFX controls and JavaFX CSS. No separate frontend toolchain or database
+server is required.
+
+Run from the repository root:
+
+```bash
+mvn clean test
+mvn javafx:run
+```
+
+Use a JDK 25 installation. In IntelliJ IDEA, open the repository as a Maven
+project, set the project SDK and Maven runner JDK to 25, allow Maven to import
+dependencies, then run `com.myanimewatchledger.app.MyAnimeWatchLedgerApplication`
+or the Maven `javafx:run` goal.
+
+### 15.2 Local data and configuration
+
+On Windows, application data is stored under `%LOCALAPPDATA%\\MyAnimeWatchLedger`.
+If `LOCALAPPDATA` is unavailable, the fallback is `~/.myanimewatchledger` under
+the user's home directory. The SQLite database is
+`my_anime_watch_ledger.db`; configuration and UI preferences are stored in the
+`config` subdirectory. The MAL Client ID is configured in Settings and stored
+locally outside the SQLite database.
+
+### 15.3 Current workspace summary
+
+- **My Ledger:** persistent personal records, six statuses, title search, status
+  filters, date columns, explicit removal confirmation, and default sorting by
+  last modified descending with title ascending as a tie-breaker.
+- **Catalogue:** seasonal MAL browsing, multiple season tabs, previous/next
+  navigation, local metadata search using partial case-insensitive AND token
+  matching, poster previews, quick ledger actions, manual refresh, and cache
+  clearing. Blacklisted anime are excluded from catalogue presentation.
+- **Anime Details:** separate non-modal detail window with independently open
+  anime tabs, extended metadata, poster preview, and ledger actions.
+- **Search History:** previously fetched seasonal searches can be reopened;
+  refresh is asynchronous and preserves prior successful data on failure.
+- **Settings:** MAL Client ID, background-opening preference, sound and animation
+  toggles, database backup/restore, and catalogue cache clearing.
+
+### 15.4 Phase 6 quality-of-life implementation baseline
+
+The Phase 6 QoL scope currently implemented on `feature/phase-6-qol` includes:
+
+1. Shared poster enlargement from Catalogue and Anime Details.
+2. One-action Catalogue addition as Blacklisted, with a distinct amber warning
+   toast; ordinary additions use success feedback.
+3. Asynchronous Search History refresh with stale-response protection.
+4. Ledger action to open the current season in Catalogue.
+5. Compact icon-only sidebar with labelled tooltips and consistent vector icons.
+6. Consistent control styling, dark dropdown menus, improved Catalogue tabs and
+   toolbar spacing, and transient notification cards.
+7. Preference-controlled click sounds and workspace fade transitions.
+8. Sound feedback for button actions, dropdown interaction, tab-header clicks,
+   poster clicks, and Ledger row selection.
+9. Latest-modified-first default Ledger ordering with alphabetical tie-breaking.
+
+The exact current keyboard support is documented separately in
+[`KEYBOARD_SHORTCUTS.md`](KEYBOARD_SHORTCUTS.md). No application-wide custom
+shortcut bindings are currently defined; the document distinguishes built-in
+control behaviour from dedicated application shortcuts.
+
+### 15.5 Phase 6 closure checklist
+
+<badge>Phase 6 — CLOSED</badge>
+
+| Area | Expected result | Current review state |
+|---|---|---|
+| Approved QoL scope | All agreed items represented in implementation | Implemented by source review |
+| Ledger default order | Last modified descending, title ascending | Implemented in LedgerView |
+| User preferences | Sound and animation settings persisted | Implemented |
+| Notifications | Success, warning, and error toast variants | Implemented |
+| Regression tests | Full Maven test suite passes on JDK 25 | Passed — 140 unit tests |
+| Manual UI verification | Check layout, icons, toast timing, dropdowns, and sounds on Windows | Passed — user confirmed manual tests |
+
+**Closure decision:** Phase 6 QoL is formally closed. The user confirmed that
+all 140 unit tests pass and that manual testing is successful. The agreed
+implementation scope and final verification gates are complete.
+
+## 16. Change control and traceability
+
+This document is the single authoritative project reference. Requirements,
+implementation decisions, and acceptance changes must be updated here rather
+than maintained in parallel specification files. Test cases should trace to
+requirement identifiers and acceptance criteria.

@@ -3,6 +3,7 @@ package com.myanimewatchledger.app;
 import com.myanimewatchledger.application.service.*;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
+import com.myanimewatchledger.domain.catalogue.CatalogueSearch;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.catalogue.Season;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
@@ -53,6 +54,11 @@ public final class ApplicationServices {
     public LedgerService ledger() { return ledger; }
     public CatalogueService catalogue() { return catalogue; }
     public CatalogueTabService catalogueTabs() { return tabs; }
+
+    /** Reads known seasonal searches without blocking the JavaFX Application Thread. */
+    public CompletableFuture<List<CatalogueSearch>> knownCatalogueSeasonsAsync() {
+        return background.submit(catalogue::getKnownSeasons);
+    }
     public AnimeDetailService animeDetails() { return animeDetails; }
     public AnimeDetailTabService animeDetailTabs() { return animeDetailTabs; }
     public boolean isMalConfigured() { return malConnection.isConfigured(); }

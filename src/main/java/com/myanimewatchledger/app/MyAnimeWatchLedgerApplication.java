@@ -1,5 +1,6 @@
 package com.myanimewatchledger.app;
 
+import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.presentation.main.MainWindow;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -43,6 +44,7 @@ public final class MyAnimeWatchLedgerApplication extends Application {
 
     @Override
     public void stop() {
+        SoundFeedback.shutdown();
         initializer.close();
     }
 
