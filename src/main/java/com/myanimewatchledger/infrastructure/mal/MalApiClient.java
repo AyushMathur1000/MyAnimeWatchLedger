@@ -125,9 +125,13 @@ public final class MalApiClient implements MalApiTransport {
 
     private static MalApiException httpFailure(int status, String retryAfterHeader, String responseBody) {
         Duration retryAfter = parseRetryAfter(retryAfterHeader);
-        if (status == 401 || status == 403) {
+        if (status == 401) {
             return new MalApiException(MalApiErrorCategory.REJECTED_CREDENTIALS, status,
-                    "MAL rejected the request. Check the API configuration or try again later.", null, null, responseBody);
+                    "MAL rejected the configured Client ID. Check the API configuration.", null, null, responseBody);
+        }
+        if (status == 403) {
+            return new MalApiException(MalApiErrorCategory.ACCESS_FORBIDDEN, status,
+                    "MAL rejected access to this resource. Try again later.", null, null, responseBody);
         }
         if (status == 404) {
             return new MalApiException(MalApiErrorCategory.NOT_FOUND, status,
