@@ -3,6 +3,7 @@ package com.myanimewatchledger.presentation.catalogue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
@@ -239,14 +240,10 @@ public final class CatalogueView extends BorderPane {
         poster.setFitHeight(250);
         poster.setPreserveRatio(true);
         poster.setSmooth(true);
-        if (metadata.pictureMedium() != null) {
-            try { poster.setImage(new Image(metadata.pictureMedium(), 190, 250, true, true, true)); }
-            catch (IllegalArgumentException ignored) { }
-        }
         Label noPoster = new Label("No poster available");
         StackPane posterFrame = new StackPane(poster, noPoster);
         posterFrame.getStyleClass().add("anime-poster-frame");
-        noPoster.setVisible(metadata.pictureMedium() == null || metadata.pictureMedium().isBlank());
+        MalImageLoader.load(poster, noPoster, metadata.pictureMedium(), metadata.pictureLarge(), 190, 250);
         posterFrame.setMinHeight(250);
         posterFrame.setMaxHeight(250);
         Label title = new Label(item.preferredTitle());
