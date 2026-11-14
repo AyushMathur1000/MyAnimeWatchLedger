@@ -15,7 +15,7 @@ import java.util.UUID;
 
 /** Creates and restores validated, standalone SQLite database backups. */
 public final class DatabaseBackupService {
-    public static final int LATEST_SUPPORTED_SCHEMA_VERSION = 3;
+    public static final int LATEST_SUPPORTED_SCHEMA_VERSION = DatabaseMigrationRunner.latestSupportedSchemaVersion();
     private static final List<TableRequirement> REQUIRED_TABLES = List.of(
             new TableRequirement("ledger_entry", List.of("mal_id", "title", "status", "date_added", "last_modified")),
             new TableRequirement("catalogue_search", List.of("search_id", "season", "year", "fetch_status")),
