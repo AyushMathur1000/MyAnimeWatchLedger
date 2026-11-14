@@ -174,6 +174,10 @@ public final class DatabaseMigrationRunner {
         }
     }
 
+    public static int latestSupportedSchemaVersion() {
+        return MIGRATIONS.isEmpty() ? 0 : MIGRATIONS.getLast().version();
+    }
+
     private int latestSupportedVersion() { return migrations.isEmpty() ? 0 : migrations.getLast().version(); }
 
     private static void validateMigrationSequence(List<Migration> migrations) {
