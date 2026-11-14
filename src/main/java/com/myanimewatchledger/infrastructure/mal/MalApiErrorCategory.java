@@ -3,6 +3,7 @@ package com.myanimewatchledger.infrastructure.mal;
 /** Stable categories for failures returned by or encountered while calling MAL. */
 public enum MalApiErrorCategory {
     REJECTED_CREDENTIALS,
+    NOT_FOUND,
     RATE_LIMITED,
     SERVICE_ERROR,
     HTTP_ERROR,
