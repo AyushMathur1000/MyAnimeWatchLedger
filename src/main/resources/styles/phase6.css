@@ -112,14 +112,13 @@
     -fx-font-size: 11px;
 }
 
-/* Roomier Catalogue controls and tab strip; retain existing card sizing. */
+/* Spacious Catalogue controls without enclosing boxes or heavy tab outlines. */
 .catalogue-season-bar {
     -fx-spacing: 9px;
-    -fx-padding: 9px 11px;
-    -fx-background-color: #20242d;
-    -fx-background-radius: 8px;
-    -fx-border-color: #303744;
-    -fx-border-radius: 8px;
+    -fx-padding: 5px 5px 8px 5px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
 }
 .catalogue-season-bar .button {
     -fx-padding: 9px 14px;
@@ -133,14 +132,33 @@
 }
 .catalogue-season-bar .separator { -fx-padding: 0 3px; }
 .catalogue-workspace .tab-pane .tab-header-area {
-    -fx-padding: 7px 8px 5px 8px;
-    -fx-background-color: #20232b;
+    -fx-padding: 5px 5px 6px 5px;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+.catalogue-workspace .tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 .catalogue-workspace .tab-pane .tab-header-area .headers-region { -fx-padding: 0; }
 .catalogue-workspace .tab-pane .tab-header-area .tab {
     -fx-padding: 8px 13px;
-    -fx-background-radius: 6px 6px 0 0;
-    -fx-background-insets: 0 2px 0 0;
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-background-radius: 5px;
+    -fx-border-color: transparent;
+    -fx-border-width: 0;
+    -fx-focus-color: transparent;
+    -fx-faint-focus-color: transparent;
 }
-.catalogue-workspace .tab-pane .tab-header-area .tab-label { -fx-font-size: 12px; }
+.catalogue-workspace .tab-pane .tab:hover { -fx-background-color: #292f3a; }
+.catalogue-workspace .tab-pane .tab:selected {
+    -fx-background-color: #35465f;
+    -fx-border-color: transparent;
+}
+.catalogue-workspace .tab-pane .tab:focused {
+    -fx-background-insets: 0;
+    -fx-border-color: transparent;
+}
+.catalogue-workspace .tab-pane .tab-label { -fx-font-size: 12px; }
 .catalogue-workspace .tab-pane .tab-content-area { -fx-padding: 0; }
