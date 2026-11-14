@@ -24,8 +24,10 @@ public final class SettingsView extends VBox {
     public SettingsView(
             WindowStateStore preferences,
             Consumer<Boolean> onBackgroundOpeningChanged,
-            ApplicationServices services) {
+            ApplicationServices services,
+            Consumer<Boolean> onMalConfiguredChanged) {
         this.services = Objects.requireNonNull(services, "services");
+        Objects.requireNonNull(onMalConfiguredChanged, "onMalConfiguredChanged");
         Objects.requireNonNull(preferences, "preferences");
         Objects.requireNonNull(onBackgroundOpeningChanged, "onBackgroundOpeningChanged");
 
@@ -96,6 +98,7 @@ public final class SettingsView extends VBox {
                         } else {
                             clientIdInput.clear();
                             configuredState.setText("Client ID configured. The value is hidden.");
+                            onMalConfiguredChanged.accept(true);
                             testButton.setDisable(false);
                             malFeedback.setText("Client ID saved. Test the connection to verify it.");
                         }
