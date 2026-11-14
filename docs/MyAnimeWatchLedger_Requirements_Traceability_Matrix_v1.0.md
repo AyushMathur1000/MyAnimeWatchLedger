@@ -24,13 +24,30 @@ A requirement being implemented is not the same as being tested. No requirement 
 
 ## 2. Existing evidence confirmed during initial audit
 
+The complete `src/test/java` tree on `develop` contains 30 test classes. Key evidence inspected:
+
 | Evidence ID | Source | Confirmed scope |
 |---|---|---|
+| EV-APP-01 | `ApplicationServicesTest` | Ledger add/duplicate/status/rename/search/remove; catalogue token search; Unicode normalization; season navigation; tab restore/reorder/close |
+| EV-APP-02 | `CatalogueRefreshServiceTest` | Atomic refresh, empty result, failed gateway preservation, DB rollback, title-sync rollback, no implicit ledger insertion, blacklist exclusion, conservative metadata merge |
+| EV-APP-03 | `CatalogueSearchServiceTest` | Tokenization, whitespace normalization, distinct AND tokens, blank query, search identity validation |
+| EV-APP-04 | `CatalogueTabServiceTest` | Reopen closed search, preserve already-open query/order, reject unknown search |
+| EV-APP-05 | `LedgerServiceEventTest` | Added/status-changed/removed events, unsubscribe, listener failure isolation |
 | EV-DB-01 | `DatabaseManagerTest` | Database initialization, parent directory creation, independent JDBC connections, foreign-key pragma, busy timeout |
-| EV-DB-02 | `DatabaseBackupServiceTest` | Backup/restore round trip, corrupt backup rejection without active-data change, existing destination protection |
-| EV-MAN-01 | User verification on Phase 4.4 branch | User reports `mvn clean test` passes and application works; this is branch-level verification, not requirement-by-requirement evidence |
+| EV-DB-02 | `JdbcRepositoryIntegrationTest` | Ledger CRUD/title search, blacklist + AND query filtering, tab persistence, transaction rollback, cache-clear ledger protection, invalid metadata JSON, failed-fetch preservation |
+| EV-DB-03 | `DatabaseMigrationRunnerTest` | Initial schema, v1 upgrade/data preservation, idempotence, newer-version rejection, failed migration rollback, cache/ledger separation |
+| EV-DB-04 | `DatabaseRestartPersistenceTest` | Database restart persistence |
+| EV-BACKUP-01 | `DatabaseBackupServiceTest` | Backup/restore round trip, corrupt backup rejection without active-data change, destination overwrite protection |
+| EV-MAL-01 | `MalResponseMapperTest` | English/Romanized/Japanese/canonical fallback, nullable fields, unknown fields/enums, required ID/title, searchable projection, conservative merge |
+| EV-MAL-02 | `MalApiCatalogueGatewayTest` | Endpoint construction/fields, mapping, multi-page completion, invalid year rejection |
+| EV-MAL-03 | `MalApiClientTest`, `ResilientMalApiTransportTest` | HTTP client and resilient transport behaviour (individual assertions still require detailed audit) |
+| EV-MAL-04 | `MalApiAnimeDetailGatewayTest`, `MalSeasonalCatalogueReaderTest`, `MalApiFieldsTest` | Detail/season reader and field-selection contracts (individual assertions still require detailed audit) |
+| EV-UI-01 | `LedgerFilterTest`, `MainNavigationTest`, `WindowStateStoreTest`, `MalImageLoaderTest` | Ledger filtering, navigation, window state, image URL/preference behaviour |
+| EV-CONFIG-01 | `MalClientConfigurationStoreTest`, `MalApiConnectionTest` | Client configuration persistence and connection checks |
+| EV-LIVE-01 | `MalCatalogueLiveSmokeTest` | Opt-in live MAL retrieval/persistence/reload; explicitly excluded from normal deterministic test dependency |
+| EV-MAN-01 | User verification on Phase 4.4 branch | User reports `mvn clean test` passes and application works; branch-level verification, not requirement-by-requirement evidence |
 
-The complete test tree has not yet been enumerated in this initial audit. Other existing test classes may provide coverage; verify them before classifying a planned item as a confirmed gap.
+The test inventory is now enumerated. Requirement-level sufficiency still needs review; a class name alone is not proof that every branch or acceptance criterion is covered.
 
 ## 3. Functional requirements
 
@@ -193,22 +210,21 @@ The complete test tree has not yet been enumerated in this initial audit. Other 
 
 ## 6. Priority gap register
 
-The following are verification tasks, not confirmed implementation defects.
+These are verification gaps or specification discrepancies, not all confirmed runtime defects.
 
-| Gap ID | Priority | Verification gap | Suggested test / evidence |
+| Gap ID | Priority | Verification gap / discrepancy | Suggested test / evidence |
 |---|---|---|---|
-| GAP-01 | P0 | Ledger/cache separation not evidenced in inspected tests | Clear-cache and failed-refresh integration tests with ledger assertions |
-| GAP-02 | P0 | Refresh transaction atomicity and previous-cache preservation | Fake gateway failure on later page and forced persistence failure |
-| GAP-03 | P0 | Blacklist enforcement across all repository paths | Repository tests for fresh, cached, history, and query results |
-| GAP-04 | P0 | Migration path and migration rollback coverage not evidenced | Fresh DB, prior-version DB, newer-version rejection, injected migration failure |
-| GAP-05 | P0 | Restore compatibility and replacement rollback cases incomplete in inspected evidence | Newer schema, missing schema, FK violation, migration failure, atomic move failure |
-| GAP-06 | P1 | Search semantics not evidenced in inspected tests | Multi-token cross-field AND, partial, case-insensitive, whitespace cases |
-| GAP-07 | P1 | MAL mapper and pagination coverage not evidenced in inspected tests | Controlled JSON fixtures and fake/local HTTP server |
-| GAP-08 | P1 | Title synchronization invariants not evidenced | Assert title changes while status/date-added/membership remain fixed |
-| GAP-09 | P1 | Tabs, history, cache reuse, and restart restoration not evidenced | Persistence and service integration tests plus manual UI scenarios |
-| GAP-10 | P1 | Offline and JavaFX responsiveness acceptance not evidenced | Block/disable network and verify local operations; slow-operation UI smoke |
-| GAP-11 | P2 | Sparse metadata and missing poster UI coverage | Fixtures with null/missing fields and placeholder visual check |
-| GAP-12 | P2 | Window state, tooltip, contextual toolbar and visual density acceptance | Manual checklist across navigation destinations |
+| GAP-01 | P0 | Restore replacement failure/rollback, newer backup schema, missing required schema, and foreign-key-invalid backup are not covered by the inspected backup tests | Add restore rejection and injected replacement-failure tests; assert active DB remains/reopens intact |
+| GAP-02 | P0 | SRS specifies exactly five statuses (Watched, Watching, Abandoned, Blacklisted, Hold), but `LedgerStatus` contains an additional `WATCH_LATER` value and service tests use it as the default | Resolve through change control: either approve an SRS update or align implementation/tests to the approved five-status baseline; do not silently accept both |
+| GAP-03 | P1 | Search unit tests verify tokenization/delegation and repository tests verify AND filtering, but direct partial/case-insensitive/cross-field AND behaviour deserves explicit boundary tests | Add repository fixtures where tokens occur in different fields, only one token matches, case differs, and substring boundaries matter |
+| GAP-04 | P1 | Blacklist exclusion is tested in repository and refresh paths, but immediate propagation across every already-open UI tab and history presentation is not proven | Add application event/query tests and manual multi-tab blacklist/unblacklist scenario |
+| GAP-05 | P1 | Title synchronization is tested for successful refresh and rollback, but full assertions across last_modified, status, date_added, and all membership paths should be consolidated | Add focused invariant test with explicit timestamps and multiple cached seasons |
+| GAP-06 | P1 | Cache clear isolation is covered at repository and migration levels; full service/UI confirmation and restoration-state messaging require manual acceptance | Verify Clear Cache warning/cancel/confirm and post-clear ledger/history/tab state |
+| GAP-07 | P1 | Search History reopen and cached retrieval after restart need explicit end-to-end confirmation | Add integration test proving no MAL gateway call on reopen and manual restart scenario |
+| GAP-08 | P1 | Offline behaviour and JavaFX thread responsiveness are not demonstrated by the inspected test classes | Controlled unavailable gateway and manual slow-operation responsiveness test |
+| GAP-09 | P1 | MAL pagination covers successful multi-page retrieval; malformed/untrusted next URL, repeated URL, later-page HTTP failure, and incomplete response cases need focused verification | Add gateway/transport tests for each failure case and assert no partial result returned |
+| GAP-10 | P2 | Sparse metadata mapper behaviour exists, but all corresponding visual states are not covered by automated UI tests | Manual card/detail rendering with missing poster, synopsis, score, genres, studios, and episode count |
+| GAP-11 | P2 | Window state and image loader tests exist; tooltips, contextual toolbar correctness, visual density, and full theme consistency remain manual | Complete UI acceptance checklist across all screens |
 
 Do not close a gap by adding a test that merely exercises a method. The test must assert the SRS-required outcome and failure behaviour.
 
