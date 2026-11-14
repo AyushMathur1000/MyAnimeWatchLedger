@@ -142,7 +142,7 @@ class DatabaseBackupServiceTest {
         try (Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + file);
              Statement statement = connection.createStatement()) {
             for (String command : sql.split(";")) {
-                if (!command.isBlank()) statement.executeUpdate(command);
+                if (!command.isBlank()) statement.execute(command);
             }
         }
     }
