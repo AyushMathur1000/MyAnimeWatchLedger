@@ -79,6 +79,20 @@ class MalApiClientTest {
     }
 
     @Test
+    void retainsAValidRetryAfterHeader() {
+        server.createContext("/v2/anime/1", exchange -> {
+            exchange.getResponseHeaders().add("Retry-After", "7");
+            byte[] body = "rate limited".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(429, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
+        assertEquals(MalApiErrorCategory.RATE_LIMITED, exception.category());
+        assertEquals(Duration.ofSeconds(7), exception.retryAfter());
+    }
+
+    @Test
     void mapsServiceFailures() {
         respond(503, "maintenance");
         MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
