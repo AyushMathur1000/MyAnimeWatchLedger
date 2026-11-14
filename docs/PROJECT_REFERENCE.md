@@ -2,7 +2,7 @@
 
 **Document ID:** MALW-SRS-001\
 **Version:** 1.3\
-**Status:** Approved requirements baseline\
+**Status:** Approved requirements and implementation reference\
 **Last updated:** 2026-11-15\
 **Project:** MyAnimeWatchLedger\
 **Document role:** Primary requirements reference for this project
