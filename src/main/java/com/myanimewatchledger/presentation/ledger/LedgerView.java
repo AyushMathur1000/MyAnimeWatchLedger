@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.ledger;
 
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.presentation.DarkDialogStyler;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -36,6 +37,7 @@ public final class LedgerView extends VBox {
     private final java.util.List<CheckBox> statusChecks = new java.util.ArrayList<>();
     private final Label emptyLabel = new Label();
     private final Label feedbackLabel = new Label();
+    private AutoCloseable ledgerSubscription;
 
     public LedgerView(LedgerController controller) {
         this(controller, malId -> { });
@@ -63,6 +65,10 @@ public final class LedgerView extends VBox {
         VBox.setVgrow(table, Priority.ALWAYS);
         getChildren().addAll(heading, searchRow, feedbackLabel, table);
         load();
+        ledgerSubscription = controller.subscribeToLedgerChanges(this::ledgerChanged);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (oldScene != null && newScene == null) closeLedgerSubscription();
+        });
     }
 
     private HBox createStatusFilters() {
@@ -231,6 +237,17 @@ public final class LedgerView extends VBox {
         column.setMinWidth(175);
         column.setPrefWidth(205);
         return column;
+    }
+
+    private void ledgerChanged(LedgerChangeEvent event) {
+        javafx.application.Platform.runLater(this::load);
+    }
+
+    private void closeLedgerSubscription() {
+        if (ledgerSubscription == null) return;
+        try { ledgerSubscription.close(); }
+        catch (Exception ignored) { }
+        ledgerSubscription = null;
     }
 
     private void load() {
