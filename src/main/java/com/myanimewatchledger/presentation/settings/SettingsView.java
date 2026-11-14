@@ -2,9 +2,14 @@ package com.myanimewatchledger.presentation.settings;
 
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
+import com.myanimewatchledger.infrastructure.persistence.DatabaseBackupService;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.stage.FileChooser;
+import javafx.stage.Window;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -13,6 +18,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.io.IOException;
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Objects;
 import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
@@ -25,9 +32,11 @@ public final class SettingsView extends VBox {
             WindowStateStore preferences,
             Consumer<Boolean> onBackgroundOpeningChanged,
             ApplicationServices services,
-            Consumer<Boolean> onMalConfiguredChanged) {
+            Consumer<Boolean> onMalConfiguredChanged,
+            Runnable onDatabaseRestored) {
         this.services = Objects.requireNonNull(services, "services");
         Objects.requireNonNull(onMalConfiguredChanged, "onMalConfiguredChanged");
+        Objects.requireNonNull(onDatabaseRestored, "onDatabaseRestored");
         Objects.requireNonNull(preferences, "preferences");
         Objects.requireNonNull(onBackgroundOpeningChanged, "onBackgroundOpeningChanged");
 
@@ -123,9 +132,74 @@ public final class SettingsView extends VBox {
         });
 
         HBox actions = new HBox(8, saveButton, testButton);
+        Label databaseSubtitle = new Label("Database backup and restore");
+        databaseSubtitle.getStyleClass().add("settings-section-title");
+        Label databaseDescription = new Label(
+                "Backups include your ledger, cached catalogue data, search history, and open-tab state. "
+                        + "Backup files are ordinary, unencrypted SQLite databases; store them somewhere private.");
+        databaseDescription.getStyleClass().add("settings-description");
+        Button createBackupButton = new Button("Create Backup");
+        Button restoreBackupButton = new Button("Restore Backup");
+        Label databaseFeedback = new Label();
+        databaseFeedback.getStyleClass().add("settings-feedback");
+
+        createBackupButton.setOnAction(event -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Create Database Backup");
+            chooser.setInitialFileName(DatabaseBackupService.defaultBackupFileName());
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("SQLite database (*.db)", "*.db"));
+            File selected = chooser.showSaveDialog(getScene() == null ? null : getScene().getWindow());
+            if (selected == null) return;
+            createBackupButton.setDisable(true);
+            restoreBackupButton.setDisable(true);
+            databaseFeedback.setText("Creating and validating backup...");
+            services.createDatabaseBackupAsync(selected.toPath()).whenComplete((saved, failure) ->
+                    Platform.runLater(() -> {
+                        createBackupButton.setDisable(false);
+                        restoreBackupButton.setDisable(false);
+                        databaseFeedback.setText(failure == null
+                                ? "Backup created and validated: " + saved
+                                : safeMessage(failure));
+                    }));
+        });
+
+        restoreBackupButton.setOnAction(event -> {
+            FileChooser chooser = new FileChooser();
+            chooser.setTitle("Select Database Backup");
+            chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("SQLite database (*.db)", "*.db"));
+            File selected = chooser.showOpenDialog(getScene() == null ? null : getScene().getWindow());
+            if (selected == null) return;
+            Alert confirmation = new Alert(Alert.AlertType.WARNING,
+                    "Restoring replaces the current local database, including ledger records, cached metadata, "
+                            + "search history, and open-tab state. This cannot be undone from within the application. "
+                            + "Continue with this restore?", ButtonType.CANCEL, ButtonType.OK);
+            confirmation.setTitle("Confirm Database Restore");
+            confirmation.setHeaderText("Current local data will be replaced");
+            Window owner = getScene() == null ? null : getScene().getWindow();
+            if (owner != null) confirmation.initOwner(owner);
+            if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+
+            createBackupButton.setDisable(true);
+            restoreBackupButton.setDisable(true);
+            databaseFeedback.setText("Validating backup and restoring database...");
+            services.restoreDatabaseBackupAsync(selected.toPath()).whenComplete((ignored, failure) ->
+                    Platform.runLater(() -> {
+                        createBackupButton.setDisable(false);
+                        restoreBackupButton.setDisable(false);
+                        if (failure == null) {
+                            databaseFeedback.setText("Database restored successfully.");
+                            onDatabaseRestored.run();
+                        } else {
+                            databaseFeedback.setText(safeMessage(failure));
+                        }
+                    }));
+        });
+
+        HBox databaseActions = new HBox(8, createBackupButton, restoreBackupButton);
         getChildren().addAll(
                 title, subtitle, backgroundOpening, description, preferenceFeedback,
-                malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback);
+                malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback,
+                databaseSubtitle, databaseDescription, databaseActions, databaseFeedback);
     }
 
     private void updateConfiguredState(Label label) {
