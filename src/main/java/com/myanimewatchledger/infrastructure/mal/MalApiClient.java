@@ -9,6 +9,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 /** Synchronous, GET-only MAL transport. Invoke from a background thread, never the JavaFX thread. */
@@ -66,7 +71,7 @@ public final class MalApiClient implements MalApiTransport {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             int status = response.statusCode();
             if (status >= 200 && status < 300) return response.body();
-            throw httpFailure(status);
+            throw httpFailure(status, response.headers().firstValue("Retry-After").orElse(null));
         } catch (HttpTimeoutException exception) {
             throw new MalApiException(MalApiErrorCategory.TIMEOUT, null,
                     "The MAL API request timed out.", exception);
@@ -118,21 +123,45 @@ public final class MalApiClient implements MalApiTransport {
         return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
-    private static MalApiException httpFailure(int status) {
+    private static MalApiException httpFailure(int status, String retryAfterHeader) {
+        Duration retryAfter = parseRetryAfter(retryAfterHeader);
         if (status == 401 || status == 403) {
             return new MalApiException(MalApiErrorCategory.REJECTED_CREDENTIALS, status,
                     "MAL rejected the configured Client ID or access to this resource.", null);
         }
+        if (status == 404) {
+            return new MalApiException(MalApiErrorCategory.NOT_FOUND, status,
+                    "MAL could not find the requested resource.", null);
+        }
         if (status == 429) {
             return new MalApiException(MalApiErrorCategory.RATE_LIMITED, status,
-                    "MAL rate-limited the request. Try again later.", null);
+                    "MAL rate-limited the request. Try again later.", null, retryAfter);
         }
         if (status >= 500) {
             return new MalApiException(MalApiErrorCategory.SERVICE_ERROR, status,
-                    "MAL is temporarily unable to process the request.", null);
+                    "MAL is temporarily unable to process the request.", null, retryAfter);
         }
         return new MalApiException(MalApiErrorCategory.HTTP_ERROR, status,
                 "MAL returned an unsuccessful HTTP response.", null);
+    }
+
+    private static Duration parseRetryAfter(String value) {
+        if (value == null || value.isBlank()) return null;
+        String normalized = value.trim();
+        try {
+            long seconds = Long.parseLong(normalized);
+            return seconds < 0 ? null : Duration.ofSeconds(seconds);
+        } catch (NumberFormatException ignored) {
+            // RFC 1123 HTTP-date form is the other standard Retry-After representation.
+        }
+        try {
+            Instant retryAt = ZonedDateTime.parse(
+                    normalized, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+            Duration delay = Duration.between(Instant.now(), retryAt);
+            return delay.isNegative() ? Duration.ZERO : delay;
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
     }
 
     private static HttpClient buildHttpClient(MalApiConfiguration configuration) {
