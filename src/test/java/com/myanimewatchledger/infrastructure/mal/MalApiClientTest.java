@@ -79,6 +79,15 @@ class MalApiClientTest {
     }
 
     @Test
+    void mapsUnknownAnimeAsNotFoundWithoutRetryMetadata() {
+        respond(404, "unknown anime");
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
+        assertEquals(MalApiErrorCategory.NOT_FOUND, exception.category());
+        assertEquals(404, exception.statusCode());
+        assertNull(exception.retryAfter());
+    }
+
+    @Test
     void retainsAValidRetryAfterHeader() {
         server.createContext("/v2/anime/1", exchange -> {
             exchange.getResponseHeaders().add("Retry-After", "7");
