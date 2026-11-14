@@ -855,36 +855,12 @@ Change 001 is approved and incorporated in this SRS version. Watch Later is a di
 
 ### Change record
 
-  -----------------------------------------------------------------------
-  Version                 Date                    Description
-  ----------------------- ----------------------- -----------------------
-  1.0                     2026-11-13              Initial SRS baseline.
-
-  1.1                     2026-11-13              Finalized decisions;
-                                                  specified AND token
-                                                  search semantics;
-                                                  included backup/restore
-                                                  and finalized UI
-                                                  defaults; aligned with
-                                                  JavaFX technology
-                                                  baseline.
-
-  1.2                     2026-11-14              Approved Change 001:
-                                                  added Watch Later as a
-                                                  distinct sixth status;
-                                                  defined its meaning and
-                                                  Catalogue add default;
-                                                  preserved Hold as
-                                                  started-but-paused;
-                                                  updated status counts,
-                                                  scope, integrity rules,
-                                                  and acceptance criteria.
-  -----------------------------------------------------------------------
-
-------------------------------------------------------------------------
-
-**End of document**\
-**MyAnimeWatchLedger --- Primary Requirements Reference**
+| Version | Date | Description |
+|---|---|---|
+| 1.0 | 2026-11-13 | Initial SRS baseline. |
+| 1.1 | 2026-11-13 | Finalized decisions, AND token search semantics, backup/restore, UI defaults, and JavaFX technology baseline. |
+| 1.2 | 2026-11-14 | Approved Change 001: added Watch Later as a distinct sixth status and defined its meaning and Catalogue add default. |
+| 1.3 | 2026-11-15 | Consolidated project reference; recorded default Ledger sort order, implementation baseline, build workflow, and Phase 6 closure gates. |
 
 ---
 
