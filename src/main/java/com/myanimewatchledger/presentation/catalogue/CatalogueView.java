@@ -5,6 +5,7 @@ import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
@@ -29,7 +30,6 @@ public final class CatalogueView extends BorderPane {
     private final TabPane tabs = new TabPane();
     private final ComboBox<Season> seasonChoice = new ComboBox<>();
     private final Spinner<Integer> yearChoice = new Spinner<>(1900, 9999, java.time.Year.now().getValue());
-    private final Label feedback = new Label();
     private final Map<Long, SeasonTab> openTabs = new LinkedHashMap<>();
     private boolean restoring;
     private AutoCloseable ledgerSubscription;
@@ -68,8 +68,7 @@ public final class CatalogueView extends BorderPane {
                 new Separator(), refresh, clearCache);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
-        feedback.getStyleClass().add("catalogue-feedback");
-        VBox top = new VBox(8, seasonBar, feedback);
+        VBox top = new VBox(8, seasonBar);
         setTop(top);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
         tabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
@@ -186,25 +185,25 @@ public final class CatalogueView extends BorderPane {
         if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
 
         setDisable(true);
-        feedback.setText("Clearing catalogue cache...");
+        ToastNotifications.show(this, "Clearing catalogue cache…", false);
         controller.clearCacheAsync().whenComplete((ignored, failure) ->
                 Platform.runLater(() -> {
                     setDisable(false);
                     if (failure != null) {
                         Throwable cause = failure instanceof CompletionException && failure.getCause() != null
                                 ? failure.getCause() : failure;
-                        feedback.setText("Could not clear catalogue cache: " + safeMessage(cause));
+                        ToastNotifications.show(this, "Could not clear catalogue cache: " + safeMessage(cause), true);
                     } else {
                         tabs.getTabs().clear();
                         openTabs.clear();
-                        feedback.setText("Catalogue cache cleared. Open a season to retrieve it again.");
+                        ToastNotifications.show(this, "Catalogue cache cleared.", false);
                     }
                 }));
     }
 
     private void refresh(SeasonTab state, boolean manual) {
         if (!controller.isMalConfigured()) {
-            feedback.setText("Configure a MAL Client ID in Settings before retrieving seasonal anime.");
+            ToastNotifications.show(this, "Configure a MAL Client ID in Settings before retrieving seasonal anime.", true);
             return;
         }
         if (state.refreshing) return;
@@ -221,12 +220,14 @@ public final class CatalogueView extends BorderPane {
                         Throwable cause = failure instanceof CompletionException && failure.getCause() != null
                                 ? failure.getCause() : failure;
                         state.message.setText("Refresh failed. Previously cached results have been preserved.");
-                        feedback.setText("Could not refresh " + label(state.search) + ": " + safeMessage(cause));
+                        ToastNotifications.show(this, "Could not refresh " + label(state.search) + ": " + safeMessage(cause), true);
                     } else {
                         state.message.setText(outcome.animeCount() + " anime loaded"
                                 + (outcome.skippedItems() > 0 ? " · " + outcome.skippedItems() + " skipped" : ""));
-                        feedback.setText(outcome.warnings().isEmpty() ? "Catalogue refreshed successfully."
-                                : "Catalogue refreshed with " + outcome.warnings().size() + " warning(s).");
+                        if (manual) ToastNotifications.show(this, outcome.warnings().isEmpty()
+                                ? "Catalogue refreshed successfully."
+                                : "Catalogue refreshed with " + outcome.warnings().size() + " warning(s).",
+                                !outcome.warnings().isEmpty());
                         controller.findSearch(state.search.searchId()).ifPresent(search -> {
                             state.search = search;
                             state.tab.setText(label(search));
@@ -362,10 +363,10 @@ public final class CatalogueView extends BorderPane {
             action.setTooltip(new Tooltip("Already in My Ledger"));
             action.setAccessibleText("Already in My Ledger");
             action.setDisable(true);
-            feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as "
-                    + displayStatus(status) + ".");
+            ToastNotifications.show(this, "Added “" + anime.preferredTitle() + "” to My Ledger as "
+                    + displayStatus(status) + ".", false);
         } catch (RuntimeException failure) {
-            feedback.setText("Could not add anime: " + safeMessage(failure));
+            ToastNotifications.show(this, "Could not add anime: " + safeMessage(failure), true);
         }
     }
 
