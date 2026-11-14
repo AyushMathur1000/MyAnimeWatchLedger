@@ -116,6 +116,7 @@ public final class AnimeDetailsView extends BorderPane {
 
     private DetailTab createTab(long malId, boolean select) {
         DetailTab state = new DetailTab(malId);
+        state.ledgerAction.setOnAction(event -> saveLedgerStatus(state));
         state.tab.setText("Anime #" + malId);
         state.tab.setUserData(malId);
         state.tab.setOnClosed(event -> {
@@ -437,7 +438,6 @@ public final class AnimeDetailsView extends BorderPane {
                 }
                 @Override public LedgerStatus fromString(String value) { return null; }
             });
-            ledgerAction.setOnAction(event -> saveLedgerStatus(this));
             ledgerAction.setDisable(true);
             ledgerActions.setAlignment(Pos.CENTER_LEFT);
             ledgerActions.getStyleClass().add("anime-details-ledger-actions");
