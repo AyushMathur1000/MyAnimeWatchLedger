@@ -363,8 +363,13 @@ public final class CatalogueView extends BorderPane {
             action.setTooltip(new Tooltip("Already in My Ledger"));
             action.setAccessibleText("Already in My Ledger");
             action.setDisable(true);
-            ToastNotifications.show(this, "Added “" + anime.preferredTitle() + "” to My Ledger as "
-                    + displayStatus(status) + ".", false);
+            String confirmation = "Added “" + anime.preferredTitle() + "” to My Ledger as "
+                    + displayStatus(status) + ".";
+            if (status == LedgerStatus.BLACKLISTED) {
+                ToastNotifications.showWarning(this, confirmation);
+            } else {
+                ToastNotifications.show(this, confirmation, false);
+            }
         } catch (RuntimeException failure) {
             ToastNotifications.show(this, "Could not add anime: " + safeMessage(failure), true);
         }
