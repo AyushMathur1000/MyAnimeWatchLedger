@@ -4,7 +4,6 @@ import javafx.animation.FadeTransition;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.StackPane;
@@ -53,6 +52,9 @@ public final class ToastNotifications {
         ACTIVE.put(owner, popup);
         popup.setOnHidden(event -> ACTIVE.remove(owner, popup));
         popup.show(owner);
+        if (owner.getScene() != null && popup.getScene() != null) {
+            popup.getScene().getStylesheets().setAll(owner.getScene().getStylesheets());
+        }
 
         Platform.runLater(() -> {
             if (!popup.isShowing()) return;
