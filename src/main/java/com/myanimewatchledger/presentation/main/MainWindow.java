@@ -19,16 +19,12 @@ import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
 import javafx.animation.FadeTransition;
 import javafx.event.ActionEvent;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -71,7 +67,6 @@ public final class MainWindow {
         SoundFeedback.setEnabled(windowStateStore.loadUiSoundsEnabled());
         root.getStyleClass().add("app-root");
         root.setLeft(sidebar);
-        root.setTop(createHeader());
         root.setBottom(statusBar);
         Scene scene = new Scene(root);
         scene.addEventFilter(ActionEvent.ACTION, event -> {
@@ -135,16 +130,6 @@ public final class MainWindow {
             }
         }
         return false;
-    }
-
-    private HBox createHeader() {
-        Label title = new Label("MyAnimeWatchLedger");
-        title.getStyleClass().add("app-title");
-        HBox header = new HBox(title);
-        header.setAlignment(Pos.CENTER_LEFT);
-        header.setPadding(new Insets(12, 18, 10, 18));
-        header.getStyleClass().add("application-header");
-        return header;
     }
 
     private void navigate(MainNavigation navigation) {
