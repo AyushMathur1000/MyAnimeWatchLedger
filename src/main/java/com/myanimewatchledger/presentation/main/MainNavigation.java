@@ -7,7 +7,7 @@ public enum MainNavigation {
     CATALOGUE("Catalogue",
             "M3 4a1 1 0 0 1 1-1h5v18H4a1 1 0 0 1-1-1z M15 3h5a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-5z M9 3h6v18H9z"),
     ANIME_DETAILS("Anime Details",
-            "M2 3h20v14H2z M2 7h20 M7 3l-3 4 M13 3l-3 4 M19 3l-3 4 M8 21h8 M12 17v4"),
+            "M4 9L2 3l7 3c2-1 4-1 6 0l7-3-2 7v5c-1 4-4 7-8 8-4-1-7-4-8-8z M8 12l2 1 M16 12l-2 1 M10 17q2 2 4 0 M9 7l-1-2 M15 7l1-2"),
     SEARCH_HISTORY("Search History",
             "M3 12a9 9 0 1 0 2.64-6.36L3 8 M3 3v5h5 M12 7v5l4 2"),
     SETTINGS("Settings",
