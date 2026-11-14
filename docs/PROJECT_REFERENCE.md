@@ -945,10 +945,9 @@ control behaviour from dedicated application shortcuts.
 | Regression tests | Full Maven test suite passes on JDK 25 | Passed — 140 unit tests |
 | Manual UI verification | Check layout, icons, toast timing, dropdowns, and sounds on Windows | Passed — user confirmed manual tests |
 
-The phase is functionally complete by scope review, but should only be
-formally closed after the current branch passes `mvn clean test` on JDK 25 and
-the final Windows UI smoke test. This repository review did not execute Maven:
-the review environment has JDK 21 and Maven is not installed.
+**Closure decision:** Phase 6 QoL is formally closed. The user confirmed that
+all 140 unit tests pass and that manual testing is successful. The agreed
+implementation scope and final verification gates are complete.
 
 ## 16. Change control and traceability
 
