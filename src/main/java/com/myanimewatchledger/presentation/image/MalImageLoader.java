@@ -23,8 +23,8 @@ public final class MalImageLoader {
      * Returns the first syntactically valid MAL image URL, preserving the caller's preference order.
      */
     public static String selectUrl(String preferred, String fallback) {
-        if (isAllowedUrl(preferred)) return preferred;
-        return isAllowedUrl(fallback) ? fallback : null;
+        if (isAllowedUrl(preferred)) return preferred.trim();
+        return isAllowedUrl(fallback) ? fallback.trim() : null;
     }
 
     /**
@@ -55,7 +55,7 @@ public final class MalImageLoader {
                             double fitWidth, double fitHeight) {
         String first = selectUrl(preferred, fallback);
         String second = isAllowedUrl(preferred) && isAllowedUrl(fallback)
-                && !preferred.equals(fallback) ? fallback : null;
+                && !preferred.trim().equals(fallback.trim()) ? fallback.trim() : null;
         loadCandidate(target, placeholder, first, second, fitWidth, fitHeight);
     }
 
