@@ -5,7 +5,6 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 import javax.sound.sampled.FloatControl;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -30,19 +29,25 @@ public final class SoundFeedback {
 
     private static Clip clickClip;
     private static volatile boolean unavailable;
+    private static volatile boolean enabled = true;
     private static volatile boolean closed;
 
     private SoundFeedback() {
     }
 
+    /** Updates the live preference; no audio work is performed on the caller thread. */
+    public static void setEnabled(boolean value) {
+        enabled = value;
+    }
+
     /** Schedules a click without blocking the caller or delaying the UI action. */
     public static void playClick() {
-        if (closed || unavailable) {
+        if (!enabled || closed || unavailable) {
             return;
         }
         try {
             AUDIO_EXECUTOR.execute(() -> {
-                if (closed || unavailable) {
+                if (!enabled || closed || unavailable) {
                     return;
                 }
                 try {
