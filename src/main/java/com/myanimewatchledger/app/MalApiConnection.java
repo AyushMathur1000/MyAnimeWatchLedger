@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.config.MalApiConfiguration;
 import com.myanimewatchledger.config.MalClientConfigurationStore;
 import com.myanimewatchledger.infrastructure.mal.MalApiClient;
+import com.myanimewatchledger.infrastructure.mal.MalApiTransport;
 import com.myanimewatchledger.infrastructure.mal.SwitchableMalApiTransport;
 
 import java.io.IOException;
@@ -17,13 +18,22 @@ public final class MalApiConnection {
 
     private final MalClientConfigurationStore configurationStore;
     private final SwitchableMalApiTransport transport;
+    private final MalApiTransport requestTransport;
     private final ObjectMapper json = new ObjectMapper();
 
     public MalApiConnection(
             MalClientConfigurationStore configurationStore,
             SwitchableMalApiTransport transport) {
+        this(configurationStore, transport, transport);
+    }
+
+    public MalApiConnection(
+            MalClientConfigurationStore configurationStore,
+            SwitchableMalApiTransport transport,
+            MalApiTransport requestTransport) {
         this.configurationStore = Objects.requireNonNull(configurationStore, "configurationStore");
         this.transport = Objects.requireNonNull(transport, "transport");
+        this.requestTransport = Objects.requireNonNull(requestTransport, "requestTransport");
     }
 
     /** Loads existing credentials without making a network request. */
@@ -48,7 +58,7 @@ public final class MalApiConnection {
      * This method is blocking and must only be called by a background worker.
      */
     public void testConnection() {
-        String response = transport.get("anime/" + CONNECTION_TEST_ANIME_ID + "?fields=id");
+        String response = requestTransport.get("anime/" + CONNECTION_TEST_ANIME_ID + "?fields=id");
         try {
             JsonNode root = json.readTree(response);
             if (root == null || !root.isObject()

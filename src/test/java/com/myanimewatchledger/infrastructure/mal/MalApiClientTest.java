@@ -68,6 +68,7 @@ class MalApiClientTest {
         assertEquals(401, exception.statusCode());
         assertFalse(exception.getMessage().contains("private diagnostic"));
         assertFalse(exception.getMessage().contains("test-client-id"));
+        assertEquals("private diagnostic response containing nothing useful", exception.diagnosticBody());
     }
 
     @Test
@@ -76,6 +77,38 @@ class MalApiClientTest {
         MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
         assertEquals(MalApiErrorCategory.RATE_LIMITED, exception.category());
         assertEquals(429, exception.statusCode());
+    }
+
+    @Test
+    void mapsForbiddenResponsesSeparatelyFromInvalidCredentials() {
+        respond(403, "protective rejection");
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
+        assertEquals(MalApiErrorCategory.ACCESS_FORBIDDEN, exception.category());
+        assertEquals(403, exception.statusCode());
+    }
+
+    @Test
+    void mapsUnknownAnimeAsNotFoundWithoutRetryMetadata() {
+        respond(404, "unknown anime");
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
+        assertEquals(MalApiErrorCategory.NOT_FOUND, exception.category());
+        assertEquals(404, exception.statusCode());
+        assertNull(exception.retryAfter());
+        assertEquals("unknown anime", exception.diagnosticBody());
+    }
+
+    @Test
+    void retainsAValidRetryAfterHeader() {
+        server.createContext("/v2/anime/1", exchange -> {
+            exchange.getResponseHeaders().add("Retry-After", "7");
+            byte[] body = "rate limited".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(429, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
+        assertEquals(MalApiErrorCategory.RATE_LIMITED, exception.category());
+        assertEquals(Duration.ofSeconds(7), exception.retryAfter());
     }
 
     @Test
