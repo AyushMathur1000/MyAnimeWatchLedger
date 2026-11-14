@@ -36,7 +36,7 @@ public final class MainWindow {
     private final WindowStateStore windowStateStore;
     private final BorderPane root = new BorderPane();
     private final NavigationSidebar sidebar = new NavigationSidebar(this::navigate);
-    private final AnimeDetailsView animeDetailsView;
+    private AnimeDetailsView animeDetailsView;
     private final ApplicationStatusBar statusBar;
     private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
     private Long requestedCatalogueSearchId;
@@ -134,8 +134,14 @@ public final class MainWindow {
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
             case SETTINGS -> root.setCenter(new SettingsView(
                     windowStateStore, enabled -> openAnimeDetailsInBackground = enabled,
-                    services, statusBar::setMalConfigured));
+                    services, statusBar::setMalConfigured, this::refreshAfterDatabaseRestore));
         }
+    }
+
+    private void refreshAfterDatabaseRestore() {
+        animeDetailsView = new AnimeDetailsView(new AnimeDetailsController(services));
+        animeDetailsView.restoreTabs();
+        renderWorkspace();
     }
 
     private void saveWindowState(Stage stage) {
