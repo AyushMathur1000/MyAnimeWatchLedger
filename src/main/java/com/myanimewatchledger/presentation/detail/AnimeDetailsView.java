@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.detail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.application.service.AnimeDetailResult;
+import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadata;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
@@ -54,6 +55,14 @@ public final class AnimeDetailsView extends BorderPane {
         emptyState.setVisible(true);
         setCenter(center);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
+        controller.subscribeToLedgerChanges(this::ledgerChanged);
+    }
+
+    private void ledgerChanged(LedgerChangeEvent event) {
+        Platform.runLater(() -> {
+            DetailTab state = openTabs.get(event.malId());
+            if (state != null) configureLedgerActions(state, event.entry());
+        });
     }
 
     /** Starts one asynchronous restoration pass. Calls to openAnime are queued until it completes. */

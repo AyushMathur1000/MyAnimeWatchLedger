@@ -3,6 +3,7 @@ package com.myanimewatchledger.presentation.catalogue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -30,6 +31,7 @@ public final class CatalogueView extends BorderPane {
     private final Label feedback = new Label();
     private final Map<Long, SeasonTab> openTabs = new LinkedHashMap<>();
     private boolean restoring;
+    private AutoCloseable ledgerSubscription;
 
     public CatalogueView(CatalogueController controller) {
         this(controller, null, malId -> { });
@@ -72,6 +74,10 @@ public final class CatalogueView extends BorderPane {
         });
         setCenter(tabs);
         restoreOrOpenCurrent(selectedSearchId);
+        ledgerSubscription = controller.subscribeToLedgerChanges(this::ledgerChanged);
+        sceneProperty().addListener((observable, oldScene, newScene) -> {
+            if (oldScene != null && newScene == null) closeLedgerSubscription();
+        });
     }
 
     private void restoreOrOpenCurrent(Long selectedSearchId) {
@@ -282,6 +288,19 @@ public final class CatalogueView extends BorderPane {
         card.setPrefHeight(510);
         card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, cardSpacer, actions);
         return card;
+    }
+
+    private void ledgerChanged(LedgerChangeEvent event) {
+        Platform.runLater(() -> {
+            for (SeasonTab tab : List.copyOf(openTabs.values())) loadCards(tab);
+        });
+    }
+
+    private void closeLedgerSubscription() {
+        if (ledgerSubscription == null) return;
+        try { ledgerSubscription.close(); }
+        catch (Exception ignored) { }
+        ledgerSubscription = null;
     }
 
     private void addToLedger(CatalogueAnime anime, Button action, Label ledgerLabel) {

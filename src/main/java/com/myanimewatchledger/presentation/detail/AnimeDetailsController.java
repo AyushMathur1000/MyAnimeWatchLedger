@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.detail;
 
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.application.service.AnimeDetailResult;
+import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
@@ -10,6 +11,7 @@ import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /** Asynchronous presentation boundary for the shared Anime Details workspace. */
 public final class AnimeDetailsController {
@@ -49,5 +51,9 @@ public final class AnimeDetailsController {
 
     public CompletableFuture<LedgerEntry> changeLedgerStatus(long malId, LedgerStatus status) {
         return services.changeLedgerStatusAsync(malId, status);
+    }
+
+    public AutoCloseable subscribeToLedgerChanges(Consumer<LedgerChangeEvent> listener) {
+        return services.ledger().subscribe(listener);
     }
 }
