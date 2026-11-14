@@ -30,6 +30,8 @@ public final class NavigationSidebar extends VBox {
             icon.setContent(item.iconPath());
             icon.getStyleClass().add("navigation-icon");
             icon.setMouseTransparent(true);
+            icon.setScaleX(1.2);
+            icon.setScaleY(1.2);
 
             Button button = new Button();
             button.setGraphic(icon);
