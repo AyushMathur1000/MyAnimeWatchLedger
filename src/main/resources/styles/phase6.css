@@ -68,3 +68,23 @@
 .text-field, .text-area, .text-area .content {
     -fx-cursor: text;
 }
+
+
+/* Short-lived, translucent toast feedback; floats above the workspace without reflow. */
+.app-toast {
+    -fx-background-color: rgba(32, 35, 43, 0.78);
+    -fx-background-radius: 9px;
+    -fx-border-color: rgba(220, 228, 240, 0.18);
+    -fx-border-radius: 9px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 16, 0.12, 0, 4);
+}
+.app-toast-message {
+    -fx-text-fill: #f1f2f5;
+    -fx-font-size: 12px;
+}
+.app-toast-success {
+    -fx-border-color: rgba(131, 201, 149, 0.45);
+}
+.app-toast-error {
+    -fx-border-color: rgba(239, 137, 137, 0.55);
+}
