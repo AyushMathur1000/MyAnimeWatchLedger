@@ -116,7 +116,6 @@ public final class AnimeDetailsView extends BorderPane {
 
     private DetailTab createTab(long malId, boolean select) {
         DetailTab state = new DetailTab(malId);
-        state.ledgerAction.setOnAction(event -> saveLedgerStatus(state));
         state.tab.setText("Anime #" + malId);
         state.tab.setUserData(malId);
         state.tab.setOnClosed(event -> {
