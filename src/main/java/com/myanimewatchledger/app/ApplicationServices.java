@@ -75,6 +75,14 @@ public final class ApplicationServices {
         });
     }
 
+    /** Clears disposable catalogue data without touching the permanent ledger. */
+    public CompletableFuture<Void> clearCatalogueCacheAsync() {
+        return background.submit(() -> {
+            catalogue.clearCache();
+            return null;
+        });
+    }
+
     /** Persists and activates the supplied Client ID away from the JavaFX thread. */
     public CompletableFuture<Void> saveMalClientIdAsync(String clientId) {
         return background.submit(() -> {
