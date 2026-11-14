@@ -151,7 +151,7 @@ public final class ResilientMalApiTransport implements MalApiTransport {
     private static boolean isRetryable(MalApiException failure) {
         return switch (failure.category()) {
             case NETWORK_ERROR, TIMEOUT, RATE_LIMITED, SERVICE_ERROR -> true;
-            case REJECTED_CREDENTIALS, NOT_FOUND, HTTP_ERROR, INTERRUPTED -> false;
+            case REJECTED_CREDENTIALS, ACCESS_FORBIDDEN, NOT_FOUND, HTTP_ERROR, INTERRUPTED -> false;
         };
     }
 
