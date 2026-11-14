@@ -13,6 +13,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,14 +63,17 @@ public final class DatabaseManager implements AutoCloseable {
     }
 
     private Connection leasedConnection(Connection delegate) {
+        AtomicBoolean released = new AtomicBoolean();
         return (Connection) Proxy.newProxyInstance(Connection.class.getClassLoader(),
                 new Class<?>[]{Connection.class}, (proxy, method, args) -> {
                     if (method.getName().equals("close") && method.getParameterCount() == 0) {
-                        synchronized (DatabaseManager.this) {
-                            try { delegate.close(); }
-                            finally {
-                                if (activeConnections > 0) activeConnections--;
-                                DatabaseManager.this.notifyAll();
+                        if (released.compareAndSet(false, true)) {
+                            synchronized (DatabaseManager.this) {
+                                try { delegate.close(); }
+                                finally {
+                                    activeConnections--;
+                                    DatabaseManager.this.notifyAll();
+                                }
                             }
                         }
                         return null;
@@ -105,6 +109,8 @@ public final class DatabaseManager implements AutoCloseable {
         if (staged.equals(databasePath)) throw new IllegalArgumentException("Staging database must differ from the active database.");
         if (!Files.isRegularFile(staged)) throw new IOException("Staging database does not exist.");
         close();
+        Files.deleteIfExists(databasePath.resolveSibling(databasePath.getFileName() + "-wal"));
+        Files.deleteIfExists(databasePath.resolveSibling(databasePath.getFileName() + "-shm"));
         Path rollback = databasePath.resolveSibling(databasePath.getFileName() + ".rollback-" + UUID.randomUUID());
         boolean oldMoved = false;
         try {
@@ -113,7 +119,6 @@ public final class DatabaseManager implements AutoCloseable {
             move(staged, databasePath);
             initialize();
             verifyActiveDatabase();
-            Files.deleteIfExists(rollback);
         } catch (Exception failure) {
             try {
                 if (initialized) close();
@@ -128,6 +133,11 @@ public final class DatabaseManager implements AutoCloseable {
             if (failure instanceof SQLException sql) throw sql;
             if (failure instanceof IOException io) throw io;
             throw new SQLException("Replacement failed; the previous database was restored.", failure);
+        }
+        try {
+            Files.deleteIfExists(rollback);
+        } catch (IOException cleanupFailure) {
+            LOGGER.log(Level.WARNING, "Database restored, but the rollback file could not be deleted: " + rollback, cleanupFailure);
         } finally {
             Files.deleteIfExists(staged.resolveSibling(staged.getFileName() + "-wal"));
             Files.deleteIfExists(staged.resolveSibling(staged.getFileName() + "-shm"));
