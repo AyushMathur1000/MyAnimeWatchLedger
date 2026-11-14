@@ -162,12 +162,27 @@ The traceability matrix lists each SRS requirement and its verification method. 
 
 ## 7. Initial test inventory and audit limitations
 
-The Phase 4.5 baseline inspection confirmed these test classes on `develop`:
+The complete `src/test/java` tree was enumerated on `develop`. It contains 30 test classes:
 
-- `DatabaseManagerTest`: initialization, parent directory creation, independent connections, foreign-key pragma, and busy timeout.
-- `DatabaseBackupServiceTest`: backup/restore round trip, corrupt backup rejection without active-data change, and refusal to overwrite an existing backup.
+| Area | Existing test classes |
+|---|---|
+| Application bootstrap/execution/configuration | `ApplicationInitializerTest`, `BackgroundTaskExecutorTest`, `MalApiConnectionTest`, `MalClientConfigurationStoreTest` |
+| Application services | `AnimeDetailServiceTest`, `AnimeDetailTabServiceTest`, `ApplicationServicesTest`, `CatalogueRefreshServiceTest`, `CatalogueSearchServiceTest`, `CatalogueTabServiceTest`, `LedgerServiceEventTest`, `SeasonNavigatorTest` |
+| MAL infrastructure | `MalApiAnimeDetailGatewayTest`, `MalApiCatalogueGatewayTest`, `MalApiClientTest`, `MalApiFieldsTest`, `MalResponseMapperTest`, `MalSeasonalCatalogueReaderTest`, `ResilientMalApiTransportTest` |
+| Persistence | `DatabaseBackupServiceTest`, `DatabaseManagerTest`, `DatabaseMigrationRunnerTest`, `DatabaseRestartPersistenceTest`, `JdbcRepositoryIntegrationTest` |
+| Opt-in live integration | `MalCatalogueLiveSmokeTest` |
+| Presentation/state | `MalImageLoaderTest`, `LedgerFilterTest`, `MainNavigationTest`, `WindowStateStoreTest` |
 
-The repository's complete test tree and every existing test class have not yet been independently enumerated in this audit. Therefore, this document does not claim that these are the only tests in the project or that uninspected requirements are uncovered. The traceability matrix distinguishes confirmed existing coverage from planned verification and gaps requiring source/test inventory review.
+Notable inspected coverage:
+- `CatalogueRefreshServiceTest`: successful refresh, valid empty result, gateway failure preserving previous membership/metadata/timestamp, database failure rollback, failure after ledger title synchronization rollback, no implicit ledger insertion, blacklist exclusion, and conservative metadata merge.
+- `ApplicationServicesTest`: ledger add/duplicate prevention/status/rename/search/removal; catalogue AND search and Unicode normalization; season navigation; open-tab restoration/reorder/close.
+- `JdbcRepositoryIntegrationTest`: ledger CRUD/title search, blacklist filtering plus AND token repository query, tab persistence, multi-repository transaction rollback, cache-clear ledger protection, invalid JSON rejection, and failed-fetch preservation.
+- `DatabaseMigrationRunnerTest`: initial schema, version-1 upgrade preserving ledger rows, idempotence, newer-version rejection, migration rollback, and cache/ledger separation.
+- `MalResponseMapperTest`: title preference/fallback, nullable fields, unknown fields/enums, required identity/title, searchable projection, and conservative merge.
+- `MalApiCatalogueGatewayTest`: endpoint fields, mapping, pagination completion, and invalid year rejection.
+- `DatabaseBackupServiceTest`: backup/restore round trip, corrupt backup rejection without active-data change, and destination overwrite protection.
+
+The live smoke test is explicitly opt-in with `-Dmal.live=true`; it is not part of the ordinary deterministic test requirement. The inventory identifies test classes, not a guarantee that every assertion or branch is sufficient. The matrix remains the place to record precise requirement-level evidence and remaining gaps.
 
 ## 8. Prioritization
 
