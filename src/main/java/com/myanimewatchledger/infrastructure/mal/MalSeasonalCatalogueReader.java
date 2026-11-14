@@ -48,9 +48,11 @@ public final class MalSeasonalCatalogueReader {
                     ? transport.get(initialRelativePath)
                     : transport.getNextPage(currentUri);
             MalSeasonalCataloguePage page = parsePage(body);
+            int mappedOnPage = 0;
             for (JsonNode node : page.animeNodes()) {
                 try {
                     AnimeMetadata mapped = mapper.mapAnime(node);
+                    mappedOnPage++;
                     AnimeMetadata previous = uniqueAnime.putIfAbsent(mapped.malId(), mapped);
                     if (previous != null) {
                         uniqueAnime.put(mapped.malId(), mapper.merge(previous, mapped));
@@ -60,6 +62,10 @@ public final class MalSeasonalCatalogueReader {
                     skipped++;
                     warnings.add(exception.getMessage());
                 }
+            }
+            if (!page.animeNodes().isEmpty() && mappedOnPage == 0) {
+                throw new MalResponseMappingException(
+                        "MAL seasonal page contained no usable anime records; catalogue is incomplete.");
             }
             if (page.nextPageUri() == null) break;
             validateNextPage(page.nextPageUri());
@@ -120,15 +126,19 @@ public final class MalSeasonalCatalogueReader {
                 || effectivePort(normalized) != 443
                 || normalized.getUserInfo() != null
                 || normalized.getFragment() != null
-                || !isWithinApiPath(normalized.getPath(), apiBaseUri.getPath())) {
+                || !isWithinApiPath(normalized.getRawPath(), apiBaseUri.getRawPath())) {
             throw new MalResponseMappingException("MAL pagination URL points outside the expected HTTPS API host/path.");
         }
     }
 
     private static boolean isWithinApiPath(String path, String basePath) {
         if (path == null || basePath == null || !path.startsWith(basePath)) return false;
+        String lowerPath = path.toLowerCase(java.util.Locale.ROOT);
+        // Encoded separators can change path segmentation after intermediary decoding.
+        if (lowerPath.contains("%2f") || lowerPath.contains("%5c")) return false;
         for (String segment : path.split("/")) {
-            if ("..".equals(segment)) return false;
+            String dotNormalized = segment.replaceAll("(?i)%2e", ".");
+            if (".".equals(dotNormalized) || "..".equals(dotNormalized)) return false;
         }
         return true;
     }

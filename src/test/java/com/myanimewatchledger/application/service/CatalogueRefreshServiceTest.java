@@ -6,6 +6,10 @@ import com.myanimewatchledger.application.port.MalCatalogueGateway;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.infrastructure.mal.MalApiCatalogueGateway;
+import com.myanimewatchledger.infrastructure.mal.MalApiErrorCategory;
+import com.myanimewatchledger.infrastructure.mal.MalApiException;
+import com.myanimewatchledger.infrastructure.mal.MalApiTransport;
 import com.myanimewatchledger.infrastructure.mal.MalResponseMapper;
 import com.myanimewatchledger.infrastructure.persistence.*;
 import org.junit.jupiter.api.AfterEach;
@@ -13,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Instant;
@@ -116,6 +121,49 @@ class CatalogueRefreshServiceTest {
                 .stream().map(CatalogueAnime::malId).toList());
         assertEquals(previous.metadataJson(),
                 persistence.animeMetadata().findByMalId(3001).orElseThrow().metadataJson());
+    }
+
+    @Test
+    void laterPageHttpFailureThroughRealGatewayPreservesPreviousCacheAndMembership() {
+        CatalogueSearch search = persistence.catalogue().findOrCreate(Season.SUMMER, 2023);
+        Instant previousSuccess = Instant.parse("2026-06-01T00:00:00Z");
+        AnimeMetadataCache previous = item(3051, "Previously Cached Result");
+        persistence.animeMetadata().upsert(previous);
+        persistence.catalogue().replaceMembership(search.searchId(), List.of(3051L));
+        persistence.catalogue().markFetchSucceeded(search.searchId(), previousSuccess);
+
+        MalApiTransport transport = new MalApiTransport() {
+            @Override
+            public String get(String relativePathAndQuery) {
+                return """
+                        {"data":[{"node":{"id":3052,"title":"First Page Result"}}],
+                         "paging":{"next":"https://api.myanimelist.net/v2/anime/season/2023/summer?offset=100&limit=100"}}
+                        """;
+            }
+
+            @Override
+            public String getNextPage(URI nextPageUri) {
+                throw new MalApiException(MalApiErrorCategory.SERVICE_ERROR, 503,
+                        "MAL is temporarily unable to process the request.", null);
+            }
+        };
+        MalApiCatalogueGateway gateway = new MalApiCatalogueGateway(
+                transport, URI.create("https://api.myanimelist.net/v2/"), mapper);
+
+        MalApiException failure = assertThrows(MalApiException.class,
+                () -> service(gateway).refresh(Season.SUMMER, 2023));
+
+        assertEquals(MalApiErrorCategory.SERVICE_ERROR, failure.category());
+        CatalogueSearch failedSearch = persistence.catalogue().findById(search.searchId()).orElseThrow();
+        assertEquals(FetchStatus.FAILED, failedSearch.fetchStatus());
+        assertEquals(previousSuccess, failedSearch.lastSuccessfulFetchAt());
+        assertEquals(List.of(3051L), persistence.catalogue()
+                .findEligibleAnime(search.searchId(), List.of()).stream()
+                .map(CatalogueAnime::malId).toList());
+        assertEquals(previous.metadataJson(),
+                persistence.animeMetadata().findByMalId(3051).orElseThrow().metadataJson());
+        assertTrue(persistence.animeMetadata().findByMalId(3052).isEmpty(),
+                "First-page data must not be persisted when a later page fails.");
     }
 
     @Test

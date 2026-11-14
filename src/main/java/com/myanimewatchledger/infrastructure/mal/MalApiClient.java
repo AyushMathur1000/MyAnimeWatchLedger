@@ -52,7 +52,7 @@ public final class MalApiClient implements MalApiTransport {
                 || effectivePort(normalized) != 443
                 || normalized.getUserInfo() != null
                 || normalized.getFragment() != null
-                || !isWithinApiPath(normalized.getPath(), base.getPath())) {
+                || !isWithinApiPath(normalized.getRawPath(), base.getRawPath())) {
             throw new IllegalArgumentException("MAL pagination URL must use the expected HTTPS API host and path.");
         }
         return send(normalized);
@@ -104,7 +104,7 @@ public final class MalApiClient implements MalApiTransport {
         if (!Objects.equals(base.getScheme(), resolved.getScheme())
                 || !Objects.equals(base.getHost(), resolved.getHost())
                 || effectivePort(base) != effectivePort(resolved)
-                || !isWithinApiPath(resolved.getPath(), base.getPath())) {
+                || !isWithinApiPath(resolved.getRawPath(), base.getRawPath())) {
             throw new IllegalArgumentException("MAL API endpoint resolves outside the configured API base path.");
         }
         return resolved;
@@ -112,8 +112,12 @@ public final class MalApiClient implements MalApiTransport {
 
     private static boolean isWithinApiPath(String path, String basePath) {
         if (path == null || basePath == null || !path.startsWith(basePath)) return false;
+        String lowerPath = path.toLowerCase(java.util.Locale.ROOT);
+        // Encoded separators can change path segmentation after intermediary decoding.
+        if (lowerPath.contains("%2f") || lowerPath.contains("%5c")) return false;
         for (String segment : path.split("/")) {
-            if ("..".equals(segment)) return false;
+            String dotNormalized = segment.replaceAll("(?i)%2e", ".");
+            if (".".equals(dotNormalized) || "..".equals(dotNormalized)) return false;
         }
         return true;
     }

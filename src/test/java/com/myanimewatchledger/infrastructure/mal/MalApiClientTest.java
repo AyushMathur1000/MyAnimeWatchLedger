@@ -136,6 +136,10 @@ class MalApiClientTest {
                 () -> client.getNextPage(URI.create("https://example.com/v2/page")));
         assertThrows(IllegalArgumentException.class,
                 () -> client.getNextPage(URI.create("https://127.0.0.1/v2/../outside")));
+        assertThrows(IllegalArgumentException.class,
+                () -> client.getNextPage(URI.create("https://127.0.0.1/v2/%2e%2e/outside")));
+        assertThrows(IllegalArgumentException.class,
+                () -> client.getNextPage(URI.create("https://127.0.0.1/v2/anime%2f..%2foutside")));
     }
 
     @Test
