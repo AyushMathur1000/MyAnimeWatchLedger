@@ -24,6 +24,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -77,6 +79,12 @@ public final class MainWindow {
                 SoundFeedback.playClick();
             }
         });
+        scene.addEventFilter(MouseEvent.MOUSE_CLICKED, event -> {
+            if (event.getButton() != MouseButton.PRIMARY || event.getTarget() instanceof ButtonBase) return;
+            if (isTabHeaderClick(event.getTarget()) || isCoverPhotoClick(event.getTarget())) {
+                SoundFeedback.playClick();
+            }
+        });
         var stylesheet = getClass().getResource("/styles/application.css");
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
         var phase6Stylesheet = getClass().getResource("/styles/phase6.css");
@@ -106,6 +114,27 @@ public final class MainWindow {
         stage.setOnHiding(event -> saveWindowState(stage));
         stage.show();
         stage.setMaximized(saved.maximized());
+    }
+
+    private static boolean isTabHeaderClick(Object target) {
+        if (!(target instanceof Node node)) return false;
+        boolean insideTab = false;
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current.getStyleClass().contains("tab")) insideTab = true;
+            if (current.getStyleClass().contains("tab-header-area")) return insideTab;
+        }
+        return false;
+    }
+
+    private static boolean isCoverPhotoClick(Object target) {
+        if (!(target instanceof Node node)) return false;
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current.getStyleClass().contains("anime-poster-frame")
+                    || current.getStyleClass().contains("anime-details-poster")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private HBox createHeader() {
