@@ -7,6 +7,7 @@ import com.myanimewatchledger.presentation.catalogue.CatalogueController;
 import com.myanimewatchledger.presentation.catalogue.CatalogueView;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsController;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsView;
+import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.presentation.history.SearchHistoryController;
 import com.myanimewatchledger.presentation.history.SearchHistoryView;
 import com.myanimewatchledger.presentation.ledger.LedgerController;
@@ -17,10 +18,12 @@ import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
 import javafx.animation.FadeTransition;
+import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.Node;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -68,6 +71,11 @@ public final class MainWindow {
         root.setTop(createHeader());
         root.setBottom(statusBar);
         Scene scene = new Scene(root);
+        scene.addEventFilter(ActionEvent.ACTION, event -> {
+            if (event.getTarget() instanceof ButtonBase) {
+                SoundFeedback.playClick();
+            }
+        });
         var stylesheet = getClass().getResource("/styles/application.css");
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
         var phase6Stylesheet = getClass().getResource("/styles/phase6.css");
