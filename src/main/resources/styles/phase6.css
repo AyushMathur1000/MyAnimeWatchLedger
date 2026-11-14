@@ -1,15 +1,16 @@
 /* Phase 6: restrained, consistent interaction styling. */
 .navigation-sidebar {
-    -fx-pref-width: 64px;
-    -fx-min-width: 64px;
-    -fx-max-width: 64px;
+    -fx-pref-width: 164px;
+    -fx-min-width: 164px;
+    -fx-max-width: 164px;
     -fx-alignment: TOP_CENTER;
 }
 .navigation-button {
-    -fx-alignment: CENTER;
-    -fx-padding: 8px;
-    -fx-font-size: 20px;
-    -fx-background-radius: 9px;
+    -fx-alignment: CENTER_LEFT;
+    -fx-padding: 10px 14px;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-background-radius: 7px;
     -fx-cursor: hand;
 }
 .navigation-button:hover {
