@@ -139,7 +139,11 @@ required.
 
 **FR-LED-005 --- Add entry**\
 The user shall be able to add an anime to the ledger and select one of
-the six statuses.
+the six statuses. When an anime is added from Catalogue without an
+explicitly selected status, its initial status shall be Watch Later.
+The user shall remain able to select any of the six statuses. This
+default applies only to new entries and shall not reclassify existing
+ledger records.
 
 **FR-LED-006 --- Change status**\
 The user shall be able to change an existing entry's status at any time.
