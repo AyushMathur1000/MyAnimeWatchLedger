@@ -49,4 +49,4 @@ The SQLite database is `my_anime_watch_ledger.db`. If `LOCALAPPDATA` is unavaila
 
 ## Project status
 
-The current working branch is `feature/phase-6-qol`. Phase 6 QoL implementation is under final verification; see the project reference for the remaining test and manual smoke-test gates.
+The current working branch is `feature/phase-6-qol`. Phase 6 QoL is complete and formally closed. See the project reference for the implemented scope and verification record.
