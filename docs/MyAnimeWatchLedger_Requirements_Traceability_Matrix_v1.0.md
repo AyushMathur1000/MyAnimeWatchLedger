@@ -5,7 +5,7 @@
 **Status:** Initial audit baseline — coverage confirmation in progress  
 **Last updated:** 2026-11-14  
 **Project:** MyAnimeWatchLedger  
-**Authoritative source:** SRS v1.1 (MALW-SRS-001)
+**Authoritative source:** SRS v1.2 (MALW-SRS-001), incorporating approved CHANGE-001
 
 ---
 
@@ -57,9 +57,9 @@ The test inventory is now enumerated. Requirement-level sufficiency still needs 
 |---|---|---|---|
 | FR-LED-001 | Persistent ledger | Integration: create/update, close/reopen database/application, verify record survives; cache clear must not remove it | Audit needed |
 | FR-LED-002 | MAL ID identity | Persistence: duplicate MAL ID insert/upsert and unique constraint behaviour | Audit needed |
-| FR-LED-003 | Five statuses | Domain + persistence: all five accepted; invalid status rejected; one current status only | Audit needed |
+| FR-LED-003 | Six statuses | Domain + persistence: all six accepted; invalid status rejected; Hold and Watch Later remain distinct; one current status only | Existing — partial (EV-APP-01, EV-DB-03); explicit six-value enum/constraint assertion planned |
 | FR-LED-004 | Current state only | Persistence: status update overwrites current value; no history requirement | Audit needed |
-| FR-LED-005 | Add entry | Service + UI: add with each valid status and verify persisted row | Audit needed / Manual |
+| FR-LED-005 | Add entry | Service + UI: add with each of six valid statuses; Catalogue add without explicit status defaults to Watch Later | Existing — partial (EV-APP-01); default and all-six persistence assertions planned / Manual |
 | FR-LED-006 | Change status | Service + UI: update each status; visible occurrences refresh without restart | Audit needed / Manual |
 | FR-LED-007 | Explicit removal | Service + UI: confirm deletes; cancel preserves; verify no history requirement | Audit needed / Manual |
 | FR-LED-008 | Ledger independence | Integration: catalogue fetch/refresh/cache clear leave ledger membership/status unchanged | Planned |
@@ -69,6 +69,7 @@ The test inventory is now enumerated. Requirement-level sufficiency still needs 
 | FR-LED-012 | Ledger status filtering | Repository/UI: each status filter; search and status filter combine | Audit needed / Manual |
 | FR-LED-013 | Ledger sorting | Repository/UI: title, date added, last modified ordering, including ties | Audit needed / Manual |
 | FR-LED-014 | No episode tracking | Schema/model review: no required episode count/progress state or UI workflow | Audit needed |
+| FR-LED-015 | Watch Later default | Service + persistence: implicit Catalogue add defaults to WATCH_LATER; explicit choice can select any of six; existing rows are not reclassified | Planned |
 
 ### 3.2 Seasonal catalogue and MAL metadata
 
@@ -181,7 +182,7 @@ The test inventory is now enumerated. Requirement-level sufficiency still needs 
 | AC | Acceptance criterion summary | Verification references | Initial status |
 |---|---|---|---|
 | AC-01 | Add, view, change status, explicitly remove ledger entries | FR-LED-005–007; UI-LED-004/005 | Audit needed / Manual |
-| AC-02 | Five mutually exclusive statuses | FR-LED-003/004 | Audit needed |
+| AC-02 | Six mutually exclusive statuses, with Hold distinct from Watch Later | FR-LED-003/004 | Planned — explicit enum/constraint coverage needed |
 | AC-03 | One record per MAL ID | FR-LED-002 | Audit needed |
 | AC-04 | Ledger survives restart | FR-LED-001 | Audit needed |
 | AC-05 | Ledger search, filtering, sorting | FR-LED-011–013 | Audit needed |
@@ -215,7 +216,7 @@ These are verification gaps or specification discrepancies, not all confirmed ru
 | Gap ID | Priority | Verification gap / discrepancy | Suggested test / evidence |
 |---|---|---|---|
 | GAP-01 | P0 | Restore replacement failure/rollback, newer backup schema, missing required schema, and foreign-key-invalid backup are not covered by the inspected backup tests | Add restore rejection and injected replacement-failure tests; assert active DB remains/reopens intact |
-| GAP-02 | P0 | SRS specifies exactly five statuses (Watched, Watching, Abandoned, Blacklisted, Hold), but `LedgerStatus` contains an additional `WATCH_LATER` value and service tests use it as the default | Resolve through change control: either approve an SRS update or align implementation/tests to the approved five-status baseline; do not silently accept both |
+| GAP-02 | P0 | Six-status change is approved by CHANGE-001 and incorporated in SRS v1.2; verify every persistence/UI path consistently supports both Hold and Watch Later | Add explicit enum/SQLite CHECK constraint, migration, selector/filter, and add-default tests; verify existing records retain their statuses |
 | GAP-03 | P1 | Search unit tests verify tokenization/delegation and repository tests verify AND filtering, but direct partial/case-insensitive/cross-field AND behaviour deserves explicit boundary tests | Add repository fixtures where tokens occur in different fields, only one token matches, case differs, and substring boundaries matter |
 | GAP-04 | P1 | Blacklist exclusion is tested in repository and refresh paths, but immediate propagation across every already-open UI tab and history presentation is not proven | Add application event/query tests and manual multi-tab blacklist/unblacklist scenario |
 | GAP-05 | P1 | Title synchronization is tested for successful refresh and rollback, but full assertions across last_modified, status, date_added, and all membership paths should be consolidated | Add focused invariant test with explicit timestamps and multiple cached seasons |
@@ -242,3 +243,4 @@ Do not close a gap by adding a test that merely exercises a method. The test mus
 | Version | Date | Description |
 |---|---|---|
 | 1.0 | 2026-11-14 | Initial mapping of SRS v1.1 functional/UI requirements and all 27 acceptance criteria to verification methods and initial evidence/gaps. |
+| 1.1 | 2026-11-14 | Incorporated approved CHANGE-001 and SRS v1.2: six ledger statuses, distinct Hold/Watch Later meanings, and Watch Later Catalogue-add default. |
