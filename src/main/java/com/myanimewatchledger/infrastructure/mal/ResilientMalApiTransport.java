@@ -93,14 +93,17 @@ public final class ResilientMalApiTransport implements MalApiTransport {
                         "The MAL API request was interrupted while waiting for request capacity.", interrupted);
             }
 
+            Duration delay = null;
             try {
                 return request.execute();
             } catch (MalApiException failure) {
                 if (attempt >= maxAttempts || !isRetryable(failure)) throw failure;
-                pause(retryDelay(attempt, failure));
+                delay = retryDelay(attempt, failure);
             } finally {
                 requestPermit.release();
             }
+            // Do not occupy the global request slot while waiting for a retry.
+            pause(delay);
         }
     }
 
@@ -117,9 +120,7 @@ public final class ResilientMalApiTransport implements MalApiTransport {
         if (exponential.compareTo(maxBackoff) > 0) exponential = maxBackoff;
 
         double factor = jitterMultiplier.getAsDouble();
-        if (!Double.isFinite(factor) || factor < 0.5 || factor > 1.5) {
-            factor = 1.0;
-        }
+        if (!Double.isFinite(factor) || factor < 0.5 || factor > 1.5) factor = 1.0;
         long nanos;
         try {
             nanos = Math.max(0L, Math.round(exponential.toNanos() * factor));
