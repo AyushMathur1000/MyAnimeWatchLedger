@@ -1,12 +1,16 @@
 package com.myanimewatchledger.presentation.feedback;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
 import javafx.animation.PauseTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Popup;
 import javafx.stage.Window;
 import javafx.util.Duration;
@@ -14,7 +18,7 @@ import javafx.util.Duration;
 import java.util.Map;
 import java.util.WeakHashMap;
 
-/** Displays brief, non-blocking feedback without taking space in the workspace layout. */
+/** Displays compact, styled, non-blocking notification cards above the workspace. */
 public final class ToastNotifications {
     private static final Map<Window, Popup> ACTIVE = new WeakHashMap<>();
 
@@ -34,16 +38,31 @@ public final class ToastNotifications {
         Popup previous = ACTIVE.remove(owner);
         if (previous != null) previous.hide();
 
-        Label text = new Label(message);
-        text.getStyleClass().add("app-toast-message");
-        text.setWrapText(true);
-        text.setMaxWidth(420);
+        Label icon = new Label(error ? "!" : "✓");
+        icon.getStyleClass().addAll("app-toast-icon", error ? "app-toast-icon-error" : "app-toast-icon-success");
+        StackPane iconHolder = new StackPane(icon);
+        iconHolder.getStyleClass().add("app-toast-icon-holder");
+        iconHolder.setMinSize(34, 34);
+        iconHolder.setPrefSize(34, 34);
+        iconHolder.setMaxSize(34, 34);
 
-        StackPane toast = new StackPane(text);
+        Label title = new Label(error ? "Something went wrong" : "Done");
+        title.getStyleClass().add("app-toast-title");
+        Label body = new Label(message);
+        body.getStyleClass().add("app-toast-message");
+        body.setWrapText(true);
+        body.setMaxWidth(360);
+
+        VBox text = new VBox(3, title, body);
+        text.getStyleClass().add("app-toast-copy");
+        HBox toast = new HBox(12, iconHolder, text);
         toast.getStyleClass().addAll("app-toast", error ? "app-toast-error" : "app-toast-success");
-        toast.setPadding(new Insets(10, 16, 10, 16));
-        toast.setMaxWidth(460);
+        toast.setPadding(new Insets(13, 17, 13, 14));
+        toast.setMaxWidth(440);
+        toast.setMinWidth(300);
         toast.setMouseTransparent(true);
+        toast.setOpacity(0);
+        toast.setTranslateY(8);
 
         Popup popup = new Popup();
         popup.setAutoFix(true);
@@ -59,16 +78,23 @@ public final class ToastNotifications {
         Platform.runLater(() -> {
             if (!popup.isShowing()) return;
             popup.setX(owner.getX() + owner.getWidth() - popup.getWidth() - 24);
-            popup.setY(owner.getY() + owner.getHeight() - popup.getHeight() - 54);
+            popup.setY(owner.getY() + owner.getHeight() - popup.getHeight() - 28);
+            FadeTransition fadeIn = new FadeTransition(Duration.millis(180), toast);
+            fadeIn.setFromValue(0);
+            fadeIn.setToValue(1);
+            TranslateTransition slideIn = new TranslateTransition(Duration.millis(180), toast);
+            slideIn.setFromY(8);
+            slideIn.setToY(0);
+            new ParallelTransition(fadeIn, slideIn).play();
         });
 
-        PauseTransition visibleTime = new PauseTransition(Duration.millis(2300));
+        PauseTransition visibleTime = new PauseTransition(Duration.millis(error ? 3600 : 2600));
         visibleTime.setOnFinished(event -> {
-            FadeTransition fade = new FadeTransition(Duration.millis(300), toast);
-            fade.setFromValue(1);
-            fade.setToValue(0);
-            fade.setOnFinished(done -> popup.hide());
-            fade.play();
+            FadeTransition fadeOut = new FadeTransition(Duration.millis(260), toast);
+            fadeOut.setFromValue(1);
+            fadeOut.setToValue(0);
+            fadeOut.setOnFinished(done -> popup.hide());
+            fadeOut.play();
         });
         visibleTime.play();
     }
