@@ -74,6 +74,21 @@ class ResilientMalApiTransportTest {
     }
 
     @Test
+    void doesNotRetryMalformedResponseFailures() {
+        AtomicInteger calls = new AtomicInteger();
+        MalApiTransport delegate = transport(path -> {
+            calls.incrementAndGet();
+            throw new MalResponseMappingException("Malformed JSON response.");
+        });
+        ResilientMalApiTransport resilient = new ResilientMalApiTransport(
+                delegate, 3, Duration.ofMillis(1), Duration.ofMillis(5),
+                millis -> fail("Malformed responses must not be retried."), () -> 1.0);
+
+        assertThrows(MalResponseMappingException.class, () -> resilient.get("anime/1"));
+        assertEquals(1, calls.get());
+    }
+
+    @Test
     void coalescesIdenticalConcurrentRequests() throws Exception {
         AtomicInteger calls = new AtomicInteger();
         CountDownLatch requestStarted = new CountDownLatch(1);
