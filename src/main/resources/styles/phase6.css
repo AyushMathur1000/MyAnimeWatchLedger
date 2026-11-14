@@ -79,21 +79,42 @@
 }
 
 
-/* Short-lived, translucent toast feedback; floats above the workspace without reflow. */
+/* Toast notification cards: opaque enough to read, compact, and visually distinct. */
 .app-toast {
-    -fx-background-color: rgba(32, 35, 43, 0.78);
-    -fx-background-radius: 9px;
-    -fx-border-color: rgba(220, 228, 240, 0.18);
-    -fx-border-radius: 9px;
-    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.28), 16, 0.12, 0, 4);
+    -fx-background-color: #252b36;
+    -fx-background-radius: 11px;
+    -fx-border-color: #414b5b;
+    -fx-border-width: 1px;
+    -fx-border-radius: 11px;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.52), 24, 0.18, 0, 7);
+}
+.app-toast-success { -fx-border-color: #527e68; }
+.app-toast-error { -fx-border-color: #8c5058; }
+.app-toast-icon-holder {
+    -fx-background-color: #294a3b;
+    -fx-background-radius: 17px;
+    -fx-alignment: CENTER;
+}
+.app-toast-icon-error { -fx-background-color: #58323a; }
+.app-toast-icon {
+    -fx-text-fill: #a9e0bd;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+}
+.app-toast-icon-error { -fx-text-fill: #ffb0b0; }
+.app-toast-title {
+    -fx-text-fill: #f4f6fa;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
 }
 .app-toast-message {
-    -fx-text-fill: #f1f2f5;
-    -fx-font-size: 12px;
+    -fx-text-fill: #c4ccd8;
+    -fx-font-size: 11px;
 }
-.app-toast-success {
-    -fx-border-color: rgba(131, 201, 149, 0.45);
-}
-.app-toast-error {
-    -fx-border-color: rgba(239, 137, 137, 0.55);
-}
+
+/* Tighter Catalogue workspace rhythm; card dimensions remain unchanged. */
+.catalogue-season-bar { -fx-spacing: 7px; -fx-padding: 0 0 2px 0; }
+.catalogue-workspace .tab-pane .tab-header-area { -fx-padding: 0 0 0 0; }
+.catalogue-workspace .tab-pane .tab-header-area .headers-region { -fx-padding: 0 0 0 0; }
+.catalogue-workspace .tab-pane .tab-header-area .tab { -fx-padding: 5px 9px; }
+.catalogue-workspace .tab-pane .tab-content-area { -fx-padding: 0; }
