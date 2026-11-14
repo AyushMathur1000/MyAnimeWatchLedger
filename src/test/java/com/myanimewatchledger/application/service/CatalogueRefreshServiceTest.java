@@ -68,6 +68,8 @@ class CatalogueRefreshServiceTest {
         assertEquals("New Preferred Title", synchronizedEntry.title());
         assertEquals(LedgerStatus.WATCHING, synchronizedEntry.status());
         assertEquals(addedAt, synchronizedEntry.dateAdded());
+        assertTrue(synchronizedEntry.lastModified().isAfter(addedAt),
+                "A preferred-title change must advance last_modified.");
         assertTrue(persistence.ledger().findByMalId(1002).isEmpty(),
                 "A catalogue refresh must never create a ledger entry.");
     }
