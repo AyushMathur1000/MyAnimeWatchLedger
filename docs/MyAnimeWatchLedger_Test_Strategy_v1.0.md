@@ -5,7 +5,7 @@
 **Status:** Initial verification baseline  
 **Last updated:** 2026-11-14  
 **Project:** MyAnimeWatchLedger  
-**Authority:** SRS v1.1 (MALW-SRS-001)  
+**Authority:** SRS v1.2 (MALW-SRS-001)  
 **Related documents:** UI/UX Specification v1.0; Database Design Specification v1.0; Software Architecture Document v1.0; API Integration Specification v1.0; Build and Development Setup v1.0
 
 ---
@@ -14,9 +14,9 @@
 
 This document defines how MyAnimeWatchLedger is verified against its approved requirements. It establishes test levels, test design principles, fixtures, execution expectations, and merge quality gates.
 
-The SRS v1.1 is the authoritative source for product behaviour. Tests shall retain and reference its stable requirement identifiers. This strategy does not silently change product requirements or treat implementation behaviour as the specification.
+The SRS v1.2 is the authoritative source for product behaviour. Tests shall retain and reference its stable requirement identifiers. This strategy does not silently change product requirements or treat implementation behaviour as the specification.
 
-The initial release acceptance criteria are the 27 items in SRS Section 11. The Requirements Traceability Matrix is maintained separately in `MyAnimeWatchLedger_Requirements_Traceability_Matrix_v1.0.md`.
+The initial release acceptance criteria are the 27 items in SRS Section 11. Approved CHANGE-001 adds Watch Later as the sixth status and defines it as distinct from Hold; tests must verify the distinction and the Catalogue-add default. The Requirements Traceability Matrix is maintained separately in `MyAnimeWatchLedger_Requirements_Traceability_Matrix_v1.0.md`.
 
 ## 2. Verification objectives
 
@@ -266,3 +266,4 @@ The SRS remains authoritative. Database Design governs physical persistence deta
 | Version | Date | Description |
 |---|---|---|
 | 1.0 | 2026-11-14 | Initial test strategy and merge quality gates based on SRS v1.1 and supporting project design specifications. |
+| 1.1 | 2026-11-14 | Updated governing requirements reference to SRS v1.2 and added verification expectations for approved CHANGE-001 (six statuses and Watch Later default). |
