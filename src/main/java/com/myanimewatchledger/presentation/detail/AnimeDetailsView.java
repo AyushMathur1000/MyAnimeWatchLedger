@@ -9,6 +9,7 @@ import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
+import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
@@ -316,28 +317,7 @@ public final class AnimeDetailsView extends BorderPane {
     }
 
     private static void showPosterPreview(String preferredUrl, String fallbackUrl, String title, Window owner) {
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        ImageView preview = new ImageView();
-        preview.setPreserveRatio(true);
-        preview.setFitWidth(bounds.getWidth() * 0.78);
-        preview.setFitHeight(bounds.getHeight() * 0.78);
-        preview.setSmooth(true);
-        Label placeholder = new Label("No poster available");
-        placeholder.getStyleClass().add("anime-details-no-poster");
-        StackPane frame = new StackPane(preview, placeholder);
-        frame.setPadding(new Insets(12));
-        frame.setStyle("-fx-background-color: #17191f;");
-        MalImageLoader.load(preview, placeholder, preferredUrl, fallbackUrl,
-                bounds.getWidth() * 0.78, bounds.getHeight() * 0.78);
-        Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        if (owner != null) dialog.initOwner(owner);
-        dialog.getDialogPane().getStyleClass().add("app-dialog");
-        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
-        dialog.getDialogPane().setContent(frame);
-        dialog.getDialogPane().setPrefSize(bounds.getWidth() * 0.82, bounds.getHeight() * 0.86);
-        dialog.setResizable(true);
-        dialog.showAndWait();
+        PosterPreviewDialog.show(preferredUrl, fallbackUrl, title, owner);
     }
 
     private static int addFact(GridPane grid, int row, String label, String value) {
