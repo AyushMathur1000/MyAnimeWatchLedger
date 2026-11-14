@@ -50,14 +50,14 @@
     -fx-background-color: #59343b;
 }
 .ledger-current-season-action {
-    -fx-min-width: 36px;
-    -fx-pref-width: 36px;
-    -fx-max-width: 36px;
+    -fx-min-width: 72px;
+    -fx-pref-width: 72px;
+    -fx-max-width: 72px;
     -fx-min-height: 32px;
     -fx-pref-height: 32px;
     -fx-max-height: 32px;
-    -fx-padding: 0;
-    -fx-font-size: 17px;
+    -fx-padding: 0 10px;
+    -fx-font-size: 11px;
     -fx-cursor: hand;
 }
 .button, .toggle-button {
