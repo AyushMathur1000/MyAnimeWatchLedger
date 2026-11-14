@@ -134,9 +134,9 @@ public final class SettingsView extends VBox {
                 : "No Client ID configured.");
     }
 
-    private static void setBusy(Button save, Button test, boolean busy) {
+    private void setBusy(Button save, Button test, boolean busy) {
         save.setDisable(busy);
-        test.setDisable(busy);
+        test.setDisable(busy || !services.isMalConfigured());
     }
 
     private static String safeMessage(Throwable failure) {
