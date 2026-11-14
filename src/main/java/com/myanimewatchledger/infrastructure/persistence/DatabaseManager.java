@@ -113,16 +113,18 @@ public final class DatabaseManager implements AutoCloseable {
         Files.deleteIfExists(databasePath.resolveSibling(databasePath.getFileName() + "-shm"));
         Path rollback = databasePath.resolveSibling(databasePath.getFileName() + ".rollback-" + UUID.randomUUID());
         boolean oldMoved = false;
+        boolean replacementMoved = false;
         try {
             move(databasePath, rollback);
             oldMoved = true;
             move(staged, databasePath);
+            replacementMoved = true;
             initialize();
             verifyActiveDatabase();
         } catch (Exception failure) {
             try {
                 if (initialized) close();
-                Files.deleteIfExists(databasePath);
+                if (replacementMoved) Files.deleteIfExists(databasePath);
                 if (oldMoved && Files.exists(rollback)) move(rollback, databasePath);
                 initialize();
                 verifyActiveDatabase();
