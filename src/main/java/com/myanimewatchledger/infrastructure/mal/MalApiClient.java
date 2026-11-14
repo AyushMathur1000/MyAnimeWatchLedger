@@ -71,7 +71,7 @@ public final class MalApiClient implements MalApiTransport {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             int status = response.statusCode();
             if (status >= 200 && status < 300) return response.body();
-            throw httpFailure(status, response.headers().firstValue("Retry-After").orElse(null));
+            throw httpFailure(status, response.headers().firstValue("Retry-After").orElse(null), response.body());
         } catch (HttpTimeoutException exception) {
             throw new MalApiException(MalApiErrorCategory.TIMEOUT, null,
                     "The MAL API request timed out.", exception);
@@ -123,26 +123,26 @@ public final class MalApiClient implements MalApiTransport {
         return "https".equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
     }
 
-    private static MalApiException httpFailure(int status, String retryAfterHeader) {
+    private static MalApiException httpFailure(int status, String retryAfterHeader, String responseBody) {
         Duration retryAfter = parseRetryAfter(retryAfterHeader);
         if (status == 401 || status == 403) {
             return new MalApiException(MalApiErrorCategory.REJECTED_CREDENTIALS, status,
-                    "MAL rejected the configured Client ID or access to this resource.", null);
+                    "MAL rejected the request. Check the API configuration or try again later.", null, null, responseBody);
         }
         if (status == 404) {
             return new MalApiException(MalApiErrorCategory.NOT_FOUND, status,
-                    "MAL could not find the requested resource.", null);
+                    "This MAL anime ID could not be found.", null, null, responseBody);
         }
         if (status == 429) {
             return new MalApiException(MalApiErrorCategory.RATE_LIMITED, status,
-                    "MAL rate-limited the request. Try again later.", null, retryAfter);
+                    "MAL rate-limited the request. Try again later.", null, retryAfter, responseBody);
         }
         if (status >= 500) {
             return new MalApiException(MalApiErrorCategory.SERVICE_ERROR, status,
-                    "MAL is temporarily unable to process the request.", null, retryAfter);
+                    "MAL is temporarily unable to process the request.", null, retryAfter, responseBody);
         }
         return new MalApiException(MalApiErrorCategory.HTTP_ERROR, status,
-                "MAL returned an unsuccessful HTTP response.", null);
+                "MAL returned an unsuccessful HTTP response.", null, null, responseBody);
     }
 
     private static Duration parseRetryAfter(String value) {
