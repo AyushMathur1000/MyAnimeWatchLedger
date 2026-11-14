@@ -8,13 +8,13 @@ import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.presentation.image.MalImageLoader;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.stage.Screen;
@@ -185,26 +185,21 @@ public final class AnimeDetailsView extends BorderPane {
         poster.setFitWidth(210);
         poster.setFitHeight(300);
         poster.setPreserveRatio(true);
-        String picture = firstNonBlank(metadata.pictureLarge(), metadata.pictureMedium());
+        String picture = MalImageLoader.selectUrl(metadata.pictureLarge(), metadata.pictureMedium());
         Label noPoster = new Label("No poster available");
         noPoster.getStyleClass().add("anime-details-no-poster");
         StackPane posterFrame = new StackPane(poster, noPoster);
         posterFrame.getStyleClass().add("anime-details-poster");
         posterFrame.setMinSize(220, 310);
         posterFrame.setPrefSize(220, 310);
+        MalImageLoader.load(poster, noPoster, metadata.pictureLarge(), metadata.pictureMedium(), 210, 300);
         if (picture != null) {
-            try {
-                Image image = new Image(picture, 210, 300, true, true, true);
-                poster.setImage(image);
-                noPoster.visibleProperty().bind(image.errorProperty());
-                posterFrame.setCursor(javafx.scene.Cursor.HAND);
-                posterFrame.setOnMouseClicked(event -> showPosterPreview(
-                        picture, cache.preferredTitle(), posterFrame.getScene().getWindow()));
-                posterFrame.setFocusTraversable(true);
-                posterFrame.setAccessibleText("Enlarge cover image");
-            } catch (IllegalArgumentException ignored) {
-                noPoster.setVisible(true);
-            }
+            posterFrame.setCursor(javafx.scene.Cursor.HAND);
+            posterFrame.setOnMouseClicked(event -> showPosterPreview(
+                    metadata.pictureLarge(), metadata.pictureMedium(), cache.preferredTitle(),
+                    posterFrame.getScene().getWindow()));
+            posterFrame.setFocusTraversable(true);
+            posterFrame.setAccessibleText("Enlarge cover image");
         }
 
         VBox heading = new VBox(7);
@@ -320,17 +315,20 @@ public final class AnimeDetailsView extends BorderPane {
                 }));
     }
 
-    private static void showPosterPreview(String imageUrl, String title, Window owner) {
+    private static void showPosterPreview(String preferredUrl, String fallbackUrl, String title, Window owner) {
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        Image image = new Image(imageUrl, true);
-        ImageView preview = new ImageView(image);
+        ImageView preview = new ImageView();
         preview.setPreserveRatio(true);
         preview.setFitWidth(bounds.getWidth() * 0.78);
         preview.setFitHeight(bounds.getHeight() * 0.78);
         preview.setSmooth(true);
-        StackPane frame = new StackPane(preview);
+        Label placeholder = new Label("No poster available");
+        placeholder.getStyleClass().add("anime-details-no-poster");
+        StackPane frame = new StackPane(preview, placeholder);
         frame.setPadding(new Insets(12));
         frame.setStyle("-fx-background-color: #17191f;");
+        MalImageLoader.load(preview, placeholder, preferredUrl, fallbackUrl,
+                bounds.getWidth() * 0.78, bounds.getHeight() * 0.78);
         Dialog<Void> dialog = new Dialog<>();
         dialog.setTitle(title);
         if (owner != null) dialog.initOwner(owner);
