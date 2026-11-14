@@ -133,7 +133,8 @@ public final class MainWindow {
             case SEARCH_HISTORY -> root.setCenter(
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
             case SETTINGS -> root.setCenter(new SettingsView(
-                    windowStateStore, enabled -> openAnimeDetailsInBackground = enabled, services));
+                    windowStateStore, enabled -> openAnimeDetailsInBackground = enabled,
+                    services, statusBar::setMalConfigured));
         }
     }
 
