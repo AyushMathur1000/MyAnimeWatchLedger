@@ -116,6 +116,10 @@ public final class AnimeDetailsView extends BorderPane {
 
     private DetailTab createTab(long malId, boolean select) {
         DetailTab state = new DetailTab(malId);
+        // Register callbacks here: DetailTab is static and cannot call outer-view methods.
+        state.ledgerAction.setOnAction(event -> addLedgerEntry(state));
+        state.ledgerStatusChoice.setOnAction(event ->
+                changeLedgerEntryStatus(state, state.ledgerStatusChoice.getValue()));
         state.tab.setText("Anime #" + malId);
         state.tab.setUserData(malId);
         state.tab.setOnClosed(event -> {
@@ -458,10 +462,7 @@ public final class AnimeDetailsView extends BorderPane {
                 @Override public LedgerStatus fromString(String value) { return null; }
             });
             ledgerAction.setDisable(true);
-            ledgerAction.setOnAction(event -> addLedgerEntry(this));
             ledgerStatusChoice.setDisable(true);
-            ledgerStatusChoice.setOnAction(event ->
-                    changeLedgerEntryStatus(this, ledgerStatusChoice.getValue()));
             ledgerStatus.getStyleClass().add("anime-details-ledger-status");
             body.setPadding(new Insets(12));
             content.setPadding(new Insets(10, 2, 2, 2));
