@@ -66,6 +66,7 @@ public final class MainWindow {
     }
 
     public void show(Stage stage) {
+        SoundFeedback.setEnabled(windowStateStore.loadUiSoundsEnabled());
         root.getStyleClass().add("app-root");
         root.setLeft(sidebar);
         root.setTop(createHeader());
@@ -161,7 +162,7 @@ public final class MainWindow {
                     services, statusBar::setMalConfigured, this::refreshAfterDatabaseRestore));
         }
         Node workspace = root.getCenter();
-        if (workspace != null) {
+        if (workspace != null && windowStateStore.loadUiAnimationsEnabled()) {
             workspace.setOpacity(0);
             FadeTransition fade = new FadeTransition(Duration.millis(150), workspace);
             fade.setFromValue(0);
