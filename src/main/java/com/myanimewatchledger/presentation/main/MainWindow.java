@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.main;
 
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.config.ApplicationPaths;
+import com.myanimewatchledger.application.service.SeasonNavigator;
 import com.myanimewatchledger.presentation.catalogue.CatalogueController;
 import com.myanimewatchledger.presentation.catalogue.CatalogueView;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsController;
@@ -15,13 +16,18 @@ import com.myanimewatchledger.presentation.settings.SettingsView;
 import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
+import javafx.animation.FadeTransition;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
+
+import java.time.Clock;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -64,6 +70,8 @@ public final class MainWindow {
         Scene scene = new Scene(root);
         var stylesheet = getClass().getResource("/styles/application.css");
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
+        var phase6Stylesheet = getClass().getResource("/styles/phase6.css");
+        if (phase6Stylesheet != null) scene.getStylesheets().add(phase6Stylesheet.toExternalForm());
 
         WindowState saved = windowStateStore.load();
         openAnimeDetailsInBackground = windowStateStore.loadOpenAnimeDetailsInBackground();
@@ -114,6 +122,13 @@ public final class MainWindow {
         navigate(MainNavigation.CATALOGUE);
     }
 
+    private void openCurrentSeason() {
+        SeasonNavigator.SeasonYear current = SeasonNavigator.current(Clock.systemDefaultZone());
+        var tab = services.catalogueTabs().open(current.season(), current.year(), "");
+        requestedCatalogueSearchId = tab.searchId();
+        navigate(MainNavigation.CATALOGUE);
+    }
+
     private void openAnimeDetails(long malId) {
         if (!openAnimeDetailsInBackground) navigate(MainNavigation.ANIME_DETAILS);
         animeDetailsView.openAnime(malId);
@@ -128,13 +143,22 @@ public final class MainWindow {
                         new CatalogueController(services), requestedId, this::openAnimeDetails));
             }
             case MY_LEDGER -> root.setCenter(
-                    new LedgerView(new LedgerController(services.ledger()), this::openAnimeDetails));
+                    new LedgerView(new LedgerController(services.ledger()),
+                            this::openAnimeDetails, this::openCurrentSeason));
             case ANIME_DETAILS -> root.setCenter(animeDetailsView);
             case SEARCH_HISTORY -> root.setCenter(
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
             case SETTINGS -> root.setCenter(new SettingsView(
                     windowStateStore, enabled -> openAnimeDetailsInBackground = enabled,
                     services, statusBar::setMalConfigured, this::refreshAfterDatabaseRestore));
+        }
+        Node workspace = root.getCenter();
+        if (workspace != null) {
+            workspace.setOpacity(0);
+            FadeTransition fade = new FadeTransition(Duration.millis(150), workspace);
+            fade.setFromValue(0);
+            fade.setToValue(1);
+            fade.play();
         }
     }
 

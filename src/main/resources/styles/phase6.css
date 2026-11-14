@@ -1,0 +1,70 @@
+/* Phase 6: restrained, consistent interaction styling. */
+.navigation-sidebar {
+    -fx-pref-width: 64px;
+    -fx-min-width: 64px;
+    -fx-max-width: 64px;
+    -fx-alignment: TOP_CENTER;
+}
+.navigation-button {
+    -fx-alignment: CENTER;
+    -fx-padding: 8px;
+    -fx-font-size: 20px;
+    -fx-background-radius: 9px;
+    -fx-cursor: hand;
+}
+.navigation-button:hover {
+    -fx-background-color: #303b4d;
+}
+.navigation-button:selected, .navigation-button.selected {
+    -fx-background-color: #394b69;
+    -fx-border-color: #6f91c2;
+    -fx-border-width: 0 0 0 3px;
+    -fx-border-radius: 2px;
+}
+.navigation-button:focused {
+    -fx-border-color: #7da7df;
+    -fx-border-radius: 8px;
+}
+.anime-poster-frame {
+    -fx-cursor: hand;
+    -fx-background-radius: 6px;
+    -fx-border-color: transparent;
+    -fx-border-radius: 6px;
+}
+.anime-poster-frame:hover {
+    -fx-border-color: #607da7;
+    -fx-background-color: #303746;
+}
+.anime-card {
+    -fx-border-color: #343945;
+}
+.anime-card:hover {
+    -fx-border-color: #526b91;
+    -fx-background-color: #232936;
+}
+.anime-card .anime-card-blacklist-action {
+    -fx-text-fill: #ef9a9a;
+}
+.anime-card .anime-card-blacklist-action:hover {
+    -fx-background-color: #59343b;
+}
+.ledger-current-season-action {
+    -fx-min-width: 36px;
+    -fx-pref-width: 36px;
+    -fx-max-width: 36px;
+    -fx-min-height: 32px;
+    -fx-pref-height: 32px;
+    -fx-max-height: 32px;
+    -fx-padding: 0;
+    -fx-font-size: 17px;
+    -fx-cursor: hand;
+}
+.button, .toggle-button {
+    -fx-cursor: hand;
+}
+.button:disabled, .toggle-button:disabled {
+    -fx-cursor: default;
+}
+.text-field, .text-area, .text-area .content {
+    -fx-cursor: text;
+}

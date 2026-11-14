@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
+import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
@@ -276,6 +277,18 @@ public final class CatalogueView extends BorderPane {
         StackPane posterFrame = new StackPane(poster, noPoster);
         posterFrame.getStyleClass().add("anime-poster-frame");
         MalImageLoader.load(poster, noPoster, metadata.pictureMedium(), metadata.pictureLarge(), 190, 250);
+        if (MalImageLoader.selectUrl(metadata.pictureLarge(), metadata.pictureMedium()) != null) {
+            posterFrame.setCursor(javafx.scene.Cursor.HAND);
+            posterFrame.setFocusTraversable(true);
+            posterFrame.setAccessibleText("Enlarge cover image");
+            posterFrame.setOnMouseClicked(event -> {
+                if (event.getButton() == javafx.scene.input.MouseButton.PRIMARY) {
+                    PosterPreviewDialog.show(metadata.pictureLarge(), metadata.pictureMedium(),
+                            item.preferredTitle(), posterFrame.getScene() == null
+                                    ? null : posterFrame.getScene().getWindow());
+                }
+            });
+        }
         posterFrame.setMinHeight(250);
         posterFrame.setMaxHeight(250);
         Label title = new Label(item.preferredTitle());
@@ -307,9 +320,18 @@ public final class CatalogueView extends BorderPane {
         ledgerAction.setAccessibleText(item.ledgerStatus() == null
                 ? "Add to My Ledger as Watch Later" : "Already in My Ledger");
         ledgerAction.setDisable(item.ledgerStatus() != null);
-        ledgerAction.setOnAction(e -> addToLedger(item, ledgerAction, ledger));
+        ledgerAction.setOnAction(e -> addToLedger(item, LedgerStatus.WATCH_LATER, ledgerAction, ledger));
 
-        HBox actions = new HBox(8, detailsAction, ledgerAction);
+        Button blacklistAction = new Button("⊘");
+        blacklistAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-blacklist-action");
+        blacklistAction.setTooltip(new Tooltip(item.ledgerStatus() == null
+                ? "Add to My Ledger as Blacklisted" : "Already in My Ledger"));
+        blacklistAction.setAccessibleText(item.ledgerStatus() == null
+                ? "Add to My Ledger as Blacklisted" : "Already in My Ledger");
+        blacklistAction.setDisable(item.ledgerStatus() != null);
+        blacklistAction.setOnAction(e -> addToLedger(item, LedgerStatus.BLACKLISTED, blacklistAction, ledger));
+
+        HBox actions = new HBox(8, detailsAction, ledgerAction, blacklistAction);
         actions.setAlignment(Pos.CENTER_RIGHT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
@@ -332,15 +354,16 @@ public final class CatalogueView extends BorderPane {
         ledgerSubscription = null;
     }
 
-    private void addToLedger(CatalogueAnime anime, Button action, Label ledgerLabel) {
+    private void addToLedger(CatalogueAnime anime, LedgerStatus status, Button action, Label ledgerLabel) {
         try {
-            controller.add(anime, LedgerStatus.WATCH_LATER);
-            ledgerLabel.setText("Ledger: Watch Later");
+            controller.add(anime, status);
+            ledgerLabel.setText("Ledger: " + displayStatus(status));
             action.setText("✓");
             action.setTooltip(new Tooltip("Already in My Ledger"));
             action.setAccessibleText("Already in My Ledger");
             action.setDisable(true);
-            feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as Watch Later.");
+            feedback.setText("Added “" + anime.preferredTitle() + "” to My Ledger as "
+                    + displayStatus(status) + ".");
         } catch (RuntimeException failure) {
             feedback.setText("Could not add anime: " + safeMessage(failure));
         }

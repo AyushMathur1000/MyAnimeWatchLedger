@@ -3,6 +3,7 @@ package com.myanimewatchledger.presentation.navigation;
 import com.myanimewatchledger.presentation.main.MainNavigation;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 
 import java.util.EnumMap;
@@ -17,13 +18,18 @@ public final class NavigationSidebar extends VBox {
     public NavigationSidebar(Consumer<MainNavigation> onNavigate) {
         Objects.requireNonNull(onNavigate, "onNavigate");
         getStyleClass().add("navigation-sidebar");
-        setPadding(new Insets(18, 12, 18, 12));
+        setPadding(new Insets(18, 10, 18, 10));
         setSpacing(8);
 
         for (MainNavigation item : MainNavigation.values()) {
-            Button button = new Button(item.icon() + "   " + item.label());
+            Button button = new Button(item.icon());
             button.getStyleClass().add("navigation-button");
-            button.setMaxWidth(Double.MAX_VALUE);
+            button.setMinSize(42, 42);
+            button.setPrefSize(42, 42);
+            button.setMaxSize(42, 42);
+            button.setTooltip(new Tooltip(item.label()));
+            button.setAccessibleText(item.label());
+            button.setFocusTraversable(true);
             button.setOnAction(event -> onNavigate.accept(item));
             buttons.put(item, button);
             getChildren().add(button);

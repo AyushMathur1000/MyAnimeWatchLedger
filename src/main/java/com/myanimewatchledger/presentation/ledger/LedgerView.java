@@ -11,6 +11,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -28,6 +29,7 @@ public final class LedgerView extends VBox {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm");
     private final LedgerController controller;
     private final LongConsumer onOpenDetails;
+    private final Runnable onOpenCurrentSeason;
     private final ObservableList<LedgerEntry> source = FXCollections.observableArrayList();
     private final FilteredList<LedgerEntry> filtered = new FilteredList<>(source, entry -> true);
     private final TableView<LedgerEntry> table = new TableView<>();
@@ -40,18 +42,28 @@ public final class LedgerView extends VBox {
     private AutoCloseable ledgerSubscription;
 
     public LedgerView(LedgerController controller) {
-        this(controller, malId -> { });
+        this(controller, malId -> { }, () -> { });
     }
 
     public LedgerView(LedgerController controller, LongConsumer onOpenDetails) {
+        this(controller, onOpenDetails, () -> { });
+    }
+
+    public LedgerView(LedgerController controller, LongConsumer onOpenDetails, Runnable onOpenCurrentSeason) {
         this.controller = Objects.requireNonNull(controller, "controller");
         this.onOpenDetails = Objects.requireNonNull(onOpenDetails, "onOpenDetails");
+        this.onOpenCurrentSeason = Objects.requireNonNull(onOpenCurrentSeason, "onOpenCurrentSeason");
         getStyleClass().add("ledger-workspace");
         setSpacing(14);
         setPadding(new Insets(26));
         Label title = new Label("My Ledger");
         title.getStyleClass().add("workspace-title");
-        HBox heading = new HBox(14, title, countLabel);
+        Button currentSeason = new Button("▦");
+        currentSeason.getStyleClass().add("ledger-current-season-action");
+        currentSeason.setTooltip(new Tooltip("Open the current season in Catalogue"));
+        currentSeason.setAccessibleText("Open the current season in Catalogue");
+        currentSeason.setOnAction(event -> this.onOpenCurrentSeason.run());
+        HBox heading = new HBox(14, title, currentSeason, countLabel);
         heading.setAlignment(Pos.BASELINE_LEFT);
         searchField.setPromptText("Search anime titles…");
         searchField.setPrefWidth(300);
