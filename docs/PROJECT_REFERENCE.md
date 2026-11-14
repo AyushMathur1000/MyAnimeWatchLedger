@@ -934,14 +934,16 @@ control behaviour from dedicated application shortcuts.
 
 ### 15.5 Phase 6 closure checklist
 
+<badge>Phase 6 — CLOSED</badge>
+
 | Area | Expected result | Current review state |
 |---|---|---|
 | Approved QoL scope | All agreed items represented in implementation | Implemented by source review |
 | Ledger default order | Last modified descending, title ascending | Implemented in LedgerView |
 | User preferences | Sound and animation settings persisted | Implemented |
 | Notifications | Success, warning, and error toast variants | Implemented |
-| Regression tests | Full Maven test suite passes on JDK 25 | Requires final local run after latest commits |
-| Manual UI verification | Check layout, icons, toast timing, dropdowns, and sounds on Windows | Requires final user smoke test |
+| Regression tests | Full Maven test suite passes on JDK 25 | Passed — 140 unit tests |
+| Manual UI verification | Check layout, icons, toast timing, dropdowns, and sounds on Windows | Passed — user confirmed manual tests |
 
 The phase is functionally complete by scope review, but should only be
 formally closed after the current branch passes `mvn clean test` on JDK 25 and
