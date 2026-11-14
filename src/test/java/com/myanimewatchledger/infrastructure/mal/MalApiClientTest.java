@@ -80,6 +80,14 @@ class MalApiClientTest {
     }
 
     @Test
+    void mapsForbiddenResponsesSeparatelyFromInvalidCredentials() {
+        respond(403, "protective rejection");
+        MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
+        assertEquals(MalApiErrorCategory.ACCESS_FORBIDDEN, exception.category());
+        assertEquals(403, exception.statusCode());
+    }
+
+    @Test
     void mapsUnknownAnimeAsNotFoundWithoutRetryMetadata() {
         respond(404, "unknown anime");
         MalApiException exception = assertThrows(MalApiException.class, () -> client().get("anime/1"));
