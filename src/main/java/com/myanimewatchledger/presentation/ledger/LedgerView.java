@@ -58,7 +58,7 @@ public final class LedgerView extends VBox {
         setPadding(new Insets(26));
         Label title = new Label("My Ledger");
         title.getStyleClass().add("workspace-title");
-        Button currentSeason = new Button("▦");
+        Button currentSeason = new Button("Season");
         currentSeason.getStyleClass().add("ledger-current-season-action");
         currentSeason.setTooltip(new Tooltip("Open the current season in Catalogue"));
         currentSeason.setAccessibleText("Open the current season in Catalogue");
