@@ -21,7 +21,6 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -38,6 +37,7 @@ public final class MainWindow {
     private final BorderPane root = new BorderPane();
     private final NavigationSidebar sidebar = new NavigationSidebar(this::navigate);
     private final AnimeDetailsView animeDetailsView;
+    private final ApplicationStatusBar statusBar;
     private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
     private Long requestedCatalogueSearchId;
     private boolean openAnimeDetailsInBackground;
@@ -45,20 +45,22 @@ public final class MainWindow {
     private double lastWindowedHeight = WindowState.defaults().height();
 
     public MainWindow(ApplicationServices services) {
-        this(services, new WindowStateStore(ApplicationPaths.dataDirectory().resolve("config").resolve("ui.properties")));
+        this(services, new WindowStateStore(
+                ApplicationPaths.dataDirectory().resolve("config").resolve("ui.properties")));
     }
 
     public MainWindow(ApplicationServices services, WindowStateStore store) {
         this.services = Objects.requireNonNull(services);
         windowStateStore = Objects.requireNonNull(store);
         animeDetailsView = new AnimeDetailsView(new AnimeDetailsController(services));
+        statusBar = new ApplicationStatusBar(services.isMalConfigured());
     }
 
     public void show(Stage stage) {
         root.getStyleClass().add("app-root");
         root.setLeft(sidebar);
         root.setTop(createHeader());
-        root.setBottom(new ApplicationStatusBar(services.isMalConfigured()));
+        root.setBottom(statusBar);
         Scene scene = new Scene(root);
         var stylesheet = getClass().getResource("/styles/application.css");
         if (stylesheet != null) scene.getStylesheets().add(stylesheet.toExternalForm());
@@ -122,21 +124,23 @@ public final class MainWindow {
             case CATALOGUE -> {
                 Long requestedId = requestedCatalogueSearchId;
                 requestedCatalogueSearchId = null;
-                root.setCenter(new CatalogueView(new CatalogueController(services), requestedId, this::openAnimeDetails));
+                root.setCenter(new CatalogueView(
+                        new CatalogueController(services), requestedId, this::openAnimeDetails));
             }
-            case MY_LEDGER -> root.setCenter(new LedgerView(new LedgerController(services.ledger()), this::openAnimeDetails));
+            case MY_LEDGER -> root.setCenter(
+                    new LedgerView(new LedgerController(services.ledger()), this::openAnimeDetails));
             case ANIME_DETAILS -> root.setCenter(animeDetailsView);
             case SEARCH_HISTORY -> root.setCenter(
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
-            case SETTINGS -> root.setCenter(new SettingsView(windowStateStore, enabled ->
-                    openAnimeDetailsInBackground = enabled));
+            case SETTINGS -> root.setCenter(new SettingsView(
+                    windowStateStore, enabled -> openAnimeDetailsInBackground = enabled, services));
         }
     }
 
     private void saveWindowState(Stage stage) {
         try {
-            windowStateStore.save(new WindowState(lastWindowedWidth, lastWindowedHeight,
-                    stage.isMaximized(), activeNavigation));
+            windowStateStore.save(new WindowState(
+                    lastWindowedWidth, lastWindowedHeight, stage.isMaximized(), activeNavigation));
         } catch (IOException | IllegalArgumentException exception) {
             LOGGER.log(Level.WARNING, "Could not save main window preferences.", exception);
         }
