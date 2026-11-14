@@ -108,7 +108,7 @@ public final class DatabaseManager implements AutoCloseable {
         Path staged = Objects.requireNonNull(stagedDatabase).toAbsolutePath().normalize();
         if (staged.equals(databasePath)) throw new IllegalArgumentException("Staging database must differ from the active database.");
         if (!Files.isRegularFile(staged)) throw new IOException("Staging database does not exist.");
-        close();
+        closeForReplacement();
         Files.deleteIfExists(databasePath.resolveSibling(databasePath.getFileName() + "-wal"));
         Files.deleteIfExists(databasePath.resolveSibling(databasePath.getFileName() + "-shm"));
         Path rollback = databasePath.resolveSibling(databasePath.getFileName() + ".rollback-" + UUID.randomUUID());
@@ -165,9 +165,8 @@ public final class DatabaseManager implements AutoCloseable {
         }
     }
 
-    @Override
-    public synchronized void close() {
-        if (!initialized) return;
+    private synchronized void closeForReplacement() throws SQLException {
+        if (!initialized) throw new SQLException("Database is not initialized.");
         closing = true;
         boolean interrupted = false;
         try {
@@ -175,15 +174,30 @@ public final class DatabaseManager implements AutoCloseable {
                 try { wait(TimeUnit.SECONDS.toMillis(1)); }
                 catch (InterruptedException exception) { interrupted = true; }
             }
-            try (Connection connection = openUnconfiguredConnection(); Statement statement = connection.createStatement()) {
-                statement.execute("PRAGMA wal_checkpoint(TRUNCATE)");
-            } catch (SQLException exception) {
-                LOGGER.log(Level.WARNING, "Unable to checkpoint SQLite WAL during shutdown.", exception);
+            try (Connection connection = openUnconfiguredConnection();
+                 Statement statement = connection.createStatement();
+                 var result = statement.executeQuery("PRAGMA wal_checkpoint(TRUNCATE)")) {
+                if (!result.next() || result.getInt(1) != 0) {
+                    throw new SQLException("SQLite could not fully checkpoint the WAL; database replacement was aborted.");
+                }
             }
-        } finally {
             initialized = false;
+        } finally {
             closing = false;
             if (interrupted) Thread.currentThread().interrupt();
         }
     }
+
+    @Override
+    public synchronized void close() {
+        if (!initialized) return;
+        try {
+            closeForReplacement();
+        } catch (SQLException exception) {
+            LOGGER.log(Level.WARNING, "Unable to checkpoint SQLite WAL during shutdown.", exception);
+            initialized = false;
+            closing = false;
+        }
+    }
+}
 }
