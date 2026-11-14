@@ -15,6 +15,8 @@ import java.util.Properties;
 /** Stores window geometry and lightweight UI preferences outside the database. */
 public final class WindowStateStore {
     private static final String BACKGROUND_DETAILS_KEY = "anime-details.open-in-background";
+    private static final String UI_SOUNDS_KEY = "ui.sound-effects.enabled";
+    private static final String UI_ANIMATIONS_KEY = "ui.animations.enabled";
     private final Path file;
 
     public WindowStateStore(Path file) {
@@ -43,6 +45,28 @@ public final class WindowStateStore {
     public void saveOpenAnimeDetailsInBackground(boolean enabled) throws IOException {
         Properties properties = loadProperties();
         properties.setProperty(BACKGROUND_DETAILS_KEY, Boolean.toString(enabled));
+        saveProperties(properties);
+    }
+
+    /** Sound effects default to enabled for installations without a saved preference. */
+    public boolean loadUiSoundsEnabled() {
+        return Boolean.parseBoolean(loadProperties().getProperty(UI_SOUNDS_KEY, "true"));
+    }
+
+    public void saveUiSoundsEnabled(boolean enabled) throws IOException {
+        Properties properties = loadProperties();
+        properties.setProperty(UI_SOUNDS_KEY, Boolean.toString(enabled));
+        saveProperties(properties);
+    }
+
+    /** Decorative UI animations default to enabled for installations without a saved preference. */
+    public boolean loadUiAnimationsEnabled() {
+        return Boolean.parseBoolean(loadProperties().getProperty(UI_ANIMATIONS_KEY, "true"));
+    }
+
+    public void saveUiAnimationsEnabled(boolean enabled) throws IOException {
+        Properties properties = loadProperties();
+        properties.setProperty(UI_ANIMATIONS_KEY, Boolean.toString(enabled));
         saveProperties(properties);
     }
 
