@@ -177,6 +177,8 @@ public final class LedgerView extends VBox {
         actions.setPrefWidth(160);
         actions.setMaxWidth(180);
         table.getColumns().setAll(title, status, added, modified, actions);
+        modified.setSortType(TableColumn.SortType.DESCENDING);
+        title.setSortType(TableColumn.SortType.ASCENDING);
         table.widthProperty().addListener((observable, oldWidth, newWidth) ->
                 applyColumnWidths(newWidth.doubleValue(), title, status, added, modified, actions));
         table.sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -186,7 +188,7 @@ public final class LedgerView extends VBox {
         SortedList<LedgerEntry> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
         table.setItems(sorted);
-        table.getSortOrder().add(title);
+        table.getSortOrder().setAll(modified, title);
     }
 
     private void applyColumnWidths(double tableWidth,
