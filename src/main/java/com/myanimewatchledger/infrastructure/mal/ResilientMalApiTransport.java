@@ -134,7 +134,13 @@ public final class ResilientMalApiTransport implements MalApiTransport {
     private void pause(Duration delay) {
         if (delay.isZero() || delay.isNegative()) return;
         try {
-            sleeper.sleep(delay.toMillis());
+            long millis;
+            try {
+                millis = delay.toMillis();
+            } catch (ArithmeticException overflow) {
+                millis = Long.MAX_VALUE;
+            }
+            sleeper.sleep(millis);
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
             throw new MalApiException(MalApiErrorCategory.INTERRUPTED, null,
