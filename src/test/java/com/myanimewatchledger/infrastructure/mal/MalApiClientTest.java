@@ -68,6 +68,7 @@ class MalApiClientTest {
         assertEquals(401, exception.statusCode());
         assertFalse(exception.getMessage().contains("private diagnostic"));
         assertFalse(exception.getMessage().contains("test-client-id"));
+        assertEquals("private diagnostic response containing nothing useful", exception.diagnosticBody());
     }
 
     @Test
@@ -85,6 +86,7 @@ class MalApiClientTest {
         assertEquals(MalApiErrorCategory.NOT_FOUND, exception.category());
         assertEquals(404, exception.statusCode());
         assertNull(exception.retryAfter());
+        assertEquals("unknown anime", exception.diagnosticBody());
     }
 
     @Test
