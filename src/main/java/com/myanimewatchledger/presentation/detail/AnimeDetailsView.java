@@ -204,7 +204,11 @@ public final class AnimeDetailsView extends BorderPane {
         canonical.setWrapText(true);
         Button openMal = new Button("Open MyAnimeList ↗");
         openMal.setOnAction(event -> openMal(state.malId));
-        heading.getChildren().addAll(preferredTitle, canonical, openMal);
+        HBox externalAndLedger = new HBox(10, openMal, state.ledgerStatus,
+                state.ledgerStatusChoice, state.ledgerAction);
+        externalAndLedger.setAlignment(Pos.CENTER_LEFT);
+        externalAndLedger.getStyleClass().add("anime-details-ledger-actions");
+        heading.getChildren().addAll(preferredTitle, canonical, externalAndLedger);
 
         GridPane facts = new GridPane();
         facts.setHgap(18);
@@ -238,10 +242,8 @@ public final class AnimeDetailsView extends BorderPane {
         addTextSection(state.body, "Background", metadata.background());
 
         state.metadataCache = cache;
-        if (!state.body.getChildren().contains(state.ledgerActions)) {
-            state.body.getChildren().add(0, state.ledgerActions);
-        }
         state.ledgerAction.setDisable(true);
+        state.ledgerStatusChoice.setDisable(true);
         controller.findLedgerEntry(state.malId).whenComplete((entry, failure) -> Platform.runLater(() -> {
             if (failure != null || !openTabs.containsKey(state.malId)) {
                 state.ledgerStatus.setText(failure == null ? "" : "Could not check ledger status.");
@@ -253,39 +255,57 @@ public final class AnimeDetailsView extends BorderPane {
 
     private void configureLedgerActions(DetailTab state, LedgerEntry entry) {
         state.ledgerEntry = entry;
-        if (entry == null) {
-            state.ledgerStatus.setText("Not currently in My Ledger");
-            state.ledgerStatusChoice.setValue(LedgerStatus.WATCH_LATER);
-            state.ledgerAction.setText("Add to My Ledger");
-        } else {
-            state.ledgerStatus.setText("In My Ledger");
-            state.ledgerStatusChoice.setValue(entry.status());
-            state.ledgerAction.setText("Update Status");
-        }
+        state.updatingLedger = true;
+        state.ledgerStatus.setText(entry == null ? "Not in My Ledger" : "In My Ledger");
+        state.ledgerStatusChoice.setValue(entry == null ? LedgerStatus.WATCH_LATER : entry.status());
+        state.updatingLedger = false;
+        state.ledgerStatusChoice.setDisable(false);
+        state.ledgerAction.setVisible(entry == null);
+        state.ledgerAction.setManaged(entry == null);
+        state.ledgerAction.setText("Add");
         state.ledgerAction.setDisable(false);
     }
 
-    private void saveLedgerStatus(DetailTab state) {
+    private void addLedgerEntry(DetailTab state) {
         LedgerStatus selected = state.ledgerStatusChoice.getValue();
-        if (selected == null || state.metadataCache == null) return;
-        boolean adding = state.ledgerEntry == null;
+        if (selected == null || state.metadataCache == null || state.ledgerEntry != null) return;
         state.ledgerAction.setDisable(true);
-        state.ledgerStatus.setText(adding ? "Adding to My Ledger…" : "Updating ledger status…");
-        var operation = adding
-                ? controller.addToLedger(state.metadataCache, selected)
-                : controller.changeLedgerStatus(state.malId, selected);
-        operation.whenComplete((entry, failure) -> Platform.runLater(() -> {
-            if (!openTabs.containsKey(state.malId)) return;
-            if (failure != null) {
-                state.ledgerStatus.setText("Ledger update failed: " + safeMessage(unwrap(failure)));
-                state.ledgerAction.setDisable(false);
-                return;
-            }
-            configureLedgerActions(state, entry);
-            state.ledgerStatus.setText("In My Ledger · " + displayStatus(entry.status()));
-            feedback.setText((adding ? "Added “" : "Updated ledger status for “")
-                    + entry.title() + "”.");
-        }));
+        state.ledgerStatusChoice.setDisable(true);
+        state.ledgerStatus.setText("Adding…");
+        controller.addToLedger(state.metadataCache, selected).whenComplete((entry, failure) ->
+                Platform.runLater(() -> {
+                    if (!openTabs.containsKey(state.malId)) return;
+                    if (failure != null) {
+                        state.ledgerStatus.setText("Add failed: " + safeMessage(unwrap(failure)));
+                        state.ledgerAction.setDisable(false);
+                        state.ledgerStatusChoice.setDisable(false);
+                        return;
+                    }
+                    configureLedgerActions(state, entry);
+                    feedback.setText("Added “" + entry.title() + "” to My Ledger.");
+                }));
+    }
+
+    private void changeLedgerEntryStatus(DetailTab state, LedgerStatus selected) {
+        if (state.updatingLedger || state.ledgerEntry == null || selected == null
+                || selected == state.ledgerEntry.status()) return;
+        LedgerStatus previous = state.ledgerEntry.status();
+        state.ledgerStatusChoice.setDisable(true);
+        state.ledgerStatus.setText("Saving…");
+        controller.changeLedgerStatus(state.malId, selected).whenComplete((entry, failure) ->
+                Platform.runLater(() -> {
+                    if (!openTabs.containsKey(state.malId)) return;
+                    if (failure != null) {
+                        state.updatingLedger = true;
+                        state.ledgerStatusChoice.setValue(previous);
+                        state.updatingLedger = false;
+                        state.ledgerStatus.setText("Save failed: " + safeMessage(unwrap(failure)));
+                        state.ledgerStatusChoice.setDisable(false);
+                        return;
+                    }
+                    configureLedgerActions(state, entry);
+                    feedback.setText("Ledger status changed to " + displayStatus(entry.status()) + ".");
+                }));
     }
 
     private static void showPosterPreview(String imageUrl, String title, Window owner) {
@@ -420,10 +440,10 @@ public final class AnimeDetailsView extends BorderPane {
         private final Label ledgerStatus = new Label();
         private final ComboBox<LedgerStatus> ledgerStatusChoice =
                 new ComboBox<>(javafx.collections.FXCollections.observableArrayList(LedgerStatus.values()));
-        private final Button ledgerAction = new Button("Add to My Ledger");
-        private final HBox ledgerActions = new HBox(10, ledgerStatus, ledgerStatusChoice, ledgerAction);
+        private final Button ledgerAction = new Button("Add");
         private AnimeMetadataCache metadataCache;
         private LedgerEntry ledgerEntry;
+        private boolean updatingLedger;
         private final VBox body = new VBox(16);
         private final VBox content = new VBox(10);
 
@@ -439,8 +459,11 @@ public final class AnimeDetailsView extends BorderPane {
                 @Override public LedgerStatus fromString(String value) { return null; }
             });
             ledgerAction.setDisable(true);
-            ledgerActions.setAlignment(Pos.CENTER_LEFT);
-            ledgerActions.getStyleClass().add("anime-details-ledger-actions");
+            ledgerAction.setOnAction(event -> addLedgerEntry(this));
+            ledgerStatusChoice.setDisable(true);
+            ledgerStatusChoice.setOnAction(event ->
+                    changeLedgerEntryStatus(this, ledgerStatusChoice.getValue()));
+            ledgerStatus.getStyleClass().add("anime-details-ledger-status");
             body.setPadding(new Insets(12));
             content.setPadding(new Insets(10, 2, 2, 2));
             content.getChildren().addAll(message, body);
