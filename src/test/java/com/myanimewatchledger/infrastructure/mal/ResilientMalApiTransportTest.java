@@ -4,14 +4,12 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,7 +18,6 @@ class ResilientMalApiTransportTest {
     @Test
     void retriesTransientServiceFailureWithBoundedBackoff() {
         AtomicInteger calls = new AtomicInteger();
-        AtomicReference<List<Long>> waits = new AtomicReference<>(List.of());
         java.util.ArrayList<Long> recordedWaits = new java.util.ArrayList<>();
         MalApiTransport delegate = transport(path -> {
             if (calls.incrementAndGet() == 1) {
@@ -112,7 +109,7 @@ class ResilientMalApiTransportTest {
             Future<String> first = workers.submit(() -> resilient.get("anime/1"));
             assertTrue(requestStarted.await(1, TimeUnit.SECONDS));
             Future<String> second = workers.submit(() -> resilient.get("anime/1"));
-            Thread.sleep(40);
+            Thread.sleep(75);
             allowResponse.countDown();
 
             assertEquals("shared-response", first.get(1, TimeUnit.SECONDS));
