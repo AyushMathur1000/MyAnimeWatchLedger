@@ -51,6 +51,71 @@ class DatabaseBackupServiceTest {
     }
 
     @Test
+    void rejectsBackupWithNewerSchemaWithoutChangingActiveDatabase() throws Exception {
+        Path activeFile = temporaryDirectory.resolve("active-newer.db");
+        Path backupFile = temporaryDirectory.resolve("newer-schema.db");
+        try (DatabaseManager manager = initializedManager(activeFile, "Keep active data")) {
+            DatabaseBackupService backups = new DatabaseBackupService(manager);
+            backups.createBackup(backupFile);
+            executeSql(backupFile, "PRAGMA user_version = " + (DatabaseBackupService.LATEST_SUPPORTED_SCHEMA_VERSION + 1));
+
+            assertThrows(java.sql.SQLException.class, () -> backups.restoreBackup(backupFile));
+            assertEquals("Keep active data", readLedgerTitle(manager));
+        }
+    }
+
+    @Test
+    void rejectsBackupMissingRequiredTableWithoutChangingActiveDatabase() throws Exception {
+        Path activeFile = temporaryDirectory.resolve("active-missing-table.db");
+        Path backupFile = temporaryDirectory.resolve("missing-table.db");
+        try (DatabaseManager manager = initializedManager(activeFile, "Keep active data")) {
+            DatabaseBackupService backups = new DatabaseBackupService(manager);
+            backups.createBackup(backupFile);
+            executeSql(backupFile, "DROP TABLE open_catalogue_tab");
+
+            assertThrows(java.sql.SQLException.class, () -> backups.restoreBackup(backupFile));
+            assertEquals("Keep active data", readLedgerTitle(manager));
+        }
+    }
+
+    @Test
+    void rejectsBackupMissingRequiredColumnWithoutChangingActiveDatabase() throws Exception {
+        Path activeFile = temporaryDirectory.resolve("active-missing-column.db");
+        Path backupFile = temporaryDirectory.resolve("missing-column.db");
+        try (DatabaseManager manager = initializedManager(activeFile, "Keep active data")) {
+            DatabaseBackupService backups = new DatabaseBackupService(manager);
+            backups.createBackup(backupFile);
+            executeSql(backupFile, """
+                    DROP TABLE open_catalogue_tab;
+                    CREATE TABLE open_catalogue_tab (
+                        search_id INTEGER PRIMARY KEY,
+                        tab_order INTEGER NOT NULL
+                    )
+                    """);
+
+            assertThrows(java.sql.SQLException.class, () -> backups.restoreBackup(backupFile));
+            assertEquals("Keep active data", readLedgerTitle(manager));
+        }
+    }
+
+    @Test
+    void rejectsForeignKeyInvalidBackupWithoutChangingActiveDatabase() throws Exception {
+        Path activeFile = temporaryDirectory.resolve("active-invalid-fk.db");
+        Path backupFile = temporaryDirectory.resolve("invalid-fk.db");
+        try (DatabaseManager manager = initializedManager(activeFile, "Keep active data")) {
+            DatabaseBackupService backups = new DatabaseBackupService(manager);
+            backups.createBackup(backupFile);
+            executeSql(backupFile, """
+                    INSERT INTO catalogue_search_anime(search_id, mal_id, display_order)
+                    VALUES (999999, 999999, 0)
+                    """);
+
+            assertThrows(java.sql.SQLException.class, () -> backups.restoreBackup(backupFile));
+            assertEquals("Keep active data", readLedgerTitle(manager));
+        }
+    }
+
+    @Test
     void refusesToOverwriteExistingBackup() throws Exception {
         Path activeFile = temporaryDirectory.resolve("active.db");
         Path backupFile = temporaryDirectory.resolve("backup.db");
@@ -62,6 +127,23 @@ class DatabaseBackupServiceTest {
 
             assertThrows(java.io.IOException.class, () -> backups.createBackup(backupFile));
             assertEquals("preserve", Files.readString(backupFile));
+        }
+    }
+
+    private DatabaseManager initializedManager(Path activeFile, String title) throws Exception {
+        DatabaseManager manager = new DatabaseManager(activeFile);
+        manager.initialize();
+        new DatabaseMigrationRunner(manager).migrate();
+        insertLedgerEntry(manager, title);
+        return manager;
+    }
+
+    private static void executeSql(Path file, String sql) throws Exception {
+        try (Connection connection = java.sql.DriverManager.getConnection("jdbc:sqlite:" + file);
+             Statement statement = connection.createStatement()) {
+            for (String command : sql.split(";")) {
+                if (!command.isBlank()) statement.executeUpdate(command);
+            }
         }
     }
 
