@@ -5,14 +5,20 @@ import com.myanimewatchledger.application.service.AnimeDetailResult;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadata;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
+import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
+import javafx.stage.Window;
+import javafx.util.StringConverter;
 
 import java.awt.Desktop;
 import java.net.URI;
@@ -178,6 +184,11 @@ public final class AnimeDetailsView extends BorderPane {
                 Image image = new Image(picture, 210, 300, true, true, true);
                 poster.setImage(image);
                 noPoster.visibleProperty().bind(image.errorProperty());
+                posterFrame.setCursor(javafx.scene.Cursor.HAND);
+                posterFrame.setOnMouseClicked(event -> showPosterPreview(
+                        picture, cache.preferredTitle(), posterFrame.getScene().getWindow()));
+                posterFrame.setFocusTraversable(true);
+                posterFrame.setAccessibleText("Enlarge cover image");
             } catch (IllegalArgumentException ignored) {
                 noPoster.setVisible(true);
             }
@@ -225,13 +236,77 @@ public final class AnimeDetailsView extends BorderPane {
         addTextSection(state.body, "Synopsis", metadata.synopsis());
         addTextSection(state.body, "Background", metadata.background());
 
+        state.metadataCache = cache;
+        if (!state.body.getChildren().contains(state.ledgerActions)) {
+            state.body.getChildren().add(0, state.ledgerActions);
+        }
+        state.ledgerAction.setDisable(true);
         controller.findLedgerEntry(state.malId).whenComplete((entry, failure) -> Platform.runLater(() -> {
-            if (failure != null || !openTabs.containsKey(state.malId)) return;
-            String status = entry.map(value -> "In My Ledger · " + displayStatus(value.status()))
-                    .orElse("Not currently in My Ledger");
-            state.ledgerStatus.setText(status);
-            if (!state.body.getChildren().contains(state.ledgerStatus)) state.body.getChildren().add(0, state.ledgerStatus);
+            if (failure != null || !openTabs.containsKey(state.malId)) {
+                state.ledgerStatus.setText(failure == null ? "" : "Could not check ledger status.");
+                return;
+            }
+            configureLedgerActions(state, entry.orElse(null));
         }));
+    }
+
+    private void configureLedgerActions(DetailTab state, LedgerEntry entry) {
+        state.ledgerEntry = entry;
+        if (entry == null) {
+            state.ledgerStatus.setText("Not currently in My Ledger");
+            state.ledgerStatusChoice.setValue(LedgerStatus.WATCH_LATER);
+            state.ledgerAction.setText("Add to My Ledger");
+        } else {
+            state.ledgerStatus.setText("In My Ledger");
+            state.ledgerStatusChoice.setValue(entry.status());
+            state.ledgerAction.setText("Update Status");
+        }
+        state.ledgerAction.setDisable(false);
+    }
+
+    private void saveLedgerStatus(DetailTab state) {
+        LedgerStatus selected = state.ledgerStatusChoice.getValue();
+        if (selected == null || state.metadataCache == null) return;
+        boolean adding = state.ledgerEntry == null;
+        state.ledgerAction.setDisable(true);
+        state.ledgerStatus.setText(adding ? "Adding to My Ledger…" : "Updating ledger status…");
+        var operation = adding
+                ? controller.addToLedger(state.metadataCache, selected)
+                : controller.changeLedgerStatus(state.malId, selected);
+        operation.whenComplete((entry, failure) -> Platform.runLater(() -> {
+            if (!openTabs.containsKey(state.malId)) return;
+            if (failure != null) {
+                state.ledgerStatus.setText("Ledger update failed: " + safeMessage(unwrap(failure)));
+                state.ledgerAction.setDisable(false);
+                return;
+            }
+            configureLedgerActions(state, entry);
+            state.ledgerStatus.setText("In My Ledger · " + displayStatus(entry.status()));
+            feedback.setText((adding ? "Added “" : "Updated ledger status for “")
+                    + entry.title() + "”.");
+        }));
+    }
+
+    private static void showPosterPreview(String imageUrl, String title, Window owner) {
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        Image image = new Image(imageUrl, true);
+        ImageView preview = new ImageView(image);
+        preview.setPreserveRatio(true);
+        preview.setFitWidth(bounds.getWidth() * 0.78);
+        preview.setFitHeight(bounds.getHeight() * 0.78);
+        preview.setSmooth(true);
+        StackPane frame = new StackPane(preview);
+        frame.setPadding(new Insets(12));
+        frame.setStyle("-fx-background-color: #17191f;");
+        Dialog<Void> dialog = new Dialog<>();
+        dialog.setTitle(title);
+        if (owner != null) dialog.initOwner(owner);
+        dialog.getDialogPane().getStyleClass().add("app-dialog");
+        dialog.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+        dialog.getDialogPane().setContent(frame);
+        dialog.getDialogPane().setPrefSize(bounds.getWidth() * 0.82, bounds.getHeight() * 0.86);
+        dialog.setResizable(true);
+        dialog.showAndWait();
     }
 
     private static int addFact(GridPane grid, int row, String label, String value) {
@@ -342,6 +417,12 @@ public final class AnimeDetailsView extends BorderPane {
         private final Tab tab = new Tab();
         private final Label message = new Label();
         private final Label ledgerStatus = new Label();
+        private final ComboBox<LedgerStatus> ledgerStatusChoice =
+                new ComboBox<>(javafx.collections.FXCollections.observableArrayList(LedgerStatus.values()));
+        private final Button ledgerAction = new Button("Add to My Ledger");
+        private final HBox ledgerActions = new HBox(10, ledgerStatus, ledgerStatusChoice, ledgerAction);
+        private AnimeMetadataCache metadataCache;
+        private LedgerEntry ledgerEntry;
         private final VBox body = new VBox(16);
         private final VBox content = new VBox(10);
 
@@ -349,6 +430,17 @@ public final class AnimeDetailsView extends BorderPane {
             this.malId = malId;
             message.getStyleClass().add("anime-details-message");
             ledgerStatus.getStyleClass().add("anime-details-ledger-status");
+            ledgerStatusChoice.setPrefWidth(150);
+            ledgerStatusChoice.setConverter(new StringConverter<>() {
+                @Override public String toString(LedgerStatus status) {
+                    return status == null ? "" : displayStatus(status);
+                }
+                @Override public LedgerStatus fromString(String value) { return null; }
+            });
+            ledgerAction.setOnAction(event -> saveLedgerStatus(this));
+            ledgerAction.setDisable(true);
+            ledgerActions.setAlignment(Pos.CENTER_LEFT);
+            ledgerActions.getStyleClass().add("anime-details-ledger-actions");
             body.setPadding(new Insets(12));
             content.setPadding(new Insets(10, 2, 2, 2));
             content.getChildren().addAll(message, body);

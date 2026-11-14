@@ -2,6 +2,9 @@ package com.myanimewatchledger.app;
 
 import com.myanimewatchledger.application.service.*;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
+import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
+import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
+import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.domain.catalogue.Season;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 
@@ -58,5 +61,23 @@ public final class ApplicationServices {
  }
  public CompletableFuture<Optional<LedgerEntry>> findLedgerEntryAsync(long malId){
   return background.submit(()->ledger.find(malId));
+ }
+ /** Adds cached anime metadata to the ledger using the status selected in the detail workspace. */
+ public CompletableFuture<LedgerEntry> addAnimeToLedgerAsync(AnimeMetadataCache cache,LedgerStatus status){
+  Objects.requireNonNull(cache);Objects.requireNonNull(status);
+  return background.submit(()->ledger.add(new CatalogueAnime(cache.malId(),cache.preferredTitle(),
+   cache.metadataJson(),cache.searchableText(),cache.cachedAt(),0,null),status));
+ }
+ /** Changes an existing ledger entry's status without blocking the JavaFX thread. */
+ public CompletableFuture<LedgerEntry> changeLedgerStatusAsync(long malId,LedgerStatus status){
+  Objects.requireNonNull(status);
+  return background.submit(()->{
+   if(!ledger.changeStatus(malId,status)){
+    LedgerEntry current=ledger.find(malId).orElseThrow(()->new IllegalStateException("Anime is no longer in the ledger."));
+    if(current.status()!=status)throw new IllegalStateException("The ledger status could not be updated.");
+    return current;
+   }
+   return ledger.find(malId).orElseThrow(()->new IllegalStateException("Updated ledger entry could not be found."));
+  });
  }
 }

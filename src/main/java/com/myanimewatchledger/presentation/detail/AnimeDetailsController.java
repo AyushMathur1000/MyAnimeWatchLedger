@@ -3,6 +3,8 @@ package com.myanimewatchledger.presentation.detail;
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.application.service.AnimeDetailResult;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
+import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
+import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 
 import java.util.List;
@@ -39,5 +41,13 @@ public final class AnimeDetailsController {
 
     public CompletableFuture<Optional<LedgerEntry>> findLedgerEntry(long malId) {
         return services.findLedgerEntryAsync(malId);
+    }
+
+    public CompletableFuture<LedgerEntry> addToLedger(AnimeMetadataCache cache, LedgerStatus status) {
+        return services.addAnimeToLedgerAsync(cache, status);
+    }
+
+    public CompletableFuture<LedgerEntry> changeLedgerStatus(long malId, LedgerStatus status) {
+        return services.changeLedgerStatusAsync(malId, status);
     }
 }

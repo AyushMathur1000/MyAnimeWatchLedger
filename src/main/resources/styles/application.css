@@ -269,3 +269,14 @@
     -fx-text-fill: #ffffff;
 }
 .anime-card .anime-card-details-action:hover { -fx-background-color: #4d6b96; }
+
+
+/* Ledger controls within the Anime Details workspace */
+.anime-details-ledger-actions { -fx-padding: 4px 12px 8px 12px; }
+.anime-details-ledger-actions .combo-box {
+    -fx-background-color: #252934; -fx-text-fill: #e0e4eb;
+    -fx-border-color: #3b414e; -fx-border-radius: 4px; -fx-background-radius: 4px;
+}
+.anime-details-ledger-actions .button { -fx-background-color: #405a80; -fx-font-weight: bold; }
+.anime-details-ledger-actions .button:disabled { -fx-opacity: 0.6; }
+.anime-details-poster { -fx-cursor: hand; }
