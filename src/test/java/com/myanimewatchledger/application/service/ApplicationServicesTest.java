@@ -47,6 +47,13 @@ class ApplicationServicesTest {
     }
 
     @Test
+    void addingAnimeWithoutExplicitStatusDefaultsToWatchLater() {
+        var added = ledger.add(anime(1000, "Watch Later Anime"));
+        assertEquals(LedgerStatus.WATCH_LATER, added.status());
+        assertEquals(added, ledger.find(1000).orElseThrow());
+    }
+
+    @Test
     void ledgerServiceAddsAnimeAndPreventsDuplicates() {
         CatalogueAnime anime = anime(1001, "Example Anime");
         var added = ledger.add(anime, LedgerStatus.WATCHING);

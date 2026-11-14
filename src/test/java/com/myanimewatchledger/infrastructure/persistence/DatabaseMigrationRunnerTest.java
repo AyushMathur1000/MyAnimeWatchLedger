@@ -27,14 +27,15 @@ class DatabaseMigrationRunnerTest {
 
             try (Connection connection = manager.getConnection();
                  Statement statement = connection.createStatement()) {
-                assertEquals(1, pragmaInt(statement, "PRAGMA user_version"));
+                assertEquals(3, pragmaInt(statement, "PRAGMA user_version"));
 
                 Set<String> expectedTables = Set.of(
                         "ledger_entry",
                         "catalogue_search",
                         "anime_metadata_cache",
                         "catalogue_search_anime",
-                        "open_catalogue_tab"
+                        "open_catalogue_tab",
+                        "open_anime_detail_tab"
                 );
                 Set<String> actualTables = new java.util.HashSet<>();
 
@@ -53,6 +54,57 @@ class DatabaseMigrationRunnerTest {
     }
 
     @Test
+    void upgradesVersionOneDatabaseAndPreservesExistingLedgerRows() throws Exception {
+        DatabaseManager manager = initializedManager();
+
+        try (manager) {
+            new DatabaseMigrationRunner(manager, List.of(
+                    new DatabaseMigrationRunner.Migration(1, "V001__initial_schema.sql")
+            )).migrate();
+
+            try (Connection connection = manager.getConnection();
+                 Statement statement = connection.createStatement()) {
+                statement.executeUpdate("""
+                        INSERT INTO ledger_entry
+                            (mal_id, title, status, date_added, last_modified)
+                        VALUES (8123, 'Existing Anime', 'HOLD', 111, 222)
+                        """);
+            }
+
+            new DatabaseMigrationRunner(manager).migrate();
+
+            try (Connection connection = manager.getConnection();
+                 Statement statement = connection.createStatement()) {
+                assertEquals(3, pragmaInt(statement, "PRAGMA user_version"));
+                try (ResultSet result = statement.executeQuery("""
+                        SELECT mal_id, title, status, date_added, last_modified
+                        FROM ledger_entry WHERE mal_id = 8123
+                        """)) {
+                    assertTrue(result.next());
+                    assertEquals(8123, result.getLong("mal_id"));
+                    assertEquals("Existing Anime", result.getString("title"));
+                    assertEquals("HOLD", result.getString("status"));
+                    assertEquals(111, result.getLong("date_added"));
+                    assertEquals(222, result.getLong("last_modified"));
+                }
+
+                statement.executeUpdate("""
+                        INSERT INTO ledger_entry
+                            (mal_id, title, status, date_added, last_modified)
+                        VALUES (8124, 'Watch Later Anime', 'WATCH_LATER', 333, 444)
+                        """);
+                assertEquals(1, scalarInt(statement,
+                        "SELECT COUNT(*) FROM ledger_entry WHERE status = 'WATCH_LATER'"));
+                assertThrows(java.sql.SQLException.class, () -> statement.executeUpdate("""
+                        INSERT INTO ledger_entry
+                            (mal_id, title, status, date_added, last_modified)
+                        VALUES (8125, 'Invalid Status', 'PLANNED', 555, 666)
+                        """));
+            }
+        }
+    }
+
+    @Test
     void doesNotReapplyAnAlreadyAppliedMigration() throws Exception {
         DatabaseManager manager = initializedManager();
 
@@ -63,7 +115,7 @@ class DatabaseMigrationRunnerTest {
 
             try (Connection connection = manager.getConnection();
                  Statement statement = connection.createStatement()) {
-                assertEquals(1, pragmaInt(statement, "PRAGMA user_version"));
+                assertEquals(3, pragmaInt(statement, "PRAGMA user_version"));
                 assertEquals(1, scalarInt(statement,
                         "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='ledger_entry'"));
             }
