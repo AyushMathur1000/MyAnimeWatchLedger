@@ -112,9 +112,35 @@
     -fx-font-size: 11px;
 }
 
-/* Tighter Catalogue workspace rhythm; card dimensions remain unchanged. */
-.catalogue-season-bar { -fx-spacing: 7px; -fx-padding: 0 0 2px 0; }
-.catalogue-workspace .tab-pane .tab-header-area { -fx-padding: 0 0 0 0; }
-.catalogue-workspace .tab-pane .tab-header-area .headers-region { -fx-padding: 0 0 0 0; }
-.catalogue-workspace .tab-pane .tab-header-area .tab { -fx-padding: 5px 9px; }
+/* Roomier Catalogue controls and tab strip; retain existing card sizing. */
+.catalogue-season-bar {
+    -fx-spacing: 9px;
+    -fx-padding: 9px 11px;
+    -fx-background-color: #20242d;
+    -fx-background-radius: 8px;
+    -fx-border-color: #303744;
+    -fx-border-radius: 8px;
+}
+.catalogue-season-bar .button {
+    -fx-padding: 9px 14px;
+    -fx-min-height: 36px;
+    -fx-font-size: 12px;
+}
+.catalogue-season-bar .combo-box-base,
+.catalogue-season-bar .spinner {
+    -fx-min-height: 36px;
+    -fx-pref-height: 36px;
+}
+.catalogue-season-bar .separator { -fx-padding: 0 3px; }
+.catalogue-workspace .tab-pane .tab-header-area {
+    -fx-padding: 7px 8px 5px 8px;
+    -fx-background-color: #20232b;
+}
+.catalogue-workspace .tab-pane .tab-header-area .headers-region { -fx-padding: 0; }
+.catalogue-workspace .tab-pane .tab-header-area .tab {
+    -fx-padding: 8px 13px;
+    -fx-background-radius: 6px 6px 0 0;
+    -fx-background-insets: 0 2px 0 0;
+}
+.catalogue-workspace .tab-pane .tab-header-area .tab-label { -fx-font-size: 12px; }
 .catalogue-workspace .tab-pane .tab-content-area { -fx-padding: 0; }
