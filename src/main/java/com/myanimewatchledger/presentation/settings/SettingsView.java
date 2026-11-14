@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.settings;
 
 import com.myanimewatchledger.app.ApplicationServices;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
+import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.infrastructure.persistence.DatabaseBackupService;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
@@ -67,6 +68,42 @@ public final class SettingsView extends VBox {
             } catch (IOException failure) {
                 backgroundOpening.setSelected(!selected);
                 preferenceFeedback.setText("Could not save this preference. Check application file permissions.");
+            }
+        });
+
+        Label feedbackSubtitle = new Label("Interaction feedback");
+        feedbackSubtitle.getStyleClass().add("settings-section-title");
+        CheckBox soundEffects = new CheckBox("Enable UI sound effects");
+        soundEffects.setSelected(preferences.loadUiSoundsEnabled());
+        soundEffects.setTooltip(new Tooltip("Play a subtle click sound when buttons are activated."));
+        CheckBox animations = new CheckBox("Enable UI animations");
+        animations.setSelected(preferences.loadUiAnimationsEnabled());
+        animations.setTooltip(new Tooltip("Enable decorative transitions when switching workspaces."));
+        Label feedbackPreferenceStatus = new Label();
+        feedbackPreferenceStatus.getStyleClass().add("settings-feedback");
+
+        soundEffects.setOnAction(event -> {
+            boolean selected = soundEffects.isSelected();
+            try {
+                preferences.saveUiSoundsEnabled(selected);
+                SoundFeedback.setEnabled(selected);
+                feedbackPreferenceStatus.setText("Preference saved.");
+            } catch (IOException failure) {
+                soundEffects.setSelected(!selected);
+                feedbackPreferenceStatus.setText(
+                        "Could not save this preference. Check application file permissions.");
+            }
+        });
+
+        animations.setOnAction(event -> {
+            boolean selected = animations.isSelected();
+            try {
+                preferences.saveUiAnimationsEnabled(selected);
+                feedbackPreferenceStatus.setText("Preference saved.");
+            } catch (IOException failure) {
+                animations.setSelected(!selected);
+                feedbackPreferenceStatus.setText(
+                        "Could not save this preference. Check application file permissions.");
             }
         });
 
@@ -231,6 +268,7 @@ public final class SettingsView extends VBox {
 
         getChildren().addAll(
                 title, subtitle, backgroundOpening, description, preferenceFeedback,
+                feedbackSubtitle, soundEffects, animations, feedbackPreferenceStatus,
                 malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback,
                 cacheSubtitle, cacheDescription, clearCacheButton, cacheFeedback,
                 databaseSubtitle, databaseDescription, databaseActions, databaseFeedback);
