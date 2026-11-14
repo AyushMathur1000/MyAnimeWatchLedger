@@ -59,7 +59,7 @@ The test inventory is now enumerated. Requirement-level sufficiency still needs 
 | FR-LED-002 | MAL ID identity | Persistence: duplicate MAL ID insert/upsert and unique constraint behaviour | Audit needed |
 | FR-LED-003 | Six statuses | Domain + persistence: all six accepted; invalid status rejected; Hold and Watch Later remain distinct; one current status only | Existing — partial (EV-APP-01, EV-DB-03); explicit six-value enum/constraint assertion planned |
 | FR-LED-004 | Current state only | Persistence: status update overwrites current value; no history requirement | Audit needed |
-| FR-LED-005 | Add entry | Service + UI: add with each of six valid statuses; Catalogue add without explicit status defaults to Watch Later | Existing — partial (EV-APP-01); default and all-six persistence assertions planned / Manual |
+| FR-LED-005 | Add entry | Service + UI: add with each of six valid statuses; Catalogue add without explicit status defaults to Watch Later and does not reclassify existing entries | Existing — partial (EV-APP-01); explicit default/all-six assertions planned / Manual |
 | FR-LED-006 | Change status | Service + UI: update each status; visible occurrences refresh without restart | Audit needed / Manual |
 | FR-LED-007 | Explicit removal | Service + UI: confirm deletes; cancel preserves; verify no history requirement | Audit needed / Manual |
 | FR-LED-008 | Ledger independence | Integration: catalogue fetch/refresh/cache clear leave ledger membership/status unchanged | Planned |
@@ -69,7 +69,6 @@ The test inventory is now enumerated. Requirement-level sufficiency still needs 
 | FR-LED-012 | Ledger status filtering | Repository/UI: each status filter; search and status filter combine | Audit needed / Manual |
 | FR-LED-013 | Ledger sorting | Repository/UI: title, date added, last modified ordering, including ties | Audit needed / Manual |
 | FR-LED-014 | No episode tracking | Schema/model review: no required episode count/progress state or UI workflow | Audit needed |
-| FR-LED-015 | Watch Later default | Service + persistence: implicit Catalogue add defaults to WATCH_LATER; explicit choice can select any of six; existing rows are not reclassified | Planned |
 
 ### 3.2 Seasonal catalogue and MAL metadata
 
