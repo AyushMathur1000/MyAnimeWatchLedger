@@ -20,33 +20,50 @@ import java.util.WeakHashMap;
 
 /** Displays compact, styled, non-blocking notification cards above the workspace. */
 public final class ToastNotifications {
+    private enum Type { SUCCESS, WARNING, ERROR }
+
     private static final Map<Window, Popup> ACTIVE = new WeakHashMap<>();
 
     private ToastNotifications() { }
 
     public static void show(Node anchor, String message, boolean error) {
+        show(anchor, message, error ? Type.ERROR : Type.SUCCESS);
+    }
+
+    /** Shows a cautionary notification without presenting it as a failure. */
+    public static void showWarning(Node anchor, String message) {
+        show(anchor, message, Type.WARNING);
+    }
+
+    private static void show(Node anchor, String message, Type type) {
         if (anchor == null || anchor.getScene() == null || anchor.getScene().getWindow() == null
                 || message == null || message.isBlank()) return;
 
         Window owner = anchor.getScene().getWindow();
-        Runnable display = () -> showForWindow(owner, message, error);
+        Runnable display = () -> showForWindow(owner, message, type);
         if (Platform.isFxApplicationThread()) display.run();
         else Platform.runLater(display);
     }
 
-    private static void showForWindow(Window owner, String message, boolean error) {
+    private static void showForWindow(Window owner, String message, Type type) {
         Popup previous = ACTIVE.remove(owner);
         if (previous != null) previous.hide();
 
-        Label icon = new Label(error ? "!" : "✓");
-        icon.getStyleClass().addAll("app-toast-icon", error ? "app-toast-icon-error" : "app-toast-icon-success");
+        boolean warning = type == Type.WARNING;
+        boolean error = type == Type.ERROR;
+        String iconText = warning ? "!" : error ? "×" : "✓";
+        String titleText = warning ? "Blacklisted" : error ? "Something went wrong" : "Done";
+        String style = warning ? "warning" : error ? "error" : "success";
+
+        Label icon = new Label(iconText);
+        icon.getStyleClass().addAll("app-toast-icon", "app-toast-icon-" + style);
         StackPane iconHolder = new StackPane(icon);
-        iconHolder.getStyleClass().addAll("app-toast-icon-holder", error ? "app-toast-icon-error" : "app-toast-icon-success");
+        iconHolder.getStyleClass().addAll("app-toast-icon-holder", "app-toast-icon-" + style);
         iconHolder.setMinSize(34, 34);
         iconHolder.setPrefSize(34, 34);
         iconHolder.setMaxSize(34, 34);
 
-        Label title = new Label(error ? "Something went wrong" : "Done");
+        Label title = new Label(titleText);
         title.getStyleClass().add("app-toast-title");
         Label body = new Label(message);
         body.getStyleClass().add("app-toast-message");
@@ -56,7 +73,7 @@ public final class ToastNotifications {
         VBox text = new VBox(3, title, body);
         text.getStyleClass().add("app-toast-copy");
         HBox toast = new HBox(12, iconHolder, text);
-        toast.getStyleClass().addAll("app-toast", error ? "app-toast-error" : "app-toast-success");
+        toast.getStyleClass().addAll("app-toast", "app-toast-" + style);
         toast.setPadding(new Insets(13, 17, 13, 14));
         toast.setMaxWidth(440);
         toast.setMinWidth(300);
@@ -88,7 +105,7 @@ public final class ToastNotifications {
             new ParallelTransition(fadeIn, slideIn).play();
         });
 
-        PauseTransition visibleTime = new PauseTransition(Duration.millis(error ? 3600 : 2600));
+        PauseTransition visibleTime = new PauseTransition(Duration.millis(error ? 3600 : warning ? 3100 : 2600));
         visibleTime.setOnFinished(event -> {
             FadeTransition fadeOut = new FadeTransition(Duration.millis(260), toast);
             fadeOut.setFromValue(1);
