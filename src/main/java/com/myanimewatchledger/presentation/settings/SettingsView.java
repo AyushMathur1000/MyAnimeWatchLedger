@@ -196,9 +196,43 @@ public final class SettingsView extends VBox {
         });
 
         HBox databaseActions = new HBox(8, createBackupButton, restoreBackupButton);
+
+        Label cacheSubtitle = new Label("Catalogue cache");
+        cacheSubtitle.getStyleClass().add("settings-section-title");
+        Label cacheDescription = new Label(
+                "Clear cached anime metadata, seasonal results, search history, and saved Catalogue tabs. "
+                        + "Your personal ledger and Anime Details tabs are not affected.");
+        cacheDescription.getStyleClass().add("settings-description");
+        Button clearCacheButton = new Button("Clear Catalogue Cache");
+        Label cacheFeedback = new Label();
+        cacheFeedback.getStyleClass().add("settings-feedback");
+
+        clearCacheButton.setOnAction(event -> {
+            Alert confirmation = new Alert(Alert.AlertType.WARNING,
+                    "This removes cached anime metadata, seasonal results, search history, and saved Catalogue tabs. "
+                            + "Your personal ledger and Anime Details tabs will remain unchanged. Continue?",
+                    ButtonType.CANCEL, ButtonType.OK);
+            confirmation.setTitle("Clear Catalogue Cache");
+            confirmation.setHeaderText("Disposable catalogue data will be removed");
+            Window owner = getScene() == null ? null : getScene().getWindow();
+            if (owner != null) confirmation.initOwner(owner);
+            if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+
+            clearCacheButton.setDisable(true);
+            cacheFeedback.setText("Clearing catalogue cache...");
+            services.clearCatalogueCacheAsync().whenComplete((ignored, failure) ->
+                    Platform.runLater(() -> {
+                        clearCacheButton.setDisable(false);
+                        cacheFeedback.setText(failure == null
+                                ? "Catalogue cache cleared. Your ledger and Anime Details tabs were preserved."
+                                : safeMessage(failure));
+                    }));
+        });
+
         getChildren().addAll(
                 title, subtitle, backgroundOpening, description, preferenceFeedback,
                 malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback,
+                cacheSubtitle, cacheDescription, clearCacheButton, cacheFeedback,
                 databaseSubtitle, databaseDescription, databaseActions, databaseFeedback);
     }
 

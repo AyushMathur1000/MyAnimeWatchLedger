@@ -30,6 +30,7 @@ public final class CatalogueController {
         return services.refreshSeasonAsync(season, year);
     }
     public boolean isMalConfigured() { return services.isMalConfigured(); }
+    public CompletableFuture<Void> clearCacheAsync() { return services.clearCatalogueCacheAsync(); }
     public Optional<LedgerEntry> findLedgerEntry(long malId) { return services.ledger().find(malId); }
     public LedgerEntry add(CatalogueAnime anime, LedgerStatus status) { return services.ledger().add(anime, status); }
     public boolean changeStatus(long malId, LedgerStatus status) {

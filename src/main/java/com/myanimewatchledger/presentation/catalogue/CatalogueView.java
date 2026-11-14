@@ -55,11 +55,16 @@ public final class CatalogueView extends BorderPane {
         Button open = new Button("Open season");
         Button next = new Button("Next →");
         Button refresh = new Button("⟳ Refresh");
+        Button clearCache = new Button("Clear Cache");
+        clearCache.setTooltip(new Tooltip("Remove cached catalogue data and search history; preserve My Ledger."));
+        clearCache.setAccessibleText("Clear Catalogue Cache");
         previous.setOnAction(e -> shiftSeason(-1));
         next.setOnAction(e -> shiftSeason(1));
         open.setOnAction(e -> openSelectedSeason());
         refresh.setOnAction(e -> refreshSelected());
-        HBox seasonBar = new HBox(9, previous, next, seasonChoice, yearChoice, open, new Separator(), refresh);
+        clearCache.setOnAction(e -> clearCache());
+        HBox seasonBar = new HBox(9, previous, next, seasonChoice, yearChoice, open,
+                new Separator(), refresh, clearCache);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
         feedback.getStyleClass().add("catalogue-feedback");
@@ -166,6 +171,34 @@ public final class CatalogueView extends BorderPane {
         SeasonTab selected = selectedTab();
         if (selected != null) refresh(selected, true);
         else openSelectedSeason();
+    }
+
+    private void clearCache() {
+        Alert confirmation = new Alert(Alert.AlertType.WARNING,
+                "This removes cached anime metadata, seasonal results, search history, and saved Catalogue tabs. "
+                        + "Your personal ledger and Anime Details tabs will remain unchanged. Continue?",
+                ButtonType.CANCEL, ButtonType.OK);
+        confirmation.setTitle("Clear Catalogue Cache");
+        confirmation.setHeaderText("Disposable catalogue data will be removed");
+        Window owner = getScene() == null ? null : getScene().getWindow();
+        if (owner != null) confirmation.initOwner(owner);
+        if (confirmation.showAndWait().orElse(ButtonType.CANCEL) != ButtonType.OK) return;
+
+        setDisable(true);
+        feedback.setText("Clearing catalogue cache...");
+        controller.clearCacheAsync().whenComplete((ignored, failure) ->
+                Platform.runLater(() -> {
+                    setDisable(false);
+                    if (failure != null) {
+                        Throwable cause = failure instanceof CompletionException && failure.getCause() != null
+                                ? failure.getCause() : failure;
+                        feedback.setText("Could not clear catalogue cache: " + safeMessage(cause));
+                    } else {
+                        tabs.getTabs().clear();
+                        openTabs.clear();
+                        feedback.setText("Catalogue cache cleared. Open a season to retrieve it again.");
+                    }
+                }));
     }
 
     private void refresh(SeasonTab state, boolean manual) {
