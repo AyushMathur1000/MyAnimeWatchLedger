@@ -22,6 +22,7 @@ import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.Node;
 import javafx.scene.control.ButtonBase;
+import javafx.scene.control.ComboBoxBase;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
@@ -70,7 +71,12 @@ public final class MainWindow {
         root.setBottom(statusBar);
         Scene scene = new Scene(root);
         scene.addEventFilter(ActionEvent.ACTION, event -> {
-            if (event.getTarget() instanceof ButtonBase) {
+            if (event.getTarget() instanceof ButtonBase || event.getTarget() instanceof ComboBoxBase<?>) {
+                SoundFeedback.playClick();
+            }
+        });
+        scene.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (event.getButton() == MouseButton.PRIMARY && isComboBoxInteraction(event.getTarget())) {
                 SoundFeedback.playClick();
             }
         });
@@ -109,6 +115,14 @@ public final class MainWindow {
         stage.setOnHiding(event -> saveWindowState(stage));
         stage.show();
         stage.setMaximized(saved.maximized());
+    }
+
+    private static boolean isComboBoxInteraction(Object target) {
+        if (!(target instanceof Node node)) return false;
+        for (Node current = node; current != null; current = current.getParent()) {
+            if (current instanceof ComboBoxBase<?>) return true;
+        }
+        return false;
     }
 
     private static boolean isTabHeaderClick(Object target) {
