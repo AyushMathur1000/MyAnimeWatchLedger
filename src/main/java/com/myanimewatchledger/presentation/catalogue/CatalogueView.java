@@ -64,11 +64,11 @@ public final class CatalogueView extends BorderPane {
         open.setOnAction(e -> openSelectedSeason());
         refresh.setOnAction(e -> refreshSelected());
         clearCache.setOnAction(e -> clearCache());
-        HBox seasonBar = new HBox(9, previous, next, seasonChoice, yearChoice, open,
+        HBox seasonBar = new HBox(7, previous, next, seasonChoice, yearChoice, open,
                 new Separator(), refresh, clearCache);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
-        VBox top = new VBox(8, seasonBar);
+        VBox top = new VBox(5, seasonBar);
         setTop(top);
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.ALL_TABS);
         tabs.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
@@ -405,25 +405,25 @@ public final class CatalogueView extends BorderPane {
         private final ScrollPane scroll = new ScrollPane(cards);
         private final Label message = new Label();
         private final ProgressIndicator progress = new ProgressIndicator();
-        private final VBox content = new VBox(10);
+        private final VBox content = new VBox(6);
         private boolean refreshing;
         private SeasonTab(CatalogueSearch search) {
             this.search = search;
             searchField.setPromptText("Search this season… (AND across words and metadata)");
             searchField.setPrefWidth(360);
-            cards.setPadding(new Insets(8));
+            cards.setPadding(new Insets(5, 6, 8, 6));
             cards.setPrefWrapLength(1050);
             scroll.setFitToWidth(true);
             scroll.getStyleClass().add("catalogue-scroll");
             Button clearSearch = new Button("Clear search");
             clearSearch.setOnAction(event -> searchField.clear());
-            HBox searchRow = new HBox(12, searchField, clearSearch, message, progress);
+            HBox searchRow = new HBox(8, searchField, clearSearch, message, progress);
             searchRow.setAlignment(Pos.CENTER_LEFT);
             progress.setPrefSize(22, 22);
             progress.setVisible(false);
             progress.setManaged(false);
             VBox.setVgrow(scroll, Priority.ALWAYS);
-            content.setPadding(new Insets(10, 2, 2, 2));
+            content.setPadding(new Insets(6, 2, 0, 2));
             content.getChildren().addAll(searchRow, scroll);
         }
     }
