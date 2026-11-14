@@ -41,7 +41,7 @@ public final class ToastNotifications {
         Label icon = new Label(error ? "!" : "✓");
         icon.getStyleClass().addAll("app-toast-icon", error ? "app-toast-icon-error" : "app-toast-icon-success");
         StackPane iconHolder = new StackPane(icon);
-        iconHolder.getStyleClass().add("app-toast-icon-holder");
+        iconHolder.getStyleClass().addAll("app-toast-icon-holder", error ? "app-toast-icon-error" : "app-toast-icon-success");
         iconHolder.setMinSize(34, 34);
         iconHolder.setPrefSize(34, 34);
         iconHolder.setMaxSize(34, 34);
