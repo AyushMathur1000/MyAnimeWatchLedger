@@ -1,6 +1,7 @@
 package com.myanimewatchledger.application.service;
 
 import com.myanimewatchledger.application.port.LedgerRepository;
+import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,25 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LedgerServiceEventTest {
+
+    @Test
+    void publishesAddedEntryAfterSuccessfulInsert() {
+        InMemoryLedgerRepository repository = new InMemoryLedgerRepository();
+        LedgerService service = new LedgerService(repository);
+        List<LedgerChangeEvent> events = new ArrayList<>();
+        service.subscribe(events::add);
+        CatalogueAnime anime = new CatalogueAnime(99, "New Anime", "{}", "new anime",
+                Instant.parse("2026-01-01T00:00:00Z"), 0, null);
+
+        LedgerEntry added = service.add(anime, LedgerStatus.WATCH_LATER);
+
+        assertEquals(added, repository.findByMalId(99).orElseThrow());
+        assertEquals(1, events.size());
+        assertEquals(LedgerChangeEvent.Type.ADDED, events.getFirst().type());
+        assertEquals(99, events.getFirst().malId());
+        assertEquals(added, events.getFirst().entry());
+        assertNull(events.getFirst().previousStatus());
+    }
 
     @Test
     void publishesStatusChangeOnlyAfterSuccessfulUpdate() {
