@@ -22,11 +22,11 @@ public final class NavigationSidebar extends VBox {
         setSpacing(8);
 
         for (MainNavigation item : MainNavigation.values()) {
-            Button button = new Button(item.icon());
+            Button button = new Button(item.label());
             button.getStyleClass().add("navigation-button");
-            button.setMinSize(42, 42);
-            button.setPrefSize(42, 42);
-            button.setMaxSize(42, 42);
+            button.setMinSize(142, 42);
+            button.setPrefSize(142, 42);
+            button.setMaxSize(142, 42);
             button.setTooltip(new Tooltip(item.label()));
             button.setAccessibleText(item.label());
             button.setFocusTraversable(true);
