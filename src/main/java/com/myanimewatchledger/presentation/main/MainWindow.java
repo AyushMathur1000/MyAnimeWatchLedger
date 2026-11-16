@@ -177,7 +177,7 @@ public final class MainWindow {
                 Long requestedId = requestedCatalogueSearchId;
                 requestedCatalogueSearchId = null;
                 root.setCenter(new CatalogueView(
-                        new CatalogueController(services), requestedId, this::openAnimeDetails));
+                        new CatalogueController(services, windowStateStore), requestedId, this::openAnimeDetails));
             }
             case MY_LEDGER -> root.setCenter(
                     new LedgerView(new LedgerController(services.ledger()),

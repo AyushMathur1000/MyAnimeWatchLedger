@@ -44,6 +44,29 @@ class JdbcRepositoryIntegrationTest {
   var rows=catalogue.findEligibleAnime(search.searchId(),List.of("alpha","fantasy"));
   assertEquals(1,rows.size());assertEquals(2001L,rows.getFirst().malId());
  }
+
+ @Test void optionalCatalogueFilterHidesEveryLedgerStatusButKeepsBlacklistExclusionWhenDisabled(){
+  var search=catalogue.findOrCreate(Season.AUTUMN,2026);
+  Instant now=Instant.now();
+  for(LedgerStatus status:LedgerStatus.values()){
+   long id=8000L+status.ordinal();
+   String title="Status "+status.name();
+   metadata.upsert(new AnimeMetadataCache(id,title,"{\"title\":\""+title+"\"}",title.toLowerCase(),now));
+   ledger.add(new LedgerEntry(id,title,status,now,now));
+  }
+  metadata.upsert(new AnimeMetadataCache(8999,"Not Tracked","{\"title\":\"Not Tracked\"}","not tracked",now));
+  List<Long> ids=new java.util.ArrayList<>();
+  for(LedgerStatus status:LedgerStatus.values())ids.add(8000L+status.ordinal());
+  ids.add(8999L);catalogue.replaceMembership(search.searchId(),ids);
+
+  var defaultRows=catalogue.findEligibleAnime(search.searchId(),List.of());
+  assertTrue(defaultRows.stream().noneMatch(row->row.ledgerStatus()==LedgerStatus.BLACKLISTED));
+  assertTrue(defaultRows.stream().anyMatch(row->row.malId()==8999L));
+  assertTrue(defaultRows.size()>1);
+
+  var filteredRows=catalogue.findEligibleAnime(search.searchId(),List.of(),true);
+  assertEquals(List.of(8999L),filteredRows.stream().map(CatalogueAnime::malId).toList());
+ }
  @Test void openTabsCanBeRestoredAndClosed(){
   var search=catalogue.findOrCreate(Season.SUMMER,2025);
   tabs.save(new OpenCatalogueTab(search.searchId(),0,"mecha"));

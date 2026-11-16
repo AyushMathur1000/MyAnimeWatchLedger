@@ -18,8 +18,12 @@ public final class CatalogueSearchService {
     }
 
     public List<CatalogueAnime> search(long searchId, String query) {
+        return search(searchId, query, false);
+    }
+
+    public List<CatalogueAnime> search(long searchId, String query, boolean excludeLedgerEntries) {
         if (searchId <= 0) throw new IllegalArgumentException("Search ID must be positive.");
-        return catalogue.findEligibleAnime(searchId, tokenize(query));
+        return catalogue.findEligibleAnime(searchId, tokenize(query), excludeLedgerEntries);
     }
 
     /** Splits on whitespace, normalizes each term, and removes duplicates while preserving order. */

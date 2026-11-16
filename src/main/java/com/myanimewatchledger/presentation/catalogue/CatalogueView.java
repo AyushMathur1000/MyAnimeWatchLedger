@@ -32,6 +32,7 @@ public final class CatalogueView extends BorderPane {
     private final Spinner<Integer> yearChoice = new Spinner<>(1900, 9999, java.time.Year.now().getValue());
     private final Map<Long, SeasonTab> openTabs = new LinkedHashMap<>();
     private boolean restoring;
+    private boolean hideLedgerEntries;
     private AutoCloseable ledgerSubscription;
 
     public CatalogueView(CatalogueController controller) {
@@ -57,6 +58,23 @@ public final class CatalogueView extends BorderPane {
         Button next = new Button("Next →");
         Button refresh = new Button("⟳ Refresh");
         Button clearCache = new Button("Clear Cache");
+        CheckMenuItem hideLedgerItem = new CheckMenuItem("Hide anime already in My Ledger");
+        hideLedgerEntries = controller.hideLedgerEntries();
+        hideLedgerItem.setSelected(hideLedgerEntries);
+        MenuButton filter = new MenuButton("Filter", null, hideLedgerItem);
+        filter.getStyleClass().add("catalogue-filter-button");
+        filter.setTooltip(new Tooltip("Filter catalogue results"));
+        hideLedgerItem.setOnAction(event -> {
+            boolean selected = hideLedgerItem.isSelected();
+            try {
+                controller.saveHideLedgerEntries(selected);
+                hideLedgerEntries = selected;
+                for (SeasonTab tab : openTabs.values()) loadCards(tab);
+            } catch (RuntimeException failure) {
+                hideLedgerItem.setSelected(hideLedgerEntries);
+                ToastNotifications.show(this, safeMessage(failure), true);
+            }
+        });
         clearCache.setTooltip(new Tooltip("Remove cached catalogue data and search history; preserve My Ledger."));
         clearCache.setAccessibleText("Clear Catalogue Cache");
         previous.setOnAction(e -> shiftSeason(-1));
@@ -65,7 +83,7 @@ public final class CatalogueView extends BorderPane {
         refresh.setOnAction(e -> refreshSelected());
         clearCache.setOnAction(e -> clearCache());
         HBox seasonBar = new HBox(7, previous, next, seasonChoice, yearChoice, open,
-                new Separator(), refresh, clearCache);
+                new Separator(), refresh, clearCache, filter);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
         VBox top = new VBox(5, seasonBar);
@@ -239,12 +257,13 @@ public final class CatalogueView extends BorderPane {
 
     private void loadCards(SeasonTab state) {
         try {
-            List<CatalogueAnime> anime = controller.loadAnime(state.search.searchId(), state.searchField.getText());
+            List<CatalogueAnime> anime = controller.loadAnime(
+                    state.search.searchId(), state.searchField.getText(), hideLedgerEntries);
             state.cards.getChildren().clear();
             if (anime.isEmpty()) {
                 Label empty = new Label(state.search.lastSuccessfulFetchAt() == null
                         ? "No cached results yet. Refresh this season to retrieve anime."
-                        : "No anime match this search, or all results are blacklisted.");
+                        : "No anime match this search or the active filters.");
                 empty.getStyleClass().add("catalogue-empty");
                 state.cards.getChildren().add(empty);
             } else {

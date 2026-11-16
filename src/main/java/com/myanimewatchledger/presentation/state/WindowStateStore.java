@@ -17,6 +17,7 @@ public final class WindowStateStore {
     private static final String BACKGROUND_DETAILS_KEY = "anime-details.open-in-background";
     private static final String UI_SOUNDS_KEY = "ui.sound-effects.enabled";
     private static final String UI_ANIMATIONS_KEY = "ui.animations.enabled";
+    private static final String CATALOGUE_HIDE_LEDGER_KEY = "catalogue.hide-ledger-entries";
     private final Path file;
 
     public WindowStateStore(Path file) {
@@ -67,6 +68,17 @@ public final class WindowStateStore {
     public void saveUiAnimationsEnabled(boolean enabled) throws IOException {
         Properties properties = loadProperties();
         properties.setProperty(UI_ANIMATIONS_KEY, Boolean.toString(enabled));
+        saveProperties(properties);
+    }
+
+    /** Hiding ledger entries is opt-in and defaults to off for existing installations. */
+    public boolean loadHideLedgerEntries() {
+        return Boolean.parseBoolean(loadProperties().getProperty(CATALOGUE_HIDE_LEDGER_KEY, "false"));
+    }
+
+    public void saveHideLedgerEntries(boolean enabled) throws IOException {
+        Properties properties = loadProperties();
+        properties.setProperty(CATALOGUE_HIDE_LEDGER_KEY, Boolean.toString(enabled));
         saveProperties(properties);
     }
 

@@ -10,5 +10,8 @@ public interface CatalogueRepository {
  void markFetchFailed(long searchId, Instant attemptedAt, String error);
  void replaceMembership(long searchId, List<Long> malIdsInDisplayOrder);
  List<CatalogueAnime> findEligibleAnime(long searchId, List<String> andTokens);
+ default List<CatalogueAnime> findEligibleAnime(long searchId, List<String> andTokens, boolean excludeLedgerEntries) {
+  return findEligibleAnime(searchId, andTokens);
+ }
  void clearCache();
 }
