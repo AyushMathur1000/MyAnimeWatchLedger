@@ -3,6 +3,7 @@ package com.myanimewatchledger.presentation.catalogue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
 import com.myanimewatchledger.presentation.feedback.ToastNotifications;
@@ -362,6 +363,31 @@ public final class CatalogueView extends BorderPane {
                 : "Ledger: " + displayStatus(item.ledgerStatus());
         Label ledger = new Label(ledgerText);
         ledger.getStyleClass().add("anime-card-ledger");
+        ComboBox<String> preferenceChoice = new ComboBox<>(
+                javafx.collections.FXCollections.observableArrayList("Unassigned", "Like", "Dislike"));
+        preferenceChoice.setPromptText("Preference");
+        preferenceChoice.setMaxWidth(Double.MAX_VALUE);
+        preferenceChoice.setDisable(item.ledgerStatus() == null);
+        if (item.ledgerStatus() != null) {
+            controller.findLedgerEntry(item.malId()).ifPresent(entry -> preferenceChoice.setValue(
+                    entry.preference() == null ? "Unassigned" : entry.preference().name().equals("LIKE") ? "Like" : "Dislike"));
+        }
+        preferenceChoice.setTooltip(new Tooltip("Set your Like / Dislike preference"));
+        preferenceChoice.setOnAction(event -> {
+            if (item.ledgerStatus() == null || preferenceChoice.getValue() == null) return;
+            AnimePreference preference = switch (preferenceChoice.getValue()) {
+                case "Like" -> AnimePreference.LIKE;
+                case "Dislike" -> AnimePreference.DISLIKE;
+                default -> null;
+            };
+            try {
+                if (!controller.changePreference(item.malId(), preference)) {
+                    ToastNotifications.show(this, "Could not update anime preference.", true);
+                }
+            } catch (RuntimeException failure) {
+                ToastNotifications.show(this, "Could not update preference: " + safeMessage(failure), true);
+            }
+        });
         Button malAction = new Button("↗");
         malAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-mal-action");
         malAction.setTooltip(new Tooltip("Open on MyAnimeList"));
@@ -398,7 +424,7 @@ public final class CatalogueView extends BorderPane {
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
         card.setMinHeight(510);
         card.setPrefHeight(510);
-        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, cardSpacer, actions);
+        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, preferenceChoice, cardSpacer, actions);
         return card;
     }
 

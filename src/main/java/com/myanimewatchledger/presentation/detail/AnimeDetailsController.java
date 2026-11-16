@@ -6,6 +6,7 @@ import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 
 import java.util.List;
@@ -52,6 +53,10 @@ public final class AnimeDetailsController {
     public CompletableFuture<LedgerEntry> changeLedgerStatus(long malId, LedgerStatus status) {
         return services.changeLedgerStatusAsync(malId, status);
     }
+
+    public CompletableFuture<Boolean> changePreference(long malId, AnimePreference preference) { return services.changeLedgerPreferenceAsync(malId, preference); }
+
+    public CompletableFuture<Boolean> changeWatchLaterPriority(long malId, Integer priority) { return services.changeWatchLaterPriorityAsync(malId, priority); }
 
     public AutoCloseable subscribeToLedgerChanges(Consumer<LedgerChangeEvent> listener) {
         return services.ledger().subscribe(listener);

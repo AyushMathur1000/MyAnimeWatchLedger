@@ -121,4 +121,24 @@ class JdbcRepositoryIntegrationTest {
   }));
   assertTrue(ledger.findByMalId(7001).isEmpty());
  }
+
+ @Test void ledgerPreferencesAndWatchLaterPriorityPersistAndRespectStatus(){
+  Instant now=Instant.now();
+  ledger.add(new LedgerEntry(1002,"Preference Anime",LedgerStatus.WATCH_LATER,now,now));
+  LedgerEntry initial=ledger.findByMalId(1002).orElseThrow();
+  assertNull(initial.preference());
+  assertNull(initial.watchLaterPriority());
+
+  assertTrue(ledger.updatePreference(1002,AnimePreference.LIKE));
+  assertTrue(ledger.updateWatchLaterPriority(1002,1));
+  LedgerEntry preferred=ledger.findByMalId(1002).orElseThrow();
+  assertEquals(AnimePreference.LIKE,preferred.preference());
+  assertEquals(1,preferred.watchLaterPriority());
+
+  assertTrue(ledger.updateStatus(1002,LedgerStatus.WATCHING));
+  LedgerEntry watching=ledger.findByMalId(1002).orElseThrow();
+  assertEquals(AnimePreference.LIKE,watching.preference());
+  assertNull(watching.watchLaterPriority());
+  assertFalse(ledger.updateWatchLaterPriority(1002,2));
+ }
 }

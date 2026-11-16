@@ -8,6 +8,7 @@ import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.OpenAnimeDetailTab;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
 import com.myanimewatchledger.presentation.feedback.ToastNotifications;
@@ -126,6 +127,7 @@ public final class AnimeDetailsView extends BorderPane {
         state.ledgerAction.setOnAction(event -> addLedgerEntry(state));
         state.ledgerStatusChoice.setOnAction(event ->
                 changeLedgerEntryStatus(state, state.ledgerStatusChoice.getValue()));
+        state.preferenceChoice.setOnAction(event -> changeLedgerPreference(state, state.preferenceChoice.getValue()));
         state.tab.setText("Anime #" + malId);
         state.tab.setUserData(malId);
         state.tab.setOnClosed(event -> {
@@ -208,8 +210,7 @@ public final class AnimeDetailsView extends BorderPane {
         canonical.setWrapText(true);
         Button openMal = new Button("Open MyAnimeList ↗");
         openMal.setOnAction(event -> openMal(state.malId));
-        HBox externalAndLedger = new HBox(10, openMal, state.ledgerStatus,
-                state.ledgerStatusChoice, state.ledgerAction);
+        HBox externalAndLedger = new HBox(10, openMal, state.ledgerStatus, state.ledgerStatusChoice, state.ledgerAction, state.preferenceChoice);
         externalAndLedger.setAlignment(Pos.CENTER_LEFT);
         externalAndLedger.getStyleClass().add("anime-details-ledger-actions");
         heading.getChildren().addAll(preferredTitle, canonical, externalAndLedger);
@@ -262,6 +263,9 @@ public final class AnimeDetailsView extends BorderPane {
         state.updatingLedger = true;
         state.ledgerStatus.setText(entry == null ? "Not in My Ledger" : "In My Ledger");
         state.ledgerStatusChoice.setValue(entry == null ? LedgerStatus.WATCH_LATER : entry.status());
+        state.preferenceChoice.setValue(entry == null || entry.preference() == null ? "Unassigned"
+                : entry.preference() == AnimePreference.LIKE ? "Like" : "Dislike");
+        state.preferenceChoice.setDisable(entry == null);
         state.updatingLedger = false;
         state.ledgerStatusChoice.setDisable(false);
         state.ledgerAction.setVisible(entry == null);
@@ -288,6 +292,30 @@ public final class AnimeDetailsView extends BorderPane {
                     configureLedgerActions(state, entry);
                     ToastNotifications.show(this, "Added “" + entry.title() + "” to My Ledger.", false);
                 }));
+    }
+
+    private void changeLedgerPreference(DetailTab state, String selected) {
+        if (state.updatingLedger || state.ledgerEntry == null || selected == null) return;
+        AnimePreference preference = switch (selected) {
+            case "Like" -> AnimePreference.LIKE;
+            case "Dislike" -> AnimePreference.DISLIKE;
+            default -> null;
+        };
+        AnimePreference previous = state.ledgerEntry.preference();
+        state.preferenceChoice.setDisable(true);
+        controller.changePreference(state.malId, preference).whenComplete((saved, failure) -> Platform.runLater(() -> {
+            if (!openTabs.containsKey(state.malId)) return;
+            if (failure != null || !Boolean.TRUE.equals(saved)) {
+                state.preferenceChoice.setValue(previous == null ? "Unassigned"
+                        : previous == AnimePreference.LIKE ? "Like" : "Dislike");
+                state.ledgerStatus.setText("Preference save failed.");
+            } else {
+                controller.findLedgerEntry(state.malId).whenComplete((entry, lookupFailure) -> Platform.runLater(() -> {
+                    if (lookupFailure == null && entry.isPresent()) state.ledgerEntry = entry.orElseThrow();
+                }));
+            }
+            state.preferenceChoice.setDisable(state.ledgerEntry == null);
+        }));
     }
 
     private void changeLedgerEntryStatus(DetailTab state, LedgerStatus selected) {
@@ -427,6 +455,8 @@ public final class AnimeDetailsView extends BorderPane {
         private final ComboBox<LedgerStatus> ledgerStatusChoice =
                 new ComboBox<>(javafx.collections.FXCollections.observableArrayList(LedgerStatus.values()));
         private final Button ledgerAction = new Button("Add");
+        private final ComboBox<String> preferenceChoice = new ComboBox<>(
+                javafx.collections.FXCollections.observableArrayList("Unassigned", "Like", "Dislike"));
         private AnimeMetadataCache metadataCache;
         private LedgerEntry ledgerEntry;
         private boolean updatingLedger;
@@ -446,6 +476,9 @@ public final class AnimeDetailsView extends BorderPane {
             });
             ledgerAction.setDisable(true);
             ledgerStatusChoice.setDisable(true);
+            preferenceChoice.setPromptText("Preference");
+            preferenceChoice.setTooltip(new Tooltip("Set your Like / Dislike preference"));
+            preferenceChoice.setDisable(true);
             ledgerStatus.getStyleClass().add("anime-details-ledger-status");
             body.setPadding(new Insets(12));
             content.setPadding(new Insets(10, 2, 2, 2));

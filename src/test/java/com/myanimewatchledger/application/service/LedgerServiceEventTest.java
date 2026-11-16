@@ -3,6 +3,7 @@ package com.myanimewatchledger.application.service;
 import com.myanimewatchledger.application.port.LedgerRepository;
 import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import org.junit.jupiter.api.Test;
 
@@ -111,10 +112,25 @@ class LedgerServiceEventTest {
             LedgerEntry current = entries.get(malId);
             if (current == null) return false;
             entries.put(malId, new LedgerEntry(current.malId(), current.title(), status,
-                    current.dateAdded(), Instant.now()));
+                    current.dateAdded(), Instant.now(), current.preference(),
+                    status == LedgerStatus.WATCH_LATER ? current.watchLaterPriority() : null));
             return true;
         }
         @Override public boolean updatePreferredTitle(long malId, String title) { return false; }
+        @Override public boolean updatePreference(long malId, AnimePreference preference) {
+            LedgerEntry current = entries.get(malId);
+            if (current == null) return false;
+            entries.put(malId, new LedgerEntry(current.malId(), current.title(), current.status(),
+                    current.dateAdded(), Instant.now(), preference, current.watchLaterPriority()));
+            return true;
+        }
+        @Override public boolean updateWatchLaterPriority(long malId, Integer priority) {
+            LedgerEntry current = entries.get(malId);
+            if (current == null || current.status() != LedgerStatus.WATCH_LATER) return false;
+            entries.put(malId, new LedgerEntry(current.malId(), current.title(), current.status(),
+                    current.dateAdded(), Instant.now(), current.preference(), priority));
+            return true;
+        }
         @Override public boolean remove(long malId) { return entries.remove(malId) != null; }
     }
 }
