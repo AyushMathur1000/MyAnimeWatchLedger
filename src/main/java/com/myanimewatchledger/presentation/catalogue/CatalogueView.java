@@ -18,6 +18,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Window;
 
 import java.time.Clock;
+import java.awt.Desktop;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.function.LongConsumer;
@@ -327,6 +329,12 @@ public final class CatalogueView extends BorderPane {
                 : "Ledger: " + displayStatus(item.ledgerStatus());
         Label ledger = new Label(ledgerText);
         ledger.getStyleClass().add("anime-card-ledger");
+        Button malAction = new Button("↗");
+        malAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-mal-action");
+        malAction.setTooltip(new Tooltip("Open on MyAnimeList"));
+        malAction.setAccessibleText("Open on MyAnimeList");
+        malAction.setOnAction(e -> openMal(item.malId()));
+
         Button detailsAction = new Button("ⓘ");
         detailsAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-details-action");
         detailsAction.setTooltip(new Tooltip("View anime details"));
@@ -351,7 +359,7 @@ public final class CatalogueView extends BorderPane {
         blacklistAction.setDisable(item.ledgerStatus() != null);
         blacklistAction.setOnAction(e -> addToLedger(item, LedgerStatus.BLACKLISTED, blacklistAction, ledger));
 
-        HBox actions = new HBox(8, detailsAction, ledgerAction, blacklistAction);
+        HBox actions = new HBox(8, malAction, detailsAction, ledgerAction, blacklistAction);
         actions.setAlignment(Pos.CENTER_RIGHT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
@@ -359,6 +367,17 @@ public final class CatalogueView extends BorderPane {
         card.setPrefHeight(510);
         card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, cardSpacer, actions);
         return card;
+    }
+
+    private static void openMal(long malId) {
+        try {
+            if (Desktop.isDesktopSupported()
+                    && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(URI.create("https://myanimelist.net/anime/" + malId));
+            }
+        } catch (Exception ignored) {
+            // Browser integration is optional; the catalogue remains usable.
+        }
     }
 
     private void ledgerChanged(LedgerChangeEvent event) {
