@@ -46,7 +46,7 @@ class JdbcRepositoryIntegrationTest {
  }
 
  @Test void optionalCatalogueFilterHidesEveryLedgerStatusButKeepsBlacklistExclusionWhenDisabled(){
-  var search=catalogue.findOrCreate(Season.AUTUMN,2026);
+  var search=catalogue.findOrCreate(Season.FALL,2026);
   Instant now=Instant.now();
   for(LedgerStatus status:LedgerStatus.values()){
    long id=8000L+status.ordinal();
