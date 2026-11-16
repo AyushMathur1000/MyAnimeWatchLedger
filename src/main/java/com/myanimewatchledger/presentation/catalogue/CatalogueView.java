@@ -18,6 +18,8 @@ import javafx.scene.text.Text;
 import javafx.stage.Window;
 
 import java.time.Clock;
+import java.awt.Desktop;
+import java.net.URI;
 import java.util.*;
 import java.util.concurrent.CompletionException;
 import java.util.function.LongConsumer;
@@ -32,6 +34,7 @@ public final class CatalogueView extends BorderPane {
     private final Spinner<Integer> yearChoice = new Spinner<>(1900, 9999, java.time.Year.now().getValue());
     private final Map<Long, SeasonTab> openTabs = new LinkedHashMap<>();
     private boolean restoring;
+    private boolean hideLedgerEntries;
     private AutoCloseable ledgerSubscription;
 
     public CatalogueView(CatalogueController controller) {
@@ -57,6 +60,23 @@ public final class CatalogueView extends BorderPane {
         Button next = new Button("Next →");
         Button refresh = new Button("⟳ Refresh");
         Button clearCache = new Button("Clear Cache");
+        CheckMenuItem hideLedgerItem = new CheckMenuItem("Hide anime already in My Ledger");
+        hideLedgerEntries = controller.hideLedgerEntries();
+        hideLedgerItem.setSelected(hideLedgerEntries);
+        MenuButton filter = new MenuButton("Filter", null, hideLedgerItem);
+        filter.getStyleClass().add("catalogue-filter-button");
+        filter.setTooltip(new Tooltip("Filter catalogue results"));
+        hideLedgerItem.setOnAction(event -> {
+            boolean selected = hideLedgerItem.isSelected();
+            try {
+                controller.saveHideLedgerEntries(selected);
+                hideLedgerEntries = selected;
+                for (SeasonTab tab : openTabs.values()) loadCards(tab);
+            } catch (RuntimeException failure) {
+                hideLedgerItem.setSelected(hideLedgerEntries);
+                ToastNotifications.show(this, safeMessage(failure), true);
+            }
+        });
         clearCache.setTooltip(new Tooltip("Remove cached catalogue data and search history; preserve My Ledger."));
         clearCache.setAccessibleText("Clear Catalogue Cache");
         previous.setOnAction(e -> shiftSeason(-1));
@@ -65,7 +85,7 @@ public final class CatalogueView extends BorderPane {
         refresh.setOnAction(e -> refreshSelected());
         clearCache.setOnAction(e -> clearCache());
         HBox seasonBar = new HBox(7, previous, next, seasonChoice, yearChoice, open,
-                new Separator(), refresh, clearCache);
+                new Separator(), refresh, clearCache, filter);
         seasonBar.setAlignment(Pos.CENTER_LEFT);
         seasonBar.getStyleClass().add("catalogue-season-bar");
         VBox top = new VBox(5, seasonBar);
@@ -239,12 +259,13 @@ public final class CatalogueView extends BorderPane {
 
     private void loadCards(SeasonTab state) {
         try {
-            List<CatalogueAnime> anime = controller.loadAnime(state.search.searchId(), state.searchField.getText());
+            List<CatalogueAnime> anime = controller.loadAnime(
+                    state.search.searchId(), state.searchField.getText(), hideLedgerEntries);
             state.cards.getChildren().clear();
             if (anime.isEmpty()) {
                 Label empty = new Label(state.search.lastSuccessfulFetchAt() == null
                         ? "No cached results yet. Refresh this season to retrieve anime."
-                        : "No anime match this search, or all results are blacklisted.");
+                        : "No anime match this search or the active filters.");
                 empty.getStyleClass().add("catalogue-empty");
                 state.cards.getChildren().add(empty);
             } else {
@@ -308,6 +329,12 @@ public final class CatalogueView extends BorderPane {
                 : "Ledger: " + displayStatus(item.ledgerStatus());
         Label ledger = new Label(ledgerText);
         ledger.getStyleClass().add("anime-card-ledger");
+        Button malAction = new Button("↗");
+        malAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-mal-action");
+        malAction.setTooltip(new Tooltip("Open on MyAnimeList"));
+        malAction.setAccessibleText("Open on MyAnimeList");
+        malAction.setOnAction(e -> openMal(item.malId()));
+
         Button detailsAction = new Button("ⓘ");
         detailsAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-details-action");
         detailsAction.setTooltip(new Tooltip("View anime details"));
@@ -332,7 +359,7 @@ public final class CatalogueView extends BorderPane {
         blacklistAction.setDisable(item.ledgerStatus() != null);
         blacklistAction.setOnAction(e -> addToLedger(item, LedgerStatus.BLACKLISTED, blacklistAction, ledger));
 
-        HBox actions = new HBox(8, detailsAction, ledgerAction, blacklistAction);
+        HBox actions = new HBox(8, malAction, detailsAction, ledgerAction, blacklistAction);
         actions.setAlignment(Pos.CENTER_RIGHT);
         Region cardSpacer = new Region();
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
@@ -340,6 +367,17 @@ public final class CatalogueView extends BorderPane {
         card.setPrefHeight(510);
         card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, cardSpacer, actions);
         return card;
+    }
+
+    private static void openMal(long malId) {
+        try {
+            if (Desktop.isDesktopSupported()
+                    && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                Desktop.getDesktop().browse(URI.create("https://myanimelist.net/anime/" + malId));
+            }
+        } catch (Exception ignored) {
+            // Browser integration is optional; the catalogue remains usable.
+        }
     }
 
     private void ledgerChanged(LedgerChangeEvent event) {

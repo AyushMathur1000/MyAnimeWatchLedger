@@ -53,6 +53,9 @@ public final class JdbcCatalogueRepository implements CatalogueRepository {
   });
  }
  @Override public List<CatalogueAnime> findEligibleAnime(long id,List<String> tokens){
+  return findEligibleAnime(id,tokens,false);
+ }
+ @Override public List<CatalogueAnime> findEligibleAnime(long id,List<String> tokens,boolean excludeLedgerEntries){
   List<String> terms=tokens==null?List.of():tokens.stream().filter(t->t!=null&&!t.isBlank()).toList();
   return transactions.withConnection(c->{
    StringBuilder sql=new StringBuilder("""
@@ -61,6 +64,7 @@ public final class JdbcCatalogueRepository implements CatalogueRepository {
     LEFT JOIN ledger_entry l ON l.mal_id=m.mal_id
     WHERE s.search_id=? AND (l.mal_id IS NULL OR l.status<>'BLACKLISTED')
     """);
+   if(excludeLedgerEntries)sql.append(" AND l.mal_id IS NULL");
    for(int i=0;i<terms.size();i++)sql.append(" AND instr(lower(m.searchable_text),lower(?))>0");
    sql.append(" ORDER BY s.display_order");
    try(PreparedStatement s=c.prepareStatement(sql.toString())){

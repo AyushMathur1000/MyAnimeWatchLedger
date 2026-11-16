@@ -6,6 +6,8 @@ import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.presentation.state.WindowStateStore;
+import java.io.IOException;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,8 +17,12 @@ import java.util.function.Consumer;
 /** Thin presentation boundary for seasonal catalogue and ledger actions. */
 public final class CatalogueController {
     private final ApplicationServices services;
+    private final WindowStateStore preferences;
 
-    public CatalogueController(ApplicationServices services) { this.services = services; }
+    public CatalogueController(ApplicationServices services, WindowStateStore preferences) {
+        this.services = services;
+        this.preferences = preferences;
+    }
 
     public List<OpenCatalogueTab> restoreTabs() { return services.catalogueTabs().restoreOpenTabs(); }
     public OpenCatalogueTab open(Season season, int year, String query) {
@@ -25,7 +31,17 @@ public final class CatalogueController {
     public boolean close(long id) { return services.catalogueTabs().close(id); }
     public boolean updateQuery(long id, String query) { return services.catalogueTabs().updateQuery(id, query); }
     public Optional<CatalogueSearch> findSearch(long id) { return services.catalogue().findSeason(id); }
-    public List<CatalogueAnime> loadAnime(long id, String query) { return services.catalogue().getAnime(id, query); }
+    public List<CatalogueAnime> loadAnime(long id, String query) { return loadAnime(id, query, false); }
+    public List<CatalogueAnime> loadAnime(long id, String query, boolean excludeLedgerEntries) {
+        return services.catalogue().getAnime(id, query, excludeLedgerEntries);
+    }
+    public boolean hideLedgerEntries() { return preferences.loadHideLedgerEntries(); }
+    public void saveHideLedgerEntries(boolean enabled) {
+        try { preferences.saveHideLedgerEntries(enabled); }
+        catch (IOException failure) {
+            throw new IllegalStateException("Could not save the Catalogue filter preference.", failure);
+        }
+    }
     public CompletableFuture<CatalogueRefreshOutcome> refresh(Season season, int year) {
         return services.refreshSeasonAsync(season, year);
     }

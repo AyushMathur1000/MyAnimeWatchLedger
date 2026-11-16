@@ -44,6 +44,18 @@ class WindowStateStoreTest {
     }
 
     @Test
+    void catalogueLedgerFilterDefaultsOffAndPersistsWithoutLosingOtherPreferences() throws Exception {
+        var store = new WindowStateStore(temp.resolve("config/ui.properties"));
+        assertFalse(store.loadHideLedgerEntries());
+        store.saveUiSoundsEnabled(false);
+        store.saveHideLedgerEntries(true);
+        assertTrue(store.loadHideLedgerEntries());
+        assertFalse(store.loadUiSoundsEnabled());
+        store.saveHideLedgerEntries(false);
+        assertFalse(store.loadHideLedgerEntries());
+    }
+
+    @Test
     void rejectsUnsupportedWindowDimensions() {
         assertThrows(IllegalArgumentException.class,
                 () -> new WindowState(640, 480, false, MainNavigation.MY_LEDGER));

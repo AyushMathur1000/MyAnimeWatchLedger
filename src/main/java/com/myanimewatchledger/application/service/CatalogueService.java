@@ -35,7 +35,11 @@ public final class CatalogueService {
     }
 
     public List<CatalogueAnime> getAnime(long searchId, String query) {
-        return searchService.search(searchId, query);
+        return getAnime(searchId, query, false);
+    }
+
+    public List<CatalogueAnime> getAnime(long searchId, String query, boolean excludeLedgerEntries) {
+        return searchService.search(searchId, query, excludeLedgerEntries);
     }
 
     public void clearCache() {
