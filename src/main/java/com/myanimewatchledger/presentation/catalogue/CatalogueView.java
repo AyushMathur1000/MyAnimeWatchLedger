@@ -9,6 +9,7 @@ import com.myanimewatchledger.presentation.feedback.ToastNotifications;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -257,23 +258,55 @@ public final class CatalogueView extends BorderPane {
                 }));
     }
 
+    /**
+     * Reconciles the visible result set by MAL ID. Existing card nodes are retained when their
+     * displayed data is unchanged; only changed/new cards are created and only obsolete nodes
+     * are detached. This keeps unrelated poster ImageViews alive during ledger changes, searches,
+     * and successful catalogue refreshes.
+     */
     private void loadCards(SeasonTab state) {
         try {
             List<CatalogueAnime> anime = controller.loadAnime(
                     state.search.searchId(), state.searchField.getText(), hideLedgerEntries);
-            state.cards.getChildren().clear();
+            List<Node> desiredNodes = new ArrayList<>(anime.size() == 0 ? 1 : anime.size());
+
+            for (CatalogueAnime item : anime) {
+                CardCacheEntry cached = state.cardCache.get(item.malId());
+                if (cached == null || !cached.matches(item)) {
+                    cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
+                            item.ledgerStatus(), createCard(item));
+                    state.cardCache.put(item.malId(), cached);
+                }
+                desiredNodes.add(cached.card());
+            }
+
             if (anime.isEmpty()) {
-                Label empty = new Label(state.search.lastSuccessfulFetchAt() == null
+                state.emptyState.setText(state.search.lastSuccessfulFetchAt() == null
                         ? "No cached results yet. Refresh this season to retrieve anime."
                         : "No anime match this search or the active filters.");
-                empty.getStyleClass().add("catalogue-empty");
-                state.cards.getChildren().add(empty);
-            } else {
-                for (CatalogueAnime item : anime) state.cards.getChildren().add(createCard(item));
+                desiredNodes.add(state.emptyState);
             }
+
+            reconcileChildren(state.cards, desiredNodes);
             state.message.setText(anime.size() + " anime");
         } catch (RuntimeException failure) {
             state.message.setText("Could not load cached catalogue: " + safeMessage(failure));
+        }
+    }
+
+    /** Applies the smallest possible child-list edits while preserving the identity of retained nodes. */
+    private static void reconcileChildren(Pane container, List<Node> desiredNodes) {
+        List<Node> children = container.getChildren();
+        for (int index = 0; index < desiredNodes.size(); index++) {
+            Node desired = desiredNodes.get(index);
+            if (index < children.size() && children.get(index) == desired) continue;
+
+            int existingIndex = children.indexOf(desired);
+            if (existingIndex >= 0) children.remove(existingIndex);
+            children.add(Math.min(index, children.size()), desired);
+        }
+        while (children.size() > desiredNodes.size()) {
+            children.remove(children.size() - 1);
         }
     }
 
@@ -449,6 +482,8 @@ public final class CatalogueView extends BorderPane {
         private final Label message = new Label();
         private final ProgressIndicator progress = new ProgressIndicator();
         private final VBox content = new VBox(6);
+        private final Map<Long, CardCacheEntry> cardCache = new HashMap<>();
+        private final Label emptyState = new Label();
         private boolean refreshing;
         private SeasonTab(CatalogueSearch search) {
             this.search = search;
@@ -468,6 +503,15 @@ public final class CatalogueView extends BorderPane {
             VBox.setVgrow(scroll, Priority.ALWAYS);
             content.setPadding(new Insets(6, 2, 0, 2));
             content.getChildren().addAll(searchRow, scroll);
+        }
+    }
+
+    private record CardCacheEntry(String metadataJson, String preferredTitle,
+                                  LedgerStatus ledgerStatus, VBox card) {
+        private boolean matches(CatalogueAnime item) {
+            return Objects.equals(metadataJson, item.metadataJson())
+                    && Objects.equals(preferredTitle, item.preferredTitle())
+                    && ledgerStatus == item.ledgerStatus();
         }
     }
 }
