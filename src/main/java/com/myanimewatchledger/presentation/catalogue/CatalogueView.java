@@ -7,7 +7,8 @@ import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
-import com.myanimewatchledger.presentation.feedback.ToastNotifications;\nimport com.myanimewatchledger.presentation.state.CataloguePresentation;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;
+import com.myanimewatchledger.presentation.state.CataloguePresentation;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
@@ -453,7 +454,8 @@ public final class CatalogueView extends BorderPane {
         card.setAlignment(Pos.CENTER_LEFT);
         card.setPadding(new Insets(24));
         card.setMaxWidth(Double.MAX_VALUE);
-        card.setMinHeight(420);\n        card.setPrefHeight(-1);
+        card.setMinHeight(420);
+        card.setPrefHeight(-1);
         return card;
     }
 
