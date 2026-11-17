@@ -233,7 +233,6 @@ public final class LedgerView extends VBox {
             if ("Unassigned".equals(right)) return -1;
             return Integer.compare(Integer.parseInt(left), Integer.parseInt(right));
         });
-        priority.setMinWidth(105);
 
         TableColumn<LedgerEntry, java.time.Instant> added = dateColumn("Date added", LedgerEntry::dateAdded);
         TableColumn<LedgerEntry, java.time.Instant> modified = dateColumn("Last modified", LedgerEntry::lastModified);
@@ -450,7 +449,8 @@ public final class LedgerView extends VBox {
                 table.refresh();
                 return;
             }
-            source.set(source.indexOf(entry), controller.find(entry.malId()).orElseThrow());
+            int index = source.indexOf(entry);
+            if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
             showFeedback(priority == null ? "Watch Later priority cleared." : "Watch Later priority set to " + priority + ".", false);
         } catch (RuntimeException failure) {
             showFeedback("Could not update priority: " + safeMessage(failure), true);
