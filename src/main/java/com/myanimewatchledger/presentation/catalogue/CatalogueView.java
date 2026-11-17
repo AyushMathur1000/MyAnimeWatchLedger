@@ -283,11 +283,12 @@ public final class CatalogueView extends BorderPane {
                 CardCacheEntry cached = state.cardCache.get(item.malId());
                 if (cached == null || !cached.matches(item, preference)) {
                     cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
-                            item.ledgerStatus(), preference, createCard(item, preference),
-                            createCarouselCard(item, preference));
+                            item.ledgerStatus(), preference,
+                            carouselMode ? null : createCard(item, preference),
+                            carouselMode ? createCarouselCard(item, preference) : null);
                     state.cardCache.put(item.malId(), cached);
                 }
-                desiredNodes.add(cached.card());
+                if (!carouselMode) desiredNodes.add(cached.card());
                 state.visibleIds.add(item.malId());
             }
 
