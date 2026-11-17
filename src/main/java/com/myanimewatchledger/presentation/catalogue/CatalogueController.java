@@ -43,6 +43,15 @@ public final class CatalogueController {
             throw new IllegalStateException("Could not save the Catalogue filter preference.", failure);
         }
     }
+    public CataloguePresentation cataloguePresentation() {
+        return preferences.loadCataloguePresentation();
+    }
+    public void saveCataloguePresentation(CataloguePresentation presentation) {
+        try { preferences.saveCataloguePresentation(presentation); }
+        catch (IOException failure) {
+            throw new IllegalStateException("Could not save the Catalogue presentation preference.", failure);
+        }
+    }
     public CompletableFuture<CatalogueRefreshOutcome> refresh(Season season, int year) {
         return services.refreshSeasonAsync(season, year);
     }
