@@ -89,4 +89,30 @@ class WindowStateStoreTest {
         assertEquals(CataloguePresentation.GRID, new WindowStateStore(file).loadCataloguePresentation());
     }
 
+    @Test
+    void automaticBackupSettingsUseApprovedDefaultsAndPersistOutsideOtherPreferences() throws Exception {
+        var store = new WindowStateStore(temp.resolve("config/ui.properties"));
+        var defaults = store.loadAutomaticBackupSettings();
+        assertTrue(defaults.enabled());
+        assertEquals(com.myanimewatchledger.config.BackupFrequency.WEEKLY, defaults.frequency());
+        assertEquals(2, defaults.retentionCount());
+        assertEquals(com.myanimewatchledger.config.ApplicationPaths.dataDirectory().resolve("backups"),
+                defaults.destination());
+
+        var changed = new com.myanimewatchledger.config.AutomaticBackupSettings(false,
+                com.myanimewatchledger.config.BackupFrequency.MONTHLY, 5, temp.resolve("custom-backups"));
+        store.saveAutomaticBackupSettings(changed);
+        store.saveLastAutomaticBackup(java.time.Instant.parse("2026-11-17T10:00:00Z"));
+        assertEquals(changed, store.loadAutomaticBackupSettings());
+        assertEquals(java.time.Instant.parse("2026-11-17T10:00:00Z"), store.loadLastAutomaticBackup());
+        assertFalse(store.loadUiSoundsEnabled());
+    }
+
+    @Test
+    void automaticBackupSettingsRejectInvalidRetentionCounts() {
+        assertThrows(IllegalArgumentException.class, () ->
+                new com.myanimewatchledger.config.AutomaticBackupSettings(true,
+                        com.myanimewatchledger.config.BackupFrequency.WEEKLY, 0, temp));
+    }
+
 }
