@@ -864,7 +864,12 @@ and the goal of keeping development manageable for one developer.
                           presentation            window
 
   OD-02                   Database backup and     Manual and automatic;
-                          restore                 automatic enabled by\n                                                  default; Weekly; retain\n                                                  2 automatic backups;\n                                                  configurable destination\n\n  OD-03                   Ledger record deletion  Explicit deletion with
+                          restore                 automatic enabled by
+                                                  default; Weekly; retain
+                                                  2 automatic backups;
+                                                  configurable destination
+
+  OD-03                   Ledger record deletion  Explicit deletion with
                                                   confirmation
 
   OD-04                   Duplicate anime records One record per MAL ID
@@ -983,7 +988,7 @@ locally outside the SQLite database.
   refresh is asynchronous and preserves prior successful data on failure.
 - **Settings:** MAL Client ID, Catalogue Presentation (Grid / Single-card
   Carousel), background-opening preference, sound and animation toggles,
-  database backup/restore, and catalogue cache clearing. Automatic backup settings and scheduling are approved requirements but remain pending implementation.
+  database backup/restore, automatic backup settings (enablement, frequency, retention, and destination), and catalogue cache clearing.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
