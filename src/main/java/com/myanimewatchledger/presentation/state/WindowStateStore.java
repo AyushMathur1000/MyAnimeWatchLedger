@@ -134,6 +134,12 @@ public final class WindowStateStore {
     public void saveAutomaticBackupSettings(AutomaticBackupSettings settings) throws IOException {
         Objects.requireNonNull(settings, "settings");
         Properties properties = loadProperties();
+        String previousDestination = properties.getProperty(AUTO_BACKUP_DESTINATION,
+                ApplicationPaths.dataDirectory().resolve("backups").toString());
+        if (!Path.of(previousDestination).toAbsolutePath().normalize().equals(settings.destination())) {
+            // A newly selected folder should receive its first backup on the next startup.
+            properties.remove(AUTO_BACKUP_LAST_SUCCESS);
+        }
         properties.setProperty(AUTO_BACKUP_ENABLED, Boolean.toString(settings.enabled()));
         properties.setProperty(AUTO_BACKUP_FREQUENCY, settings.frequency().name());
         properties.setProperty(AUTO_BACKUP_RETENTION, Integer.toString(settings.retentionCount()));
