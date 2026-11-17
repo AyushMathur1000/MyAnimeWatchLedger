@@ -475,8 +475,8 @@ public final class CatalogueView extends BorderPane {
                 label.setMaxWidth(Double.MAX_VALUE);
                 label.setWrapText(true);
                 if (label.getStyleClass().contains("anime-card-synopsis")) {
-                    label.setMaxHeight(180);
-                    label.setMinHeight(Region.USE_PREF_SIZE);
+                    // Keep the full synopsis in the scrollable details column.
+                    label.setMaxHeight(Double.MAX_VALUE);
                 }
                 if (label.getStyleClass().contains("anime-card-title")) {
                     label.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
@@ -551,7 +551,7 @@ public final class CatalogueView extends BorderPane {
 
         HBox card = new HBox(36, posterNode, informationScroll);
         card.prefHeightProperty().bind(
-                Bindings.max(460, state.carouselCardHost.heightProperty().subtract(8)));
+                Bindings.max(490, state.carouselCardHost.heightProperty().subtract(8)));
         card.prefWidthProperty().bind(state.carouselCardHost.widthProperty());
         card.getStyleClass().addAll("anime-card", "anime-carousel-card");
         card.setAlignment(Pos.TOP_LEFT);
