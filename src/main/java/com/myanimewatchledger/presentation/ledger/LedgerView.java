@@ -52,7 +52,13 @@ public final class LedgerView extends VBox {
     }
 
     public LedgerView(LedgerController controller, LongConsumer onOpenDetails, Runnable onOpenCurrentSeason) {
+        this(controller, onOpenDetails, onOpenCurrentSeason, "", Set.of());
+    }
+
+    public LedgerView(LedgerController controller, LongConsumer onOpenDetails, Runnable onOpenCurrentSeason,
+                      String initialSearchText, Set<LedgerStatus> initialStatuses) {
         this.controller = Objects.requireNonNull(controller, "controller");
+        this.selectedStatuses.addAll(Objects.requireNonNull(initialStatuses, "initialStatuses"));
         this.onOpenDetails = Objects.requireNonNull(onOpenDetails, "onOpenDetails");
         this.onOpenCurrentSeason = Objects.requireNonNull(onOpenCurrentSeason, "onOpenCurrentSeason");
         getStyleClass().add("ledger-workspace");
@@ -69,6 +75,7 @@ public final class LedgerView extends VBox {
         heading.setAlignment(Pos.BASELINE_LEFT);
         searchField.setPromptText("Search anime titles…");
         searchField.setPrefWidth(300);
+        searchField.setText(initialSearchText == null ? "" : initialSearchText);
         searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
         HBox searchRow = new HBox(10, searchField, createStatusFilters());
         searchRow.setAlignment(Pos.CENTER_LEFT);
@@ -97,6 +104,7 @@ public final class LedgerView extends VBox {
         for (LedgerStatus status : LedgerStatus.values()) {
             CheckBox check = new CheckBox(displayStatus(status));
             check.getStyleClass().add("ledger-status-filter");
+            check.setSelected(selectedStatuses.contains(status));
             check.setOnAction(event -> {
                 if (check.isSelected()) selectedStatuses.add(status);
                 else selectedStatuses.remove(status);
@@ -397,6 +405,14 @@ public final class LedgerView extends VBox {
             showFeedback("Database error: " + safeMessage(exception), true);
             updateCount();
         }
+    }
+
+    public String getSearchText() {
+        return searchField.getText() == null ? "" : searchField.getText();
+    }
+
+    public Set<LedgerStatus> getSelectedStatuses() {
+        return Set.copyOf(selectedStatuses);
     }
 
     private void applyFilters() {
