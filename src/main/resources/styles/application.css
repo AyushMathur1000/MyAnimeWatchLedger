@@ -291,7 +291,7 @@
     -fx-background-color: #405a80;
     -fx-border-color: #7899c7;
 }
-.ledger-table .combo-box {
+.ledger-table .combo-box:not(.ledger-status-choice) {
     -fx-min-width: 58px;
     -fx-pref-width: 62px;
     -fx-max-width: 66px;
