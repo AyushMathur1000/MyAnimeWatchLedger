@@ -292,9 +292,9 @@
     -fx-border-color: #7899c7;
 }
 .ledger-table .combo-box {
-    -fx-min-width: 66px;
-    -fx-pref-width: 70px;
-    -fx-max-width: 74px;
+    -fx-min-width: 58px;
+    -fx-pref-width: 62px;
+    -fx-max-width: 66px;
 }
 .anime-card .anime-card-preference-action {
     -fx-min-width: 34px;
