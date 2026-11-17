@@ -4,6 +4,7 @@ import com.myanimewatchledger.application.service.*;
 import com.myanimewatchledger.config.*;
 import com.myanimewatchledger.infrastructure.mal.*;
 import com.myanimewatchledger.infrastructure.persistence.*;
+import com.myanimewatchledger.presentation.state.WindowStateStore;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -71,7 +72,9 @@ public final class ApplicationInitializer implements AutoCloseable {
 
             services = new ApplicationServices(
                     ledger, catalogue, tabs, refresh, details, detailTabs, background, malConnection,
-                    new DatabaseBackupService(database));
+                    new DatabaseBackupService(database),
+                    new AutomaticDatabaseBackupService(new DatabaseBackupService(database),
+                            new WindowStateStore(ApplicationPaths.dataDirectory().resolve("config").resolve("ui.properties"))));
             LOG.info("Application services initialized. MAL configured: " + services.isMalConfigured());
         } catch (IOException | SQLException | RuntimeException failure) {
             close();

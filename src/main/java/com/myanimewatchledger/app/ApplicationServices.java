@@ -29,6 +29,7 @@ public final class ApplicationServices {
     private final BackgroundTaskExecutor background;
     private final MalApiConnection malConnection;
     private final DatabaseBackupService databaseBackup;
+    private final AutomaticDatabaseBackupService automaticBackups;
 
     ApplicationServices(
             LedgerService ledger,
@@ -39,7 +40,8 @@ public final class ApplicationServices {
             AnimeDetailTabService animeDetailTabs,
             BackgroundTaskExecutor background,
             MalApiConnection malConnection,
-            DatabaseBackupService databaseBackup) {
+            DatabaseBackupService databaseBackup,
+            AutomaticDatabaseBackupService automaticBackups) {
         this.ledger = Objects.requireNonNull(ledger);
         this.catalogue = Objects.requireNonNull(catalogue);
         this.tabs = Objects.requireNonNull(tabs);
@@ -49,6 +51,7 @@ public final class ApplicationServices {
         this.background = Objects.requireNonNull(background);
         this.malConnection = Objects.requireNonNull(malConnection);
         this.databaseBackup = Objects.requireNonNull(databaseBackup);
+        this.automaticBackups = Objects.requireNonNull(automaticBackups);
     }
 
     public LedgerService ledger() { return ledger; }
@@ -62,6 +65,16 @@ public final class ApplicationServices {
     public AnimeDetailService animeDetails() { return animeDetails; }
     public AnimeDetailTabService animeDetailTabs() { return animeDetailTabs; }
     public boolean isMalConfigured() { return malConnection.isConfigured(); }
+
+    /** Runs one due automatic backup on a worker thread; null means disabled or not due. */
+    public CompletableFuture<Path> runAutomaticBackupIfDueAsync() {
+        return background.submit(() -> {
+            try { return automaticBackups.runIfDue(); }
+            catch (java.io.IOException | java.sql.SQLException failure) {
+                throw new IllegalStateException("Automatic database backup failed: " + failure.getMessage(), failure);
+            }
+        });
+    }
 
     public CompletableFuture<Path> createDatabaseBackupAsync(Path destination) {
         return background.submit(() -> {

@@ -8,6 +8,7 @@ import com.myanimewatchledger.presentation.catalogue.CatalogueView;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsController;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsView;
 import com.myanimewatchledger.presentation.feedback.SoundFeedback;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;
 import com.myanimewatchledger.presentation.history.SearchHistoryController;
 import com.myanimewatchledger.presentation.history.SearchHistoryView;
 import com.myanimewatchledger.presentation.ledger.LedgerController;
@@ -22,6 +23,7 @@ import com.myanimewatchledger.presentation.state.WindowState;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.status.ApplicationStatusBar;
 import javafx.animation.FadeTransition;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.Node;
@@ -121,6 +123,17 @@ public final class MainWindow {
         stage.setOnHiding(event -> saveWindowState(stage));
         stage.show();
         stage.setMaximized(saved.maximized());
+        services.runAutomaticBackupIfDueAsync().whenComplete((backup, failure) -> {
+            Platform.runLater(() -> {
+                if (failure != null) {
+                    LOGGER.log(Level.WARNING, "Automatic database backup failed.", failure);
+                    ToastNotifications.show(root, "Automatic backup failed. Check the backup folder and Settings.", true);
+                } else if (backup != null) {
+                    LOGGER.info("Automatic database backup created: " + backup);
+                    ToastNotifications.show(root, "Automatic database backup created.", false);
+                }
+            });
+        });
     }
 
     private static boolean isComboBoxInteraction(Object target) {
