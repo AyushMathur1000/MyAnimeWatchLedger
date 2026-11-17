@@ -1,7 +1,7 @@
 # MyAnimeWatchLedger --- Software Requirements Specification
 
 **Document ID:** MALW-SRS-001\
-**Version:** 1.4\
+**Version:** 1.5\
 **Status:** Approved requirements and implementation reference\
 **Last updated:** 2026-11-17\
 **Project:** MyAnimeWatchLedger\
@@ -942,7 +942,7 @@ locally outside the SQLite database.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
-The Phase 6 QoL scope currently implemented on `feature/phase-6-qol` includes:
+The Phase 6 QoL scope merged into `develop` includes:
 
 1. Shared poster enlargement from Catalogue and Anime Details.
 2. One-action Catalogue addition as Blacklisted, with a distinct amber warning
@@ -995,12 +995,24 @@ card at a time, with horizontal Previous/Next navigation and no
 neighbouring-card previews. Its expanded card uses a responsive
 poster-and-information layout. Grid remains the default presentation.
 The global selection is stored in the existing local UI preferences
-file, outside the SQLite catalogue cache and permanent ledger. Both
-presentations use the same filtered catalogue result set and do not
-cause additional MAL requests.
+file, outside the SQLite catalogue cache and permanent ledger. The
+setting is available under Settings → Catalogue presentation and takes
+effect when Catalogue is reopened. Both presentations use the same
+filtered catalogue result set and do not cause additional MAL requests.
+
+In Carousel mode, the card contains a fixed poster column and a
+scrollable information column so long synopsis text does not expand the
+workspace. Previous/Next controls and Left/Right arrow keys navigate the
+currently visible anime in the selected season tab. Arrow keys retain
+their normal behaviour when a text input or combo box is the event
+target. The carousel exposes Like/Dislike controls and a ledger-status
+selector beside them; the Grid card layout omits Like/Dislike controls
+and the carousel-only status selector. The existing compact Grid
+quick-actions remain unchanged.
 
 ### Change record
 
 | Version | Date | Description |
 |---|---|---|
 | 1.4 | 2026-11-17 | Approved Change 002: add the persisted Grid / Single-card Carousel catalogue presentation preference and define carousel behaviour. |
+| 1.5 | 2026-11-17 | Documented carousel status and preference controls, keyboard navigation, settings application behaviour, and the merged implementation; corrected stale branch-status references. |

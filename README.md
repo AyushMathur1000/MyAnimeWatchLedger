@@ -46,7 +46,8 @@ The SQLite database is `my_anime_watch_ledger.db`. If `LOCALAPPDATA` is unavaila
 
 - [Project reference](docs/PROJECT_REFERENCE.md) — authoritative requirements, finalized decisions, implementation overview, build workflow, and phase acceptance/closure checklist.
 - [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md) — current keyboard behaviour and shortcut support.
+- [Single-card catalogue carousel](docs/features/single-card-catalogue-carousel.md) — presentation behaviour, settings, controls, and manual verification.
 
 ## Project status
 
-The current working branch is `feature/phase-6-qol`. Phase 6 QoL is complete and formally closed. See the project reference for the implemented scope and verification record.
+`develop` contains the merged single-card catalogue carousel (PR #18). The project reference records the approved requirements and current implementation. Run the Maven test suite and launch the JavaFX application locally when validating a checkout.
