@@ -443,40 +443,58 @@ public final class CatalogueView extends BorderPane {
         source.getChildren().clear();
 
         Node posterNode = parts.remove(0);
+        // The grid card's fixed dimensions and spacer must not leak into the
+        // full-width carousel layout.
+        source.setPrefWidth(-1);
+        source.setMinWidth(0);
+        source.setMaxWidth(Double.MAX_VALUE);
+
         if (posterNode instanceof StackPane posterFrame) {
-            posterFrame.setMinSize(270, 390);
-            posterFrame.setPrefSize(270, 390);
-            posterFrame.setMaxSize(270, 390);
+            posterFrame.setMinSize(300, 430);
+            posterFrame.setPrefSize(300, 430);
+            posterFrame.setMaxSize(300, 430);
             for (Node child : posterFrame.getChildren()) {
                 if (child instanceof ImageView image) {
-                    image.setFitWidth(260);
-                    image.setFitHeight(380);
+                    image.setFitWidth(290);
+                    image.setFitHeight(420);
                 }
             }
         }
 
+        parts.removeIf(part -> part instanceof Region region
+                && part.getClass() == Region.class);
         for (Node part : parts) {
-            if (part instanceof Label label && label.getStyleClass().contains("anime-card-synopsis")) {
-                label.setMaxHeight(Double.MAX_VALUE);
-                VBox.setVgrow(label, Priority.ALWAYS);
+            if (part instanceof Label label) {
+                label.setMaxWidth(Double.MAX_VALUE);
+                label.setWrapText(true);
+                if (label.getStyleClass().contains("anime-card-synopsis")) {
+                    label.setMaxHeight(180);
+                    label.setMinHeight(Region.USE_PREF_SIZE);
+                }
+                if (label.getStyleClass().contains("anime-card-title")) {
+                    label.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+                }
             }
-            if (part instanceof Label label && label.getStyleClass().contains("anime-card-title")) {
-                label.setStyle("-fx-font-size: 21px;");
+            if (part instanceof HBox actions) {
+                actions.setMaxWidth(Double.MAX_VALUE);
             }
         }
-        VBox information = new VBox(12);
+
+        VBox information = new VBox(16);
         information.getStyleClass().add("anime-carousel-information");
         information.setFillWidth(true);
+        information.setMinWidth(0);
         information.setMaxWidth(Double.MAX_VALUE);
         information.getChildren().addAll(parts);
         HBox.setHgrow(information, Priority.ALWAYS);
 
-        HBox card = new HBox(28, posterNode, information);
+        HBox card = new HBox(36, posterNode, information);
         card.getStyleClass().addAll("anime-card", "anime-carousel-card");
-        card.setAlignment(Pos.CENTER_LEFT);
-        card.setPadding(new Insets(24));
+        card.setAlignment(Pos.TOP_LEFT);
+        card.setPadding(new Insets(30));
+        card.setMinWidth(0);
         card.setMaxWidth(Double.MAX_VALUE);
-        card.setMinHeight(420);
+        card.setMinHeight(490);
         card.setPrefHeight(-1);
         return card;
     }
@@ -622,7 +640,8 @@ public final class CatalogueView extends BorderPane {
             carouselCardHost.setAlignment(Pos.CENTER);
             carouselCardHost.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             carouselPane.setPadding(new Insets(14, 10, 10, 10));
-            carouselPane.setAlignment(Pos.CENTER);
+            carouselPane.setAlignment(Pos.TOP_CENTER);
+            carouselPane.setFillWidth(true);
             VBox.setVgrow(carouselCardHost, Priority.ALWAYS);
             carouselEmptyState.getStyleClass().add("catalogue-empty-state");
             previousCard.setOnAction(event -> {
