@@ -832,6 +832,7 @@ modified first with alphabetical title tie-breaking.
 -   Programmatic JavaFX UI initially; FXML is not required.
 -   Standard JavaFX controls and layouts should be preferred over
     complex custom UI frameworks.
+-   Automatic backup scheduling belongs in the application/service layer; backup preferences and the last-successful timestamp belong in local configuration, while the existing persistence backup service remains responsible for consistent SQLite snapshots and validation.
 
 ### Explicitly excluded from the initial project
 
@@ -977,7 +978,7 @@ locally outside the SQLite database.
   refresh is asynchronous and preserves prior successful data on failure.
 - **Settings:** MAL Client ID, Catalogue Presentation (Grid / Single-card
   Carousel), background-opening preference, sound and animation toggles,
-  database backup/restore, automatic backup enablement/frequency/retention/destination settings, and catalogue cache clearing.
+  database backup/restore, and catalogue cache clearing. Automatic backup settings and scheduling are approved requirements but remain pending implementation.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
