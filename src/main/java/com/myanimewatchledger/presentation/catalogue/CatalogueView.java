@@ -3,6 +3,7 @@ package com.myanimewatchledger.presentation.catalogue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
