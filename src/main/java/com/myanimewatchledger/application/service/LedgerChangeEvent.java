@@ -5,5 +5,5 @@ import com.myanimewatchledger.domain.ledger.LedgerStatus;
 
 /** Describes a successfully persisted change to one permanent ledger entry. */
 public record LedgerChangeEvent(Type type, long malId, LedgerEntry entry, LedgerStatus previousStatus) {
-    public enum Type { ADDED, STATUS_CHANGED, REMOVED }
+    public enum Type { ADDED, STATUS_CHANGED, PREFERENCE_CHANGED, PRIORITY_CHANGED, REMOVED }
 }

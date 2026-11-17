@@ -9,5 +9,7 @@ public interface LedgerRepository {
  List<LedgerEntry> searchByTitle(String query);
  boolean updateStatus(long malId, LedgerStatus status);
  boolean updatePreferredTitle(long malId, String title);
+ boolean updatePreference(long malId, AnimePreference preference);
+ boolean updateWatchLaterPriority(long malId, Integer priority);
  boolean remove(long malId);
 }

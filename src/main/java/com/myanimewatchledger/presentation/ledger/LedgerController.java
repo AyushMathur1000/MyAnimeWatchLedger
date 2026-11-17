@@ -3,6 +3,7 @@ package com.myanimewatchledger.presentation.ledger;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.LedgerService;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 
 import java.util.List;
@@ -29,6 +30,10 @@ public final class LedgerController {
     public boolean changeStatus(long malId, LedgerStatus status) {
         return service.changeStatus(malId, status);
     }
+
+    public boolean changePreference(long malId, AnimePreference preference) { return service.changePreference(malId, preference); }
+
+    public boolean changeWatchLaterPriority(long malId, Integer priority) { return service.changeWatchLaterPriority(malId, priority); }
 
     public boolean remove(long malId) {
         return service.remove(malId);

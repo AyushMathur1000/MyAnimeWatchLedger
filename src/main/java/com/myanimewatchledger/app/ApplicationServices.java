@@ -158,6 +158,15 @@ public final class ApplicationServices {
                 cache.searchableText(), cache.cachedAt(), 0, null), status));
     }
 
+    public CompletableFuture<Boolean> changeLedgerPreferenceAsync(long malId,
+            com.myanimewatchledger.domain.ledger.AnimePreference preference) {
+        return background.submit(() -> ledger.changePreference(malId, preference));
+    }
+
+    public CompletableFuture<Boolean> changeWatchLaterPriorityAsync(long malId, Integer priority) {
+        return background.submit(() -> ledger.changeWatchLaterPriority(malId, priority));
+    }
+
     public CompletableFuture<LedgerEntry> changeLedgerStatusAsync(long malId, LedgerStatus status) {
         Objects.requireNonNull(status);
         return background.submit(() -> {

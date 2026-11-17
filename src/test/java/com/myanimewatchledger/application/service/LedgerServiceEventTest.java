@@ -3,6 +3,7 @@ package com.myanimewatchledger.application.service;
 import com.myanimewatchledger.application.port.LedgerRepository;
 import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import org.junit.jupiter.api.Test;
 
@@ -88,6 +89,40 @@ class LedgerServiceEventTest {
         assertEquals(LedgerStatus.ABANDONED, repository.findByMalId(303).orElseThrow().status());
     }
 
+    @Test
+    void preferenceChangesAreIndependentOfStatusAndPublishUpdatedEntry() {
+        InMemoryLedgerRepository repository = new InMemoryLedgerRepository();
+        repository.add(entry(404, LedgerStatus.WATCHING));
+        LedgerService service = new LedgerService(repository);
+        List<LedgerChangeEvent> events = new ArrayList<>();
+        service.subscribe(events::add);
+
+        assertTrue(service.changePreference(404, AnimePreference.LIKE));
+        LedgerEntry updated = repository.findByMalId(404).orElseThrow();
+
+        assertEquals(LedgerStatus.WATCHING, updated.status());
+        assertEquals(AnimePreference.LIKE, updated.preference());
+        assertEquals(LedgerChangeEvent.Type.PREFERENCE_CHANGED, events.getFirst().type());
+        assertEquals(AnimePreference.LIKE, events.getFirst().entry().preference());
+
+        assertTrue(service.changePreference(404, null));
+        assertNull(repository.findByMalId(404).orElseThrow().preference());
+    }
+
+    @Test
+    void priorityIsLimitedToWatchLaterAndClearedWhenStatusChanges() {
+        InMemoryLedgerRepository repository = new InMemoryLedgerRepository();
+        repository.add(entry(405, LedgerStatus.WATCH_LATER));
+        LedgerService service = new LedgerService(repository);
+
+        assertTrue(service.changeWatchLaterPriority(405, 1));
+        assertEquals(1, repository.findByMalId(405).orElseThrow().watchLaterPriority());
+        assertTrue(service.changeStatus(405, LedgerStatus.WATCHING));
+        assertNull(repository.findByMalId(405).orElseThrow().watchLaterPriority());
+        assertFalse(service.changeWatchLaterPriority(405, 5));
+        assertThrows(IllegalArgumentException.class, () -> service.changeWatchLaterPriority(405, 11));
+    }
+
     private static LedgerEntry entry(long malId, LedgerStatus status) {
         Instant now = Instant.parse("2026-01-01T00:00:00Z");
         return new LedgerEntry(malId, "Anime " + malId, status, now, now);
@@ -111,10 +146,25 @@ class LedgerServiceEventTest {
             LedgerEntry current = entries.get(malId);
             if (current == null) return false;
             entries.put(malId, new LedgerEntry(current.malId(), current.title(), status,
-                    current.dateAdded(), Instant.now()));
+                    current.dateAdded(), Instant.now(), current.preference(),
+                    status == LedgerStatus.WATCH_LATER ? current.watchLaterPriority() : null));
             return true;
         }
         @Override public boolean updatePreferredTitle(long malId, String title) { return false; }
+        @Override public boolean updatePreference(long malId, AnimePreference preference) {
+            LedgerEntry current = entries.get(malId);
+            if (current == null) return false;
+            entries.put(malId, new LedgerEntry(current.malId(), current.title(), current.status(),
+                    current.dateAdded(), Instant.now(), preference, current.watchLaterPriority()));
+            return true;
+        }
+        @Override public boolean updateWatchLaterPriority(long malId, Integer priority) {
+            LedgerEntry current = entries.get(malId);
+            if (current == null || current.status() != LedgerStatus.WATCH_LATER) return false;
+            entries.put(malId, new LedgerEntry(current.malId(), current.title(), current.status(),
+                    current.dateAdded(), Instant.now(), current.preference(), priority));
+            return true;
+        }
         @Override public boolean remove(long malId) { return entries.remove(malId) != null; }
     }
 }

@@ -2,6 +2,7 @@ package com.myanimewatchledger.presentation.ledger;
 
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.presentation.DarkDialogStyler;
 import com.myanimewatchledger.presentation.feedback.SoundFeedback;
@@ -51,7 +52,13 @@ public final class LedgerView extends VBox {
     }
 
     public LedgerView(LedgerController controller, LongConsumer onOpenDetails, Runnable onOpenCurrentSeason) {
+        this(controller, onOpenDetails, onOpenCurrentSeason, "", Set.of());
+    }
+
+    public LedgerView(LedgerController controller, LongConsumer onOpenDetails, Runnable onOpenCurrentSeason,
+                      String initialSearchText, Set<LedgerStatus> initialStatuses) {
         this.controller = Objects.requireNonNull(controller, "controller");
+        this.selectedStatuses.addAll(Objects.requireNonNull(initialStatuses, "initialStatuses"));
         this.onOpenDetails = Objects.requireNonNull(onOpenDetails, "onOpenDetails");
         this.onOpenCurrentSeason = Objects.requireNonNull(onOpenCurrentSeason, "onOpenCurrentSeason");
         getStyleClass().add("ledger-workspace");
@@ -68,6 +75,7 @@ public final class LedgerView extends VBox {
         heading.setAlignment(Pos.BASELINE_LEFT);
         searchField.setPromptText("Search anime titles…");
         searchField.setPrefWidth(300);
+        searchField.setText(initialSearchText == null ? "" : initialSearchText);
         searchField.textProperty().addListener((obs, oldValue, newValue) -> applyFilters());
         HBox searchRow = new HBox(10, searchField, createStatusFilters());
         searchRow.setAlignment(Pos.CENTER_LEFT);
@@ -96,6 +104,7 @@ public final class LedgerView extends VBox {
         for (LedgerStatus status : LedgerStatus.values()) {
             CheckBox check = new CheckBox(displayStatus(status));
             check.getStyleClass().add("ledger-status-filter");
+            check.setSelected(selectedStatuses.contains(status));
             check.setOnAction(event -> {
                 if (check.isSelected()) selectedStatuses.add(status);
                 else selectedStatuses.remove(status);
@@ -144,7 +153,95 @@ public final class LedgerView extends VBox {
             }
         });
         status.setMinWidth(155);
-        status.setPrefWidth(175);
+        status.setPrefWidth(155);
+        status.setMaxWidth(155);
+
+        TableColumn<LedgerEntry, String> preference = new TableColumn<>("Preference");
+        preference.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyStringWrapper(
+                data.getValue().preference() == null ? "NONE" : data.getValue().preference().name()));
+        preference.setCellFactory(column -> new TableCell<>() {
+            private final Button like = new Button("👍");
+            private final Button dislike = new Button("👎");
+            private final HBox buttons = new HBox(4, like, dislike);
+            {
+                like.setTooltip(new Tooltip("Like this anime"));
+                like.setAccessibleText("Like this anime");
+                dislike.setTooltip(new Tooltip("Dislike this anime"));
+                dislike.setAccessibleText("Dislike this anime");
+                like.getStyleClass().add("ledger-preference-toggle");
+                dislike.getStyleClass().add("ledger-preference-toggle");
+                like.setOnAction(event -> {
+                    LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
+                    if (entry != null) updatePreference(entry, entry.preference() == AnimePreference.LIKE ? null : AnimePreference.LIKE);
+                });
+                dislike.setOnAction(event -> {
+                    LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
+                    if (entry != null) updatePreference(entry, entry.preference() == AnimePreference.DISLIKE ? null : AnimePreference.DISLIKE);
+                });
+            }
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+                like.getStyleClass().remove("ledger-preference-active");
+                dislike.getStyleClass().remove("ledger-preference-active");
+                if ("LIKE".equals(item)) like.getStyleClass().add("ledger-preference-active");
+                if ("DISLIKE".equals(item)) dislike.getStyleClass().add("ledger-preference-active");
+                setGraphic(buttons);
+            }
+        });
+        preference.setMinWidth(88);
+        preference.setPrefWidth(94);
+
+        TableColumn<LedgerEntry, String> priority = new TableColumn<>("Priority");
+        priority.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyStringWrapper(
+                data.getValue().status() != LedgerStatus.WATCH_LATER ? "N/A"
+                        : data.getValue().watchLaterPriority() == null ? "Unassigned"
+                        : data.getValue().watchLaterPriority().toString()));
+        priority.setCellFactory(column -> new TableCell<>() {
+            private final ComboBox<String> choice = new ComboBox<>();
+            private boolean rendering;
+            {
+                choice.getItems().add("Unassigned");
+                for (int i = 1; i <= 10; i++) choice.getItems().add(Integer.toString(i));
+                choice.setPrefWidth(60);
+                choice.setMinWidth(56);
+                choice.setMaxWidth(64);
+                choice.setOnAction(event -> {
+                    if (rendering) return;
+                    LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
+                    if (entry != null && entry.status() == LedgerStatus.WATCH_LATER) {
+                        updatePriority(entry, "Unassigned".equals(choice.getValue())
+                                ? null : Integer.valueOf(choice.getValue()));
+                    }
+                });
+            }
+            @Override protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                } else if ("N/A".equals(item)) {
+                    setGraphic(new Label("—"));
+                } else {
+                    rendering = true;
+                    choice.setValue(item);
+                    rendering = false;
+                    setGraphic(choice);
+                }
+            }
+        });
+        priority.setMinWidth(78);
+        priority.setPrefWidth(82);
+        priority.setMaxWidth(88);
+        priority.setComparator((left, right) -> {
+            if ("N/A".equals(left)) return "N/A".equals(right) ? 0 : 1;
+            if ("N/A".equals(right)) return -1;
+            if ("Unassigned".equals(left)) return "Unassigned".equals(right) ? 0 : 1;
+            if ("Unassigned".equals(right)) return -1;
+            return Integer.compare(Integer.parseInt(left), Integer.parseInt(right));
+        });
 
         TableColumn<LedgerEntry, java.time.Instant> added = dateColumn("Date added", LedgerEntry::dateAdded);
         TableColumn<LedgerEntry, java.time.Instant> modified = dateColumn("Last modified", LedgerEntry::lastModified);
@@ -153,16 +250,35 @@ public final class LedgerView extends VBox {
         actions.setSortable(false);
         actions.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyObjectWrapper<>(data.getValue()));
         actions.setCellFactory(column -> new TableCell<>() {
-            private final Button details = new Button("Details");
-            private final Button remove = new Button("Remove");
-            private final HBox buttons = new HBox(5, details, remove);
+            private final Button details = new Button("ⓘ");
+            private final Button mal = new Button("↗");
+            private final Button remove = new Button("×");
+            private final HBox buttons = new HBox(5, details, mal, remove);
             {
                 details.setOnAction(event -> {
                     LedgerEntry entry = getItem();
                     if (entry != null) onOpenDetails.accept(entry.malId());
                 });
+                details.getStyleClass().add("ledger-icon-action");
                 details.setTooltip(new Tooltip("Open anime details"));
-                remove.getStyleClass().add("ledger-destructive-action");
+                details.setAccessibleText("Open anime details");
+                mal.getStyleClass().add("ledger-icon-action");
+                mal.setTooltip(new Tooltip("Open on MyAnimeList"));
+                mal.setAccessibleText("Open on MyAnimeList");
+                mal.setOnAction(event -> {
+                    LedgerEntry entry = getItem();
+                    if (entry != null) {
+                        try {
+                            if (java.awt.Desktop.isDesktopSupported()) java.awt.Desktop.getDesktop().browse(
+                                    java.net.URI.create("https://myanimelist.net/anime/" + entry.malId()));
+                        } catch (Exception failure) {
+                            showFeedback("Could not open the MyAnimeList page: " + safeMessage(new RuntimeException(failure)), true);
+                        }
+                    }
+                });
+                remove.setTooltip(new Tooltip("Remove from My Ledger"));
+                remove.setAccessibleText("Remove from My Ledger");
+                remove.getStyleClass().addAll("ledger-destructive-action", "ledger-icon-action");
                 remove.setOnAction(event -> {
                     LedgerEntry entry = getItem();
                     if (entry != null) removeEntry(entry);
@@ -173,17 +289,17 @@ public final class LedgerView extends VBox {
                 setGraphic(empty || item == null ? null : buttons);
             }
         });
-        actions.setMinWidth(150);
-        actions.setPrefWidth(160);
-        actions.setMaxWidth(180);
-        table.getColumns().setAll(title, status, added, modified, actions);
+        actions.setMinWidth(125);
+        actions.setPrefWidth(135);
+        actions.setMaxWidth(150);
+        table.getColumns().setAll(title, status, preference, priority, added, modified, actions);
         modified.setSortType(TableColumn.SortType.DESCENDING);
         title.setSortType(TableColumn.SortType.ASCENDING);
         table.widthProperty().addListener((observable, oldWidth, newWidth) ->
-                applyColumnWidths(newWidth.doubleValue(), title, status, added, modified, actions));
+                applyColumnWidths(newWidth.doubleValue(), title, status, preference, priority, added, modified, actions));
         table.sceneProperty().addListener((observable, oldScene, newScene) -> {
             if (newScene != null) javafx.application.Platform.runLater(() ->
-                    applyColumnWidths(table.getWidth(), title, status, added, modified, actions));
+                    applyColumnWidths(table.getWidth(), title, status, preference, priority, added, modified, actions));
         });
         SortedList<LedgerEntry> sorted = new SortedList<>(filtered);
         sorted.comparatorProperty().bind(table.comparatorProperty());
@@ -194,16 +310,24 @@ public final class LedgerView extends VBox {
     private void applyColumnWidths(double tableWidth,
                                    TableColumn<LedgerEntry, String> title,
                                    TableColumn<LedgerEntry, LedgerStatus> status,
+                                   TableColumn<LedgerEntry, String> preference,
+                                   TableColumn<LedgerEntry, String> priority,
                                    TableColumn<LedgerEntry, java.time.Instant> added,
                                    TableColumn<LedgerEntry, java.time.Instant> modified,
                                    TableColumn<LedgerEntry, LedgerEntry> actions) {
         if (tableWidth <= 0) return;
+
+        // Every column except Anime is sized to its content/control. Anime absorbs
+        // the remaining width, keeping the compact columns anchored at the right.
         double usableWidth = Math.max(0, tableWidth - 18);
-        title.setPrefWidth(usableWidth * 0.58);
-        status.setPrefWidth(usableWidth * 0.10);
-        added.setPrefWidth(usableWidth * 0.10);
-        modified.setPrefWidth(usableWidth * 0.10);
-        actions.setPrefWidth(Math.max(150, usableWidth * 0.12));
+        double fixedWidth = 155 + 94 + 82 + 150 + 150 + 140;
+        title.setPrefWidth(Math.max(280, usableWidth - fixedWidth));
+        status.setPrefWidth(155);
+        preference.setPrefWidth(94);
+        priority.setPrefWidth(82);
+        added.setPrefWidth(150);
+        modified.setPrefWidth(150);
+        actions.setPrefWidth(140);
     }
 
     private ComboBox<LedgerStatus> statusCombo() {
@@ -252,8 +376,9 @@ public final class LedgerView extends VBox {
                 setText(empty || item == null ? null : DATE_FORMAT.format(item.atZone(ZoneId.systemDefault()).toLocalDateTime()));
             }
         });
-        column.setMinWidth(175);
-        column.setPrefWidth(205);
+        column.setMinWidth(145);
+        column.setPrefWidth(150);
+        column.setMaxWidth(150);
         return column;
     }
 
@@ -279,6 +404,14 @@ public final class LedgerView extends VBox {
             showFeedback("Database error: " + safeMessage(exception), true);
             updateCount();
         }
+    }
+
+    public String getSearchText() {
+        return searchField.getText() == null ? "" : searchField.getText();
+    }
+
+    public Set<LedgerStatus> getSelectedStatuses() {
+        return Set.copyOf(selectedStatuses);
     }
 
     private void applyFilters() {
@@ -312,6 +445,38 @@ public final class LedgerView extends VBox {
             applyFilters();
         } catch (RuntimeException exception) {
             showFeedback("Could not change status: " + safeMessage(exception), true);
+            table.refresh();
+        }
+    }
+
+    private void updatePreference(LedgerEntry entry, AnimePreference preference) {
+        try {
+            if (!controller.changePreference(entry.malId(), preference)) {
+                showFeedback("The preference could not be changed.", true);
+                table.refresh();
+                return;
+            }
+            int index = source.indexOf(entry);
+            if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
+            showFeedback(preference == null ? "Anime preference cleared." : "Anime preference updated.", false);
+        } catch (RuntimeException failure) {
+            showFeedback("Could not update preference: " + safeMessage(failure), true);
+            table.refresh();
+        }
+    }
+
+    private void updatePriority(LedgerEntry entry, Integer priority) {
+        try {
+            if (!controller.changeWatchLaterPriority(entry.malId(), priority)) {
+                showFeedback("Priority can only be assigned to Watch Later entries.", true);
+                table.refresh();
+                return;
+            }
+            int index = source.indexOf(entry);
+            if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
+            showFeedback(priority == null ? "Watch Later priority cleared." : "Watch Later priority set to " + priority + ".", false);
+        } catch (RuntimeException failure) {
+            showFeedback("Could not update priority: " + safeMessage(failure), true);
             table.refresh();
         }
     }

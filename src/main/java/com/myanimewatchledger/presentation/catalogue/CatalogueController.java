@@ -5,6 +5,7 @@ import com.myanimewatchledger.application.service.CatalogueRefreshOutcome;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
 import java.io.IOException;
@@ -52,6 +53,8 @@ public final class CatalogueController {
     public boolean changeStatus(long malId, LedgerStatus status) {
         return services.ledger().changeStatus(malId, status);
     }
+    public boolean changePreference(long malId, AnimePreference preference) { return services.ledger().changePreference(malId, preference); }
+    public boolean changeWatchLaterPriority(long malId, Integer priority) { return services.ledger().changeWatchLaterPriority(malId, priority); }
     public AutoCloseable subscribeToLedgerChanges(Consumer<LedgerChangeEvent> listener) {
         return services.ledger().subscribe(listener);
     }

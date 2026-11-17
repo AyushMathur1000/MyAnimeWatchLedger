@@ -3,6 +3,7 @@ package com.myanimewatchledger.application.service;
 import com.myanimewatchledger.application.port.LedgerRepository;
 import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
+import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 
 import java.time.Clock;
@@ -85,6 +86,33 @@ public final class LedgerService {
         LedgerEntry updated = ledger.findByMalId(malId).orElseThrow(
                 () -> new IllegalStateException("Updated ledger entry could not be found."));
         publish(new LedgerChangeEvent(LedgerChangeEvent.Type.STATUS_CHANGED, malId, updated, previous));
+        return true;
+    }
+
+    /** Sets or clears the optional Like/Dislike preference. */
+    public boolean changePreference(long malId, AnimePreference preference) {
+        requireValidMalId(malId);
+        Optional<LedgerEntry> before = ledger.findByMalId(malId);
+        if (before.isEmpty()) return false;
+        if (before.orElseThrow().preference() == preference) return true;
+        if (!ledger.updatePreference(malId, preference)) return false;
+        LedgerEntry updated = ledger.findByMalId(malId).orElseThrow();
+        publish(new LedgerChangeEvent(LedgerChangeEvent.Type.PREFERENCE_CHANGED, malId, updated, updated.status()));
+        return true;
+    }
+
+    /** Sets or clears a 1–10 priority; only Watch Later entries accept a value. */
+    public boolean changeWatchLaterPriority(long malId, Integer priority) {
+        requireValidMalId(malId);
+        if (priority != null && (priority < 1 || priority > 10)) {
+            throw new IllegalArgumentException("Watch Later priority must be between 1 and 10.");
+        }
+        Optional<LedgerEntry> before = ledger.findByMalId(malId);
+        if (before.isEmpty() || before.orElseThrow().status() != LedgerStatus.WATCH_LATER) return false;
+        if (Objects.equals(before.orElseThrow().watchLaterPriority(), priority)) return true;
+        if (!ledger.updateWatchLaterPriority(malId, priority)) return false;
+        LedgerEntry updated = ledger.findByMalId(malId).orElseThrow();
+        publish(new LedgerChangeEvent(LedgerChangeEvent.Type.PRIORITY_CHANGED, malId, updated, updated.status()));
         return true;
     }
 
