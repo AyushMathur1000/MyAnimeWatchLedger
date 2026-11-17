@@ -936,8 +936,9 @@ locally outside the SQLite database.
   anime tabs, extended metadata, poster preview, and ledger actions.
 - **Search History:** previously fetched seasonal searches can be reopened;
   refresh is asynchronous and preserves prior successful data on failure.
-- **Settings:** MAL Client ID, background-opening preference, sound and animation
-  toggles, database backup/restore, and catalogue cache clearing.
+- **Settings:** MAL Client ID, Catalogue Presentation (Grid / Single-card
+  Carousel), background-opening preference, sound and animation toggles,
+  database backup/restore, and catalogue cache clearing.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
