@@ -808,6 +808,13 @@ modified first with alphabetical title tie-breaking.
     preference-controlled interaction sounds and workspace transitions,
     and transient toast feedback for routine actions and warnings.
 
+30. Automatic backups are enabled by default and run when due at application startup.
+31. Automatic backup frequency (Daily/Weekly/Monthly), retention count, and destination directory are configurable.
+32. The default automatic backup settings are Weekly, 2 retained backups, and the application data `backups` directory.
+33. Automatic retention never deletes manual backups and only removes older automatic backups after a new backup has been created and validated.
+34. Automatic backup failures do not block startup, are reported, and do not update the last-successful-backup timestamp.
+35. Backup preferences and scheduling metadata are stored outside the SQLite database.
+
 ## 12. Approved technology baseline
 
   Concern                       Approved technology or approach
@@ -856,10 +863,7 @@ and the goal of keeping development manageable for one developer.
   OD-01                   Detailed anime          Separate non-modal
                           presentation            window
 
-  OD-02                   Database backup and     Included; manual
-                          restore                 
-
-  OD-03                   Ledger record deletion  Explicit deletion with
+  OD-02                   Database backup and     Manual and automatic;\n                          restore                 automatic enabled by\n                                                  default; Weekly; retain\n                                                  2 automatic backups;\n                                                  configurable destination\n\n  OD-03                   Ledger record deletion  Explicit deletion with
                                                   confirmation
 
   OD-04                   Duplicate anime records One record per MAL ID
@@ -1055,7 +1059,8 @@ quick-actions remain unchanged.
 | Version | Date | Description |
 |---|---|---|
 | 1.4 | 2026-11-17 | Approved Change 002: add the persisted Grid / Single-card Carousel catalogue presentation preference and define carousel behaviour. |
-| 1.5 | 2026-11-17 | Documented carousel status and preference controls, keyboard navigation, settings application behaviour, and the merged implementation; corrected stale branch-status references. |\n| 1.6 | 2026-11-17 | Approved automatic database backups with configurable frequency, retention, and destination; documented defaults and safe retention rules. |
+| 1.5 | 2026-11-17 | Documented carousel status and preference controls, keyboard navigation, settings application behaviour, and the merged implementation; corrected stale branch-status references. |
+| 1.6 | 2026-11-17 | Approved automatic database backups with configurable frequency, retention, and destination; documented defaults and safe retention rules. |
 
 
 ## 18. Approved requirement change — CHANGE-003
