@@ -8,7 +8,7 @@ A local-first Java desktop application for maintaining a personal anime watch le
 - Seasonal catalogue browsing with multiple season tabs, local metadata search, adaptive grid and single-card horizontal carousel views.
 - Anime details in a separate, non-modal workspace.
 - Persistent search history and disposable catalogue cache.
-- Database backup and restore.
+- Manual database backup and restore, plus configurable automatic backups.
 - Dark JavaFX interface with preference-controlled sound effects and animations.
 
 ## Requirements
@@ -46,7 +46,7 @@ The SQLite database is `my_anime_watch_ledger.db`. If `LOCALAPPDATA` is unavaila
 
 - [Project reference](docs/PROJECT_REFERENCE.md) — authoritative requirements, finalized decisions, implementation overview, build workflow, and phase acceptance/closure checklist.
 - [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md) — current keyboard behaviour and shortcut support.
-- [Single-card catalogue carousel](docs/features/single-card-catalogue-carousel.md) — presentation behaviour, settings, controls, and manual verification.
+- [Single-card catalogue carousel](docs/features/single-card-catalogue-carousel.md) — presentation behaviour, settings, controls, and manual verification.\n- [Automatic database backups](docs/features/automatic-database-backups.md) — approved defaults, configurable schedule/retention/location, safety rules, and implementation plan.
 
 ## Project status
 
