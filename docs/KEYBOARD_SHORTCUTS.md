@@ -26,7 +26,8 @@ The table above describes standard control behaviour, not custom MyAnimeWatchLed
 ## Workspace-specific guidance
 
 - **My Ledger:** Focus the table and use the arrow keys to move the selection. Use the visible status dropdown to change an entry's status.
-- **Catalogue:** Focus a season/year selector or search field and use its standard JavaFX keyboard interaction. Season navigation and refresh currently have no dedicated key bindings.
+- **Catalogue (Grid):** Focus a season/year selector or search field and use its standard JavaFX keyboard interaction. Season navigation and refresh have no dedicated key bindings.
+- **Catalogue (Single-card Carousel):** When the carousel is active and focus is not in a text input or combo box, `Left` moves to the previous visible anime and `Right` moves to the next visible anime. Navigation stops at the first and last result; it does not wrap. The on-screen Previous/Next buttons provide the same navigation. Search-field caret movement and combo-box popup navigation retain their normal arrow-key behaviour.
 - **Anime Details:** Focus the tab area or controls to use their standard JavaFX keyboard behaviour. No custom close-tab or next-tab shortcut is currently assigned.
 - **Search History:** Use Tab navigation to reach the refresh and open-search actions. No custom refresh shortcut is assigned.
 - **Settings:** Use Tab/Shift+Tab to move through preferences and actions.
