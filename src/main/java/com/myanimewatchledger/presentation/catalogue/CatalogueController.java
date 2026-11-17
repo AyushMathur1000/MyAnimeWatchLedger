@@ -7,7 +7,8 @@ import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
-import com.myanimewatchledger.presentation.state.WindowStateStore;\nimport com.myanimewatchledger.presentation.state.CataloguePresentation;
+import com.myanimewatchledger.presentation.state.WindowStateStore;
+import com.myanimewatchledger.presentation.state.CataloguePresentation;
 import java.io.IOException;
 
 import java.util.List;
