@@ -18,6 +18,7 @@ public final class WindowStateStore {
     private static final String UI_SOUNDS_KEY = "ui.sound-effects.enabled";
     private static final String UI_ANIMATIONS_KEY = "ui.animations.enabled";
     private static final String CATALOGUE_HIDE_LEDGER_KEY = "catalogue.hide-ledger-entries";
+    private static final String CATALOGUE_PRESENTATION_KEY = "catalogue.presentation";
     private final Path file;
 
     public WindowStateStore(Path file) {
