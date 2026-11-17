@@ -308,13 +308,20 @@ public final class LedgerView extends VBox {
                                    TableColumn<LedgerEntry, LedgerEntry> actions) {
         if (tableWidth <= 0) return;
         double usableWidth = Math.max(0, tableWidth - 18);
-        title.setPrefWidth(usableWidth * 0.34);
-        status.setPrefWidth(usableWidth * 0.11);
-        preference.setPrefWidth(Math.min(94, usableWidth * 0.09));
-        priority.setPrefWidth(Math.min(82, usableWidth * 0.07));
-        added.setPrefWidth(usableWidth * 0.11);
-        modified.setPrefWidth(usableWidth * 0.13);
-        actions.setPrefWidth(Math.max(125, usableWidth * 0.10));
+        // Keep the compact action columns fixed, then distribute every remaining
+        // pixel across the title, status and date columns. This avoids the unused
+        // filler area produced by percentage widths that total less than 100%.
+        double preferenceWidth = 94;
+        double priorityWidth = 82;
+        double actionsWidth = 140;
+        double flexibleWidth = Math.max(0, usableWidth - preferenceWidth - priorityWidth - actionsWidth);
+        title.setPrefWidth(flexibleWidth * 0.42);
+        status.setPrefWidth(flexibleWidth * 0.16);
+        preference.setPrefWidth(preferenceWidth);
+        priority.setPrefWidth(priorityWidth);
+        added.setPrefWidth(flexibleWidth * 0.18);
+        modified.setPrefWidth(flexibleWidth * 0.24);
+        actions.setPrefWidth(actionsWidth);
     }
 
     private ComboBox<LedgerStatus> statusCombo() {
