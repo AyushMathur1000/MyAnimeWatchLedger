@@ -1,6 +1,6 @@
 # Automatic Database Backups
 
-**Status:** Approved requirements; implementation pending  
+**Status:** Implemented in feature branch; verification pending  
 **Related requirements:** FR-BACKUP-001 through FR-BACKUP-009, UI-SET-004  
 **Authoritative reference:** [Project Reference](../PROJECT_REFERENCE.md)
 
@@ -88,20 +88,20 @@ No database schema migration is required for these settings.
 
 ## Implementation plan
 
-1. Extend the local preferences store with typed load/save methods,
+1. [x] Extend the local preferences store with typed load/save methods,
    validation, and the approved defaults.
-2. Add an automatic-backup coordinator/service that determines due
+2. [x] Add an automatic-backup coordinator/service that determines due
    state, generates automatic filenames, invokes the existing validated
    backup service, records success, and applies safe retention.
-3. Trigger the coordinator once during application startup on a
+3. [x] Trigger the coordinator once during application startup on a
    background executor; marshal completion/failure feedback to JavaFX.
-4. Add Settings controls for enablement, frequency, retention count,
+4. [x] Add Settings controls for enablement, frequency, retention count,
    and destination directory selection. Persist each change and restore
    the previous control value if saving fails.
-5. Add unit tests for defaults, invalid preferences, due calculations,
+5. [x] Add unit tests for defaults, invalid preferences, due calculations,
    first-run behaviour, retention ordering, manual-backup exclusion,
    failed backup preservation, and destination errors.
-6. Perform manual Windows verification for startup timing, Settings
+6. [ ] Perform manual Windows verification for startup timing, Settings
    persistence, backup contents, restore compatibility, and user-visible
    failure feedback.
 
