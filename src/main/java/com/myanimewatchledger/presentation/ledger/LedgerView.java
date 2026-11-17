@@ -197,9 +197,9 @@ public final class LedgerView extends VBox {
             {
                 choice.getItems().add("Unassigned");
                 for (int i = 1; i <= 10; i++) choice.getItems().add(Integer.toString(i));
-                choice.setPrefWidth(70);
-                choice.setMinWidth(66);
-                choice.setMaxWidth(74);
+                choice.setPrefWidth(60);
+                choice.setMinWidth(56);
+                choice.setMaxWidth(64);
                 choice.setOnAction(event -> {
                     if (rendering) return;
                     LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
