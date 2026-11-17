@@ -11,6 +11,10 @@ import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.presentation.history.SearchHistoryController;
 import com.myanimewatchledger.presentation.history.SearchHistoryView;
 import com.myanimewatchledger.presentation.ledger.LedgerController;
+import com.myanimewatchledger.domain.ledger.LedgerStatus;
+
+import java.util.EnumSet;
+import java.util.Set;
 import com.myanimewatchledger.presentation.ledger.LedgerView;
 import com.myanimewatchledger.presentation.navigation.NavigationSidebar;
 import com.myanimewatchledger.presentation.settings.SettingsView;
@@ -49,6 +53,8 @@ public final class MainWindow {
     private MainNavigation activeNavigation = MainNavigation.MY_LEDGER;
     private Long requestedCatalogueSearchId;
     private boolean openAnimeDetailsInBackground;
+    private String ledgerSearchText = "";
+    private Set<LedgerStatus> ledgerSelectedStatuses = EnumSet.noneOf(LedgerStatus.class);
     private double lastWindowedWidth = WindowState.defaults().width();
     private double lastWindowedHeight = WindowState.defaults().height();
 
@@ -148,6 +154,10 @@ public final class MainWindow {
 
     private void navigate(MainNavigation navigation) {
         if (activeNavigation == navigation) return;
+        if (activeNavigation == MainNavigation.MY_LEDGER && root.getCenter() instanceof LedgerView ledgerView) {
+            ledgerSearchText = ledgerView.getSearchText();
+            ledgerSelectedStatuses = ledgerView.getSelectedStatuses();
+        }
         activeNavigation = navigation;
         sidebar.select(navigation);
         renderWorkspace();
@@ -166,12 +176,6 @@ public final class MainWindow {
         navigate(MainNavigation.CATALOGUE);
     }
 
-    /** Ledger actions always navigate to Details, regardless of the Catalogue background-open preference. */
-    private void openAnimeDetailsFromLedger(long malId) {
-        navigate(MainNavigation.ANIME_DETAILS);
-        animeDetailsView.openAnime(malId);
-    }
-
     private void openAnimeDetails(long malId) {
         if (!openAnimeDetailsInBackground) navigate(MainNavigation.ANIME_DETAILS);
         animeDetailsView.openAnime(malId);
@@ -187,7 +191,8 @@ public final class MainWindow {
             }
             case MY_LEDGER -> root.setCenter(
                     new LedgerView(new LedgerController(services.ledger()),
-                            this::openAnimeDetailsFromLedger, this::openCurrentSeason));
+                            this::openAnimeDetails, this::openCurrentSeason,
+                            ledgerSearchText, ledgerSelectedStatuses));
             case ANIME_DETAILS -> root.setCenter(animeDetailsView);
             case SEARCH_HISTORY -> root.setCenter(
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
