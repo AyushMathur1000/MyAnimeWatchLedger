@@ -50,6 +50,41 @@ public final class SettingsView extends VBox {
 
         Label subtitle = new Label("Application behaviour");
         subtitle.getStyleClass().add("settings-section-title");
+
+        Label cataloguePresentationLabel = new Label("Catalogue presentation");
+        cataloguePresentationLabel.getStyleClass().add("settings-field-label");
+        ComboBox<CataloguePresentation> cataloguePresentation = new ComboBox<>();
+        cataloguePresentation.getItems().setAll(CataloguePresentation.GRID,
+                CataloguePresentation.SINGLE_CARD_CAROUSEL);
+        cataloguePresentation.setValue(preferences.loadCataloguePresentation());
+        cataloguePresentation.setMaxWidth(360);
+        cataloguePresentation.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
+            @Override protected void updateItem(CataloguePresentation item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : presentationLabel(item));
+            }
+        });
+        cataloguePresentation.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override protected void updateItem(CataloguePresentation item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : presentationLabel(item));
+            }
+        });
+        cataloguePresentation.setTooltip(new Tooltip(
+                "Choose between the adaptive card grid and a single-card horizontal carousel."));
+        Label cataloguePresentationFeedback = new Label();
+        cataloguePresentationFeedback.getStyleClass().add("settings-feedback");
+        cataloguePresentation.setOnAction(event -> {
+            CataloguePresentation selected = cataloguePresentation.getValue();
+            try {
+                preferences.saveCataloguePresentation(selected);
+                cataloguePresentationFeedback.setText("Preference saved. Reopen Catalogue to apply it.");
+            } catch (IOException failure) {
+                cataloguePresentation.setValue(preferences.loadCataloguePresentation());
+                cataloguePresentationFeedback.setText(
+                        "Could not save this preference. Check application file permissions.");
+            }
+        });
         CheckBox backgroundOpening = new CheckBox("Open Anime Details in Background");
         backgroundOpening.setSelected(preferences.loadOpenAnimeDetailsInBackground());
         backgroundOpening.setTooltip(new Tooltip(
@@ -272,6 +307,13 @@ public final class SettingsView extends VBox {
                 malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback,
                 cacheSubtitle, cacheDescription, clearCacheButton, cacheFeedback,
                 databaseSubtitle, databaseDescription, databaseActions, databaseFeedback);
+    }
+
+    private static String presentationLabel(CataloguePresentation presentation) {
+        return switch (presentation) {
+            case GRID -> "Grid";
+            case SINGLE_CARD_CAROUSEL -> "Single-card carousel";
+        };
     }
 
     private static String presentationLabel(CataloguePresentation presentation) {
