@@ -599,6 +599,11 @@ shall be saved locally and restored on application startup. Changing
 the selection shall take effect the next time the Catalogue workspace
 is opened.
 
+**UI-SET-004** --- Settings shall provide controls to enable or disable
+automatic backups, select Daily/Weekly/Monthly frequency, set the
+retention count, and choose the destination directory. Defaults shall be
+enabled, Weekly, 2 backups, and the application data `backups` directory.
+
 ## 7. Data requirements and integrity
 
 ### 7.1 Permanent ledger data
