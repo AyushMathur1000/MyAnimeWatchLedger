@@ -38,6 +38,7 @@ class AutomaticDatabaseBackupServiceTest {
             assertTrue(Files.isRegularFile(first));
             assertEquals(clock.instant(), preferences.loadLastAutomaticBackup());
 
+            Files.move(first, destination.resolve("my_anime_watch_ledger_auto_20261110_100000_000.db"));
             Files.createFile(destination.resolve("my_anime_watch_ledger_auto_20261101_100000_000.db"));
             Files.createFile(destination.resolve("my_anime_watch_ledger_auto_20261108_100000_000.db"));
             Files.createFile(destination.resolve("manual_backup.db"));
