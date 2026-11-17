@@ -8,6 +8,7 @@ import com.myanimewatchledger.presentation.catalogue.CatalogueView;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsController;
 import com.myanimewatchledger.presentation.detail.AnimeDetailsView;
 import com.myanimewatchledger.presentation.feedback.SoundFeedback;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;
 import com.myanimewatchledger.presentation.history.SearchHistoryController;
 import com.myanimewatchledger.presentation.history.SearchHistoryView;
 import com.myanimewatchledger.presentation.ledger.LedgerController;
@@ -121,6 +122,15 @@ public final class MainWindow {
         stage.setOnHiding(event -> saveWindowState(stage));
         stage.show();
         stage.setMaximized(saved.maximized());
+        services.runAutomaticBackupIfDueAsync().whenComplete((backup, failure) -> {
+            if (failure != null) {
+                LOGGER.log(Level.WARNING, "Automatic database backup failed.", failure);
+                ToastNotifications.show(root, "Automatic backup failed. Check the backup folder and Settings.", true);
+            } else if (backup != null) {
+                LOGGER.info("Automatic database backup created: " + backup);
+                ToastNotifications.show(root, "Automatic database backup created.", false);
+            }
+        });
     }
 
     private static boolean isComboBoxInteraction(Object target) {
