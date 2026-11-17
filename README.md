@@ -5,7 +5,7 @@ A local-first Java desktop application for maintaining a personal anime watch le
 ## Features
 
 - Personal ledger with **Watched**, **Watching**, **Abandoned**, **Blacklisted**, **Hold**, and **Watch Later** statuses.
-- Seasonal catalogue browsing with multiple season tabs and local metadata search.
+- Seasonal catalogue browsing with multiple season tabs, local metadata search, adaptive grid and single-card horizontal carousel views.
 - Anime details in a separate, non-modal workspace.
 - Persistent search history and disposable catalogue cache.
 - Database backup and restore.
