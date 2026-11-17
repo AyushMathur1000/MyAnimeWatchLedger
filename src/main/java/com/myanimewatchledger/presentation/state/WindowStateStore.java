@@ -1,6 +1,10 @@
 package com.myanimewatchledger.presentation.state;
 
 import com.myanimewatchledger.presentation.main.MainNavigation;
+import com.myanimewatchledger.config.ApplicationPaths;
+import com.myanimewatchledger.config.AutomaticBackupSettings;
+import com.myanimewatchledger.config.BackupFrequency;
+import java.time.Instant;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -19,6 +23,11 @@ public final class WindowStateStore {
     private static final String UI_ANIMATIONS_KEY = "ui.animations.enabled";
     private static final String CATALOGUE_HIDE_LEDGER_KEY = "catalogue.hide-ledger-entries";
     private static final String CATALOGUE_PRESENTATION_KEY = "catalogue.presentation";
+    private static final String AUTO_BACKUP_ENABLED = "backup.automatic.enabled";
+    private static final String AUTO_BACKUP_FREQUENCY = "backup.automatic.frequency";
+    private static final String AUTO_BACKUP_RETENTION = "backup.automatic.retention";
+    private static final String AUTO_BACKUP_DESTINATION = "backup.automatic.destination";
+    private static final String AUTO_BACKUP_LAST_SUCCESS = "backup.automatic.last-success";
     private final Path file;
 
     public WindowStateStore(Path file) {
@@ -98,6 +107,50 @@ public final class WindowStateStore {
         Objects.requireNonNull(presentation, "presentation");
         Properties properties = loadProperties();
         properties.setProperty(CATALOGUE_PRESENTATION_KEY, presentation.name());
+        saveProperties(properties);
+    }
+
+    /** Automatic backups default to enabled, weekly, two files, under the app data directory. */
+    public AutomaticBackupSettings loadAutomaticBackupSettings() {
+        Properties properties = loadProperties();
+        boolean enabled = Boolean.parseBoolean(properties.getProperty(AUTO_BACKUP_ENABLED, "true"));
+        BackupFrequency frequency;
+        try { frequency = BackupFrequency.valueOf(properties.getProperty(AUTO_BACKUP_FREQUENCY, "WEEKLY")); }
+        catch (IllegalArgumentException invalid) { frequency = BackupFrequency.WEEKLY; }
+        int retention;
+        try { retention = Integer.parseInt(properties.getProperty(AUTO_BACKUP_RETENTION, "2")); }
+        catch (NumberFormatException invalid) { retention = 2; }
+        if (retention < 1 || retention > 1000) retention = 2;
+        String destination = properties.getProperty(AUTO_BACKUP_DESTINATION,
+                ApplicationPaths.dataDirectory().resolve("backups").toString());
+        try {
+            return new AutomaticBackupSettings(enabled, frequency, retention, Path.of(destination));
+        } catch (RuntimeException invalid) {
+            return new AutomaticBackupSettings(true, BackupFrequency.WEEKLY, 2,
+                    ApplicationPaths.dataDirectory().resolve("backups"));
+        }
+    }
+
+    public void saveAutomaticBackupSettings(AutomaticBackupSettings settings) throws IOException {
+        Objects.requireNonNull(settings, "settings");
+        Properties properties = loadProperties();
+        properties.setProperty(AUTO_BACKUP_ENABLED, Boolean.toString(settings.enabled()));
+        properties.setProperty(AUTO_BACKUP_FREQUENCY, settings.frequency().name());
+        properties.setProperty(AUTO_BACKUP_RETENTION, Integer.toString(settings.retentionCount()));
+        properties.setProperty(AUTO_BACKUP_DESTINATION, settings.destination().toString());
+        saveProperties(properties);
+    }
+
+    public Instant loadLastAutomaticBackup() {
+        String value = loadProperties().getProperty(AUTO_BACKUP_LAST_SUCCESS);
+        if (value == null || value.isBlank()) return null;
+        try { return Instant.parse(value); }
+        catch (RuntimeException invalid) { return null; }
+    }
+
+    public void saveLastAutomaticBackup(Instant instant) throws IOException {
+        Properties properties = loadProperties();
+        properties.setProperty(AUTO_BACKUP_LAST_SUCCESS, Objects.requireNonNull(instant).toString());
         saveProperties(properties);
     }
 
