@@ -1,7 +1,7 @@
 # MyAnimeWatchLedger --- Software Requirements Specification
 
 **Document ID:** MALW-SRS-001\
-**Version:** 1.5\
+**Version:** 1.6\
 **Status:** Approved requirements and implementation reference\
 **Last updated:** 2026-11-17\
 **Project:** MyAnimeWatchLedger\
@@ -58,7 +58,7 @@ the authority for the user's personal status and collection membership.
 -   Previous-season and next-season navigation.
 -   Search history and persistent disposable catalogue cache.
 -   Manual catalogue refresh and manual cache clearing.
--   Manual database backup and restore.
+-   Manual and automatic database backup, plus manual restore.
 -   Dark desktop UI with icon-first contextual actions and tooltips.
 
 ### 3.2 Out of scope
@@ -421,8 +421,42 @@ Backup and restore operations shall preserve database integrity. The
 implementation design shall define how to handle incompatible schema
 versions and failed restore attempts.
 
-The exact backup format and whether disposable cache is included in
-backups shall be defined in the database design.
+**FR-BACKUP-005 --- Automatic backup**\
+Automatic database backups shall be enabled by default. The application
+shall check at startup whether a backup is due, based on the time of the
+last successful automatic backup and the configured frequency. A first
+run with no successful automatic backup shall be considered due.
+
+**FR-BACKUP-006 --- Configurable schedule and retention**\
+The user shall be able to configure automatic backup frequency
+(Daily, Weekly, or Monthly) and the number of successful automatic
+backups to retain. Defaults shall be Weekly and 2 backups.
+
+**FR-BACKUP-007 --- Configurable destination**\
+The user shall be able to choose the automatic backup destination
+directory. The default shall be a `backups` directory under the
+application data directory. If the configured destination is unavailable
+or unwritable, the application shall report the failure and shall not
+silently write backups to another location.
+
+**FR-BACKUP-008 --- Safe retention**\
+Retention cleanup shall apply only to automatic backups, never to
+manually created backups. The application shall create and validate a
+new automatic backup successfully before deleting older automatic
+backups. Failed or incomplete backups shall not count toward retention.
+
+**FR-BACKUP-009 --- Non-blocking and recoverable operation**\
+Automatic backup work shall run off the JavaFX Application Thread and
+shall not prevent normal application startup when it fails. The
+application shall report failures and retry at a later eligible startup.
+Manual backup and manual restore shall remain available.
+
+Backup files shall remain ordinary, unencrypted SQLite database files.
+The backup shall contain the local database contents, including the
+ledger, cached catalogue data, search history, and persisted open-tab
+state. Backup preferences and scheduling metadata shall be stored
+outside the SQLite database in the local configuration/preferences
+file.
 
 ## 6. User interface requirements
 
@@ -938,7 +972,7 @@ locally outside the SQLite database.
   refresh is asynchronous and preserves prior successful data on failure.
 - **Settings:** MAL Client ID, Catalogue Presentation (Grid / Single-card
   Carousel), background-opening preference, sound and animation toggles,
-  database backup/restore, and catalogue cache clearing.
+  database backup/restore, automatic backup enablement/frequency/retention/destination settings, and catalogue cache clearing.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
@@ -1015,4 +1049,28 @@ quick-actions remain unchanged.
 | Version | Date | Description |
 |---|---|---|
 | 1.4 | 2026-11-17 | Approved Change 002: add the persisted Grid / Single-card Carousel catalogue presentation preference and define carousel behaviour. |
-| 1.5 | 2026-11-17 | Documented carousel status and preference controls, keyboard navigation, settings application behaviour, and the merged implementation; corrected stale branch-status references. |
+| 1.5 | 2026-11-17 | Documented carousel status and preference controls, keyboard navigation, settings application behaviour, and the merged implementation; corrected stale branch-status references. |\n| 1.6 | 2026-11-17 | Approved automatic database backups with configurable frequency, retention, and destination; documented defaults and safe retention rules. |
+
+
+## 18. Approved requirement change — CHANGE-003
+
+Automatic database backups are added alongside the existing manual
+backup and restore actions. Automatic backups are enabled by default and
+are checked at application startup. The initial defaults are Weekly
+frequency, 2 retained automatic backups, and
+`%LOCALAPPDATA%\\MyAnimeWatchLedger\\backups` on Windows (the
+application data `backups` directory on other supported fallback
+locations). Users can select Daily, Weekly, or Monthly frequency, set
+the retention count, and choose another destination directory.
+
+Only automatic backups are subject to automatic retention cleanup.
+Manually created backups are never removed by retention. A new automatic
+backup must be successfully created and validated before older automatic
+backups are deleted. Automatic backup failures are reported but do not
+block application startup. Backup preferences and the last successful
+automatic backup timestamp are stored in the local configuration file,
+not in SQLite. Existing manual backup and restore remain available.
+
+The existing SQLite backup mechanism uses a consistent database snapshot
+and validates the resulting file; the automatic workflow should reuse
+that mechanism rather than copying the active database file directly.
