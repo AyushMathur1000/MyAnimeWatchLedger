@@ -323,12 +323,12 @@ public final class LedgerView extends VBox {
         double priorityWidth = 82;
         double actionsWidth = 140;
         double flexibleWidth = Math.max(0, usableWidth - preferenceWidth - priorityWidth - actionsWidth);
-        title.setPrefWidth(flexibleWidth * 0.42);
-        status.setPrefWidth(flexibleWidth * 0.16);
+        title.setPrefWidth(flexibleWidth * 0.48);
+        status.setPrefWidth(flexibleWidth * 0.20);
         preference.setPrefWidth(preferenceWidth);
         priority.setPrefWidth(priorityWidth);
-        added.setPrefWidth(flexibleWidth * 0.18);
-        modified.setPrefWidth(flexibleWidth * 0.24);
+        added.setPrefWidth(flexibleWidth * 0.14);
+        modified.setPrefWidth(flexibleWidth * 0.18);
         actions.setPrefWidth(actionsWidth);
     }
 
@@ -378,8 +378,8 @@ public final class LedgerView extends VBox {
                 setText(empty || item == null ? null : DATE_FORMAT.format(item.atZone(ZoneId.systemDefault()).toLocalDateTime()));
             }
         });
-        column.setMinWidth(175);
-        column.setPrefWidth(205);
+        column.setMinWidth(145);
+        column.setPrefWidth(160);
         return column;
     }
 
