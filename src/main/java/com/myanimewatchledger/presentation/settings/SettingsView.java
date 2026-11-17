@@ -252,7 +252,7 @@ public final class SettingsView extends VBox {
                         Path.of(destinationLabel.getText()));
                 preferences.saveAutomaticBackupSettings(updated);
                 automaticBackupFeedback.setText("Automatic backup settings saved.");
-            } catch (NumberFormatException | IllegalArgumentException failure) {
+            } catch (IllegalArgumentException failure) {
                 automaticBackupFeedback.setText("Retention count must be a whole number between 1 and 1000.");
             } catch (IOException failure) {
                 automaticBackupFeedback.setText("Could not save automatic backup settings. Check file permissions.");
