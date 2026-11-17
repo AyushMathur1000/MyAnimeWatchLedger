@@ -227,6 +227,8 @@ public final class LedgerView extends VBox {
         priority.setPrefWidth(82);
         priority.setMaxWidth(88);
         priority.setComparator((left, right) -> {
+            if ("N/A".equals(left)) return "N/A".equals(right) ? 0 : 1;
+            if ("N/A".equals(right)) return -1;
             if ("Unassigned".equals(left)) return "Unassigned".equals(right) ? 0 : 1;
             if ("Unassigned".equals(right)) return -1;
             return Integer.compare(Integer.parseInt(left), Integer.parseInt(right));
