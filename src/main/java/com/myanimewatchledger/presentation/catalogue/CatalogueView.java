@@ -290,7 +290,7 @@ public final class CatalogueView extends BorderPane {
                 if (cached == null || !cached.matches(item, preference)) {
                     cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
                             item.ledgerStatus(), preference,
-                            carouselMode ? null : createCard(item, preference),
+                            carouselMode ? null : createCard(item, preference, false),
                             carouselMode ? createCarouselCard(item, preference, state) : null);
                     state.cardCache.put(item.malId(), cached);
                 }
@@ -334,7 +334,7 @@ public final class CatalogueView extends BorderPane {
         }
     }
 
-    private VBox createCard(CatalogueAnime item, AnimePreference currentPreference) {
+    private VBox createCard(CatalogueAnime item, AnimePreference currentPreference, boolean includePreferenceActions) {
         AnimeMetadata metadata;
         try { metadata = JSON.readValue(item.metadataJson(), AnimeMetadata.class); }
         catch (Exception invalid) {
@@ -439,12 +439,17 @@ public final class CatalogueView extends BorderPane {
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
         card.setMinHeight(510);
         card.setPrefHeight(510);
-        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, preferenceActions, cardSpacer, actions);
+        if (includePreferenceActions) {
+            card.getChildren().addAll(posterFrame, title, details, synopsis, ledger,
+                    preferenceActions, cardSpacer, actions);
+        } else {
+            card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, cardSpacer, actions);
+        }
         return card;
     }
 
     private HBox createCarouselCard(CatalogueAnime item, AnimePreference preference, SeasonTab state) {
-        VBox source = createCard(item, preference);
+        VBox source = createCard(item, preference, true);
         List<Node> parts = new ArrayList<>(source.getChildren());
         source.getChildren().clear();
 
