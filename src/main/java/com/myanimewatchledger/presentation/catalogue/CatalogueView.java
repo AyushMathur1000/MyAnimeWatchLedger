@@ -379,8 +379,8 @@ public final class CatalogueView extends BorderPane {
         if (currentPreference == AnimePreference.DISLIKE) dislikeAction.getStyleClass().add("ledger-preference-active");
         likeAction.setDisable(item.ledgerStatus() == null);
         dislikeAction.setDisable(item.ledgerStatus() == null);
-        likeAction.setOnAction(event -> updateCardPreference(item, AnimePreference.LIKE));
-        dislikeAction.setOnAction(event -> updateCardPreference(item, AnimePreference.DISLIKE));
+        likeAction.setOnAction(event -> updateCardPreference(item, currentPreference == AnimePreference.LIKE ? null : AnimePreference.LIKE));
+        dislikeAction.setOnAction(event -> updateCardPreference(item, currentPreference == AnimePreference.DISLIKE ? null : AnimePreference.DISLIKE));
         preferenceActions.getChildren().addAll(likeAction, dislikeAction);
         Button malAction = new Button("↗");
         malAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-mal-action");
@@ -427,8 +427,8 @@ public final class CatalogueView extends BorderPane {
             if (!controller.changePreference(anime.malId(), preference)) {
                 ToastNotifications.show(this, "Could not update anime preference.", true);
             } else {
-                ToastNotifications.show(this, preference == AnimePreference.LIKE
-                        ? "Anime liked." : "Anime disliked.", false);
+                ToastNotifications.show(this, preference == null ? "Anime preference cleared."
+                        : preference == AnimePreference.LIKE ? "Anime liked." : "Anime disliked.", false);
             }
         } catch (RuntimeException failure) {
             ToastNotifications.show(this, "Could not update preference: " + safeMessage(failure), true);
