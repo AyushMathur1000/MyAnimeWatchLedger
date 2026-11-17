@@ -1,6 +1,8 @@
 package com.myanimewatchledger.app;
 
 import com.myanimewatchledger.application.service.*;
+import com.myanimewatchledger.application.recommendation.RecommendationService;
+import com.myanimewatchledger.application.recommendation.RuleBasedRecommendationEngine;
 import com.myanimewatchledger.config.*;
 import com.myanimewatchledger.infrastructure.mal.*;
 import com.myanimewatchledger.infrastructure.persistence.*;
@@ -70,11 +72,16 @@ public final class ApplicationInitializer implements AutoCloseable {
             AnimeDetailService details = new AnimeDetailService(
                     persistence.animeMetadata(), new MalApiAnimeDetailGateway(malTransport, mapper), mapper);
 
+            RecommendationService recommendations = new RecommendationService(
+                    persistence.ledger(), persistence.animeMetadata(), new RuleBasedRecommendationEngine(),
+                    persistence.recommendationHistory());
+
             services = new ApplicationServices(
                     ledger, catalogue, tabs, refresh, details, detailTabs, background, malConnection,
                     new DatabaseBackupService(database),
                     new AutomaticDatabaseBackupService(new DatabaseBackupService(database),
-                            new WindowStateStore(ApplicationPaths.dataDirectory().resolve("config").resolve("ui.properties"))));
+                            new WindowStateStore(ApplicationPaths.dataDirectory().resolve("config").resolve("ui.properties"))),
+                    recommendations);
             LOG.info("Application services initialized. MAL configured: " + services.isMalConfigured());
         } catch (IOException | SQLException | RuntimeException failure) {
             close();

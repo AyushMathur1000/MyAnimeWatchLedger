@@ -1,6 +1,10 @@
 package com.myanimewatchledger.app;
 
 import com.myanimewatchledger.application.service.*;
+import com.myanimewatchledger.application.recommendation.RecommendationService;
+import com.myanimewatchledger.domain.recommendation.AnimeRecommendation;
+import com.myanimewatchledger.domain.recommendation.RecommendationDimension;
+import com.myanimewatchledger.domain.recommendation.RecommendationFeedbackAction;
 import com.myanimewatchledger.domain.catalogue.AnimeMetadataCache;
 import com.myanimewatchledger.domain.catalogue.CatalogueAnime;
 import com.myanimewatchledger.domain.catalogue.CatalogueSearch;
@@ -30,6 +34,7 @@ public final class ApplicationServices {
     private final MalApiConnection malConnection;
     private final DatabaseBackupService databaseBackup;
     private final AutomaticDatabaseBackupService automaticBackups;
+    private final RecommendationService recommendations;
 
     ApplicationServices(
             LedgerService ledger,
@@ -41,7 +46,8 @@ public final class ApplicationServices {
             BackgroundTaskExecutor background,
             MalApiConnection malConnection,
             DatabaseBackupService databaseBackup,
-            AutomaticDatabaseBackupService automaticBackups) {
+            AutomaticDatabaseBackupService automaticBackups,
+            RecommendationService recommendations) {
         this.ledger = Objects.requireNonNull(ledger);
         this.catalogue = Objects.requireNonNull(catalogue);
         this.tabs = Objects.requireNonNull(tabs);
@@ -52,11 +58,26 @@ public final class ApplicationServices {
         this.malConnection = Objects.requireNonNull(malConnection);
         this.databaseBackup = Objects.requireNonNull(databaseBackup);
         this.automaticBackups = Objects.requireNonNull(automaticBackups);
+        this.recommendations = Objects.requireNonNull(recommendations);
     }
 
     public LedgerService ledger() { return ledger; }
     public CatalogueService catalogue() { return catalogue; }
     public CatalogueTabService catalogueTabs() { return tabs; }
+    public RecommendationService recommendations() { return recommendations; }
+    public CompletableFuture<java.util.Optional<AnimeRecommendation>> recommendAnimeAsync(CatalogueAnime anime) {
+        return background.submit(() -> recommendations.recommend(anime));
+    }
+    public CompletableFuture<Long> recordRecommendationAsync(CatalogueAnime anime, AnimeRecommendation recommendation) {
+        return background.submit(() -> recommendations.recordRecommendation(anime, recommendation));
+    }
+    public CompletableFuture<Void> recordRecommendationFeedbackAsync(long eventId, RecommendationDimension dimension,
+            RecommendationFeedbackAction action, String selectedValue) {
+        return background.submit(() -> {
+            recommendations.recordFeedback(eventId, dimension, action, selectedValue);
+            return null;
+        });
+    }
 
     /** Reads known seasonal searches without blocking the JavaFX Application Thread. */
     public CompletableFuture<List<CatalogueSearch>> knownCatalogueSeasonsAsync() {

@@ -5,6 +5,9 @@ import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
+import com.myanimewatchledger.domain.recommendation.AnimeRecommendation;
+import com.myanimewatchledger.domain.recommendation.RecommendationDimension;
+import com.myanimewatchledger.domain.recommendation.RecommendationFeedbackAction;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
 import com.myanimewatchledger.presentation.feedback.ToastNotifications;
@@ -288,7 +291,7 @@ public final class CatalogueView extends BorderPane {
                         .map(LedgerEntry::preference).orElse(null);
                 CardCacheEntry cached = state.cardCache.get(item.malId());
                 if (cached == null || !cached.matches(item, preference)) {
-                    cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
+                    cached = new CardCacheEntry(item, item.metadataJson(), item.preferredTitle(),
                             item.ledgerStatus(), preference,
                             carouselMode ? null : createCard(item, preference, false),
                             carouselMode ? createCarouselCard(item, preference, state) : null);
@@ -571,6 +574,17 @@ public final class CatalogueView extends BorderPane {
         int actionRowIndex = Math.max(0, parts.size() - 1);
         information.getChildren().addAll(parts.subList(0, actionRowIndex));
         information.getChildren().add(statusEditor);
+        if (item.ledgerStatus() == null) {
+            VBox recommendationPanel = new VBox(8);
+            recommendationPanel.getStyleClass().add("anime-recommendation-panel");
+            recommendationPanel.setMaxWidth(Double.MAX_VALUE);
+            recommendationPanel.getChildren().addAll(
+                    new Label("Personalised suggestion"),
+                    new Label("Analysing your locally cached preferences…"));
+            state.recommendationPanels.put(item.malId(), recommendationPanel);
+            state.recommendationLoaded.remove(item.malId());
+            information.getChildren().add(recommendationPanel);
+        }
         information.getChildren().addAll(parts.subList(actionRowIndex, parts.size()));
 
         HBox card = new HBox(24, posterColumn, informationScroll);
@@ -597,10 +611,137 @@ public final class CatalogueView extends BorderPane {
         state.currentIndex = Math.max(0, Math.min(state.currentIndex, state.visibleIds.size() - 1));
         long malId = state.visibleIds.get(state.currentIndex);
         CardCacheEntry entry = state.cardCache.get(malId);
-        if (entry != null) state.carouselCardHost.getChildren().setAll(entry.carouselCard());
+        if (entry != null) {
+            state.carouselCardHost.getChildren().setAll(entry.carouselCard());
+            if (entry.item().ledgerStatus() == null) loadRecommendationIfNeeded(state, entry);
+        }
         state.carouselPosition.setText((state.currentIndex + 1) + " / " + state.visibleIds.size());
         state.previousCard.setDisable(state.currentIndex == 0);
         state.nextCard.setDisable(state.currentIndex >= state.visibleIds.size() - 1);
+    }
+
+    private void loadRecommendationIfNeeded(SeasonTab state, CardCacheEntry entry) {
+        long malId = entry.item().malId();
+        if (!state.recommendationLoaded.add(malId)) return;
+        VBox panel = state.recommendationPanels.get(malId);
+        if (panel == null) return;
+        controller.recommend(entry.item()).whenComplete((result, failure) ->
+                Platform.runLater(() -> {
+                    if (failure != null) {
+                        panel.getChildren().setAll(new Label("Personalised suggestion unavailable."));
+                        return;
+                    }
+                    if (result == null || result.isEmpty()) {
+                        panel.setVisible(false);
+                        panel.setManaged(false);
+                        return;
+                    }
+                    AnimeRecommendation recommendation = result.orElseThrow();
+                    controller.recordRecommendation(entry.item(), recommendation).whenComplete((eventId, historyFailure) ->
+                            Platform.runLater(() -> {
+                                if (historyFailure != null) {
+                                    panel.getChildren().setAll(new Label("Could not save recommendation history."));
+                                    return;
+                                }
+                                showRecommendationPanel(panel, entry.item(), recommendation, eventId);
+                            }));
+                }));
+    }
+
+    private void showRecommendationPanel(VBox panel, CatalogueAnime anime,
+                                         AnimeRecommendation recommendation, long eventId) {
+        List<Node> content = new ArrayList<>();
+        Label heading = new Label("Personalised suggestion");
+        heading.getStyleClass().add("anime-card-ledger");
+        content.add(heading);
+        content.add(new Label("Suggested status: " + displayStatus(recommendation.suggestedStatus())));
+        content.add(new Label("Preference: " + (recommendation.suggestedPreference() == null
+                ? "Not enough evidence" : recommendation.suggestedPreference().name())));
+        if (recommendation.suggestedWatchLaterPriority() != null) {
+            content.add(new Label("Watch Later priority: "
+                    + recommendation.suggestedWatchLaterPriority() + " / 10 (1 is highest)"));
+        }
+        content.add(new Label("Taste compatibility: "
+                + (recommendation.tasteCompatibility() == null
+                ? "Not enough evidence" : recommendation.tasteCompatibility() + "%")));
+        content.add(new Label("Confidence: " + recommendation.confidence() + "%"));
+        if (!recommendation.reasons().isEmpty()) {
+            Label rationale = new Label(String.join(" • ", recommendation.reasons()));
+            rationale.setWrapText(true);
+            rationale.setMaxWidth(Double.MAX_VALUE);
+            content.add(rationale);
+        }
+        Button apply = new Button("Apply suggestion to My Ledger");
+        apply.setOnAction(event -> {
+            if (applyRecommendation(anime, recommendation)) {
+                recordRecommendationResponse(eventId, recommendation, RecommendationFeedbackAction.ACCEPTED)
+                        .whenComplete((ignored, failure) -> {
+                            if (failure != null) Platform.runLater(() ->
+                                    ToastNotifications.show(this, "Recommendation was applied, but feedback "
+                                            + "could not be saved: " + safeMessage(failure), true));
+                        });
+            }
+        });
+        Button reject = new Button("Reject");
+        reject.setTooltip(new Tooltip("I disagree with this recommendation."));
+        reject.setOnAction(event -> recordRecommendationResponse(eventId, recommendation,
+                RecommendationFeedbackAction.REJECTED).whenComplete((ignored, failure) ->
+                Platform.runLater(() -> finishRecommendationResponse(panel, failure,
+                        "Recommendation rejected."))));
+        Button dismiss = new Button("Dismiss");
+        dismiss.setTooltip(new Tooltip("I am not deciding about this anime right now."));
+        dismiss.setOnAction(event -> recordRecommendationResponse(eventId, recommendation,
+                RecommendationFeedbackAction.DISMISSED).whenComplete((ignored, failure) ->
+                Platform.runLater(() -> finishRecommendationResponse(panel, failure,
+                        "Recommendation dismissed for now."))));
+        content.add(new HBox(8, apply, reject, dismiss));
+        panel.getChildren().setAll(content);
+    }
+
+    private java.util.concurrent.CompletableFuture<Void> recordRecommendationResponse(
+            long eventId, AnimeRecommendation recommendation, RecommendationFeedbackAction action) {
+        String statusValue = action == RecommendationFeedbackAction.ACCEPTED
+                ? recommendation.suggestedStatus().name() : null;
+        java.util.concurrent.CompletableFuture<Void> sequence = controller.recordRecommendationFeedback(
+                eventId, RecommendationDimension.STATUS, action, statusValue);
+        if (recommendation.suggestedPreference() != null) {
+            String preferenceValue = action == RecommendationFeedbackAction.ACCEPTED
+                    ? recommendation.suggestedPreference().name() : null;
+            sequence = sequence.thenCompose(ignored -> controller.recordRecommendationFeedback(
+                    eventId, RecommendationDimension.PREFERENCE, action, preferenceValue));
+        }
+        if (recommendation.suggestedWatchLaterPriority() != null) {
+            String priorityValue = action == RecommendationFeedbackAction.ACCEPTED
+                    ? recommendation.suggestedWatchLaterPriority().toString() : null;
+            sequence = sequence.thenCompose(ignored -> controller.recordRecommendationFeedback(
+                    eventId, RecommendationDimension.WATCH_LATER_PRIORITY, action, priorityValue));
+        }
+        return sequence;
+    }
+
+    private void finishRecommendationResponse(VBox panel, Throwable failure, String message) {
+        if (failure != null) {
+            ToastNotifications.show(this, "Could not save recommendation feedback: " + safeMessage(failure), true);
+            return;
+        }
+        panel.getChildren().setAll(new Label(message));
+        ToastNotifications.show(this, message, false);
+    }
+
+    private boolean applyRecommendation(CatalogueAnime anime, AnimeRecommendation recommendation) {
+        try {
+            controller.addRecommendation(anime, recommendation);
+            String message = "Applied recommendation for “" + anime.preferredTitle() + "”.";
+            if (recommendation.suggestedStatus() == LedgerStatus.BLACKLISTED) {
+                ToastNotifications.showWarning(this, message);
+            } else {
+                ToastNotifications.show(this, message, false);
+            }
+            return true;
+        } catch (RuntimeException failure) {
+            ToastNotifications.show(this, "Could not apply recommendation: " + safeMessage(failure), true);
+            return false;
+        }
     }
 
     private void handleCarouselNavigationKey(KeyEvent event) {
@@ -646,7 +787,17 @@ public final class CatalogueView extends BorderPane {
 
     private void ledgerChanged(LedgerChangeEvent event) {
         Platform.runLater(() -> {
-            for (SeasonTab tab : List.copyOf(openTabs.values())) loadCards(tab);
+            for (SeasonTab tab : List.copyOf(openTabs.values())) {
+                // Any ledger preference change can alter the local profile, so invalidate
+                // recommendations even when the visible catalogue card itself is unchanged.
+                tab.recommendationLoaded.clear();
+                for (VBox panel : tab.recommendationPanels.values()) {
+                    panel.setVisible(true);
+                    panel.setManaged(true);
+                    panel.getChildren().setAll(new Label("Recalculating from your local preferences…"));
+                }
+                loadCards(tab);
+            }
         });
     }
 
@@ -723,6 +874,8 @@ public final class CatalogueView extends BorderPane {
         private final ProgressIndicator progress = new ProgressIndicator();
         private final VBox content = new VBox(6);
         private final Map<Long, CardCacheEntry> cardCache = new HashMap<>();
+        private final Map<Long, VBox> recommendationPanels = new HashMap<>();
+        private final Set<Long> recommendationLoaded = new HashSet<>();
         private final Label emptyState = new Label();
         private boolean refreshing;
 
@@ -778,7 +931,7 @@ public final class CatalogueView extends BorderPane {
         }
     }
 
-    private record CardCacheEntry(String metadataJson, String preferredTitle,
+    private record CardCacheEntry(CatalogueAnime item, String metadataJson, String preferredTitle,
                                   LedgerStatus ledgerStatus, AnimePreference preference,
                                   VBox card, HBox carouselCard) {
         private boolean matches(CatalogueAnime item, AnimePreference currentPreference) {

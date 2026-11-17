@@ -26,7 +26,8 @@ public final class DatabaseMigrationRunner {
             new Migration(1, "V001__initial_schema.sql"),
             new Migration(2, "V002__add_watch_later_status.sql"),
             new Migration(3, "V003__persist_open_anime_detail_tabs.sql"),
-            new Migration(4, "V004__add_ledger_preferences_and_watch_later_priority.sql")
+            new Migration(4, "V004__add_ledger_preferences_and_watch_later_priority.sql"),
+            new Migration(5, "V005__add_recommendation_history.sql")
     );
 
     private final DatabaseManager databaseManager;

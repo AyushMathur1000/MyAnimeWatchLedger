@@ -6,6 +6,7 @@ A local-first Java desktop application for maintaining a personal anime watch le
 
 - Personal ledger with **Watched**, **Watching**, **Abandoned**, **Blacklisted**, **Hold**, and **Watch Later** statuses.
 - Seasonal catalogue browsing with multiple season tabs, local metadata search, adaptive grid and single-card horizontal carousel views.
+- Explainable offline anime recommendations with separate Accept, Reject and Dismiss feedback in carousel view only.
 - Anime details in a separate, non-modal workspace.
 - Persistent search history and disposable catalogue cache.
 - Manual database backup and restore, plus configurable automatic backups.
@@ -47,6 +48,7 @@ The SQLite database is `my_anime_watch_ledger.db`. If `LOCALAPPDATA` is unavaila
 - [Project reference](docs/PROJECT_REFERENCE.md) — authoritative requirements, finalized decisions, implementation overview, build workflow, and phase acceptance/closure checklist.
 - [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md) — current keyboard behaviour and shortcut support.
 - [Single-card catalogue carousel](docs/features/single-card-catalogue-carousel.md) — presentation behaviour, settings, controls, and manual verification.
+- [Offline recommendations](docs/features/offline-recommendations.md) — local scoring, eligibility, feedback and history.
 
 ## Project status
 

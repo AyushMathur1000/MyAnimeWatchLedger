@@ -63,13 +63,20 @@ public final class LedgerService {
 
     /** Adds a catalogue anime to the permanent ledger using the selected status. */
     public LedgerEntry add(CatalogueAnime anime, LedgerStatus status) {
+        return add(anime, status, null, null);
+    }
+
+    /** Adds a recommendation and its optional preference/priority as one ledger row. */
+    public LedgerEntry add(CatalogueAnime anime, LedgerStatus status,
+                           AnimePreference preference, Integer watchLaterPriority) {
         Objects.requireNonNull(anime, "anime");
         Objects.requireNonNull(status, "status");
         if (ledger.findByMalId(anime.malId()).isPresent()) {
             throw new IllegalStateException("Anime is already present in the ledger: " + anime.malId());
         }
         Instant now = clock.instant();
-        LedgerEntry entry = new LedgerEntry(anime.malId(), anime.preferredTitle(), status, now, now);
+        LedgerEntry entry = new LedgerEntry(anime.malId(), anime.preferredTitle(), status, now, now,
+                preference, watchLaterPriority);
         ledger.add(entry);
         publish(new LedgerChangeEvent(LedgerChangeEvent.Type.ADDED, anime.malId(), entry, null));
         return entry;

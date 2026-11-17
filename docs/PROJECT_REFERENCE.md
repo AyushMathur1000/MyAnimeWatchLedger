@@ -1,7 +1,7 @@
 # MyAnimeWatchLedger --- Software Requirements Specification
 
 **Document ID:** MALW-SRS-001\
-**Version:** 1.7\
+**Version:** 1.8\
 **Status:** Approved requirements and implementation reference\
 **Last updated:** 2026-11-17\
 **Project:** MyAnimeWatchLedger\
@@ -19,11 +19,14 @@ MyAnimeWatchLedger is a single-user desktop application for maintaining
 a personal anime ledger and browsing seasonal anime catalogues obtained
 from MyAnimeList (MAL).
 
-The application has two deliberately separate data domains:
+The application has three deliberately separate data domains:
 
 1.  **Personal ledger:** durable, locally stored user decisions.
 2.  **Catalogue data:** MAL metadata and seasonal search results held in
     a disposable local cache.
+3.  **Recommendation history:** durable local feature snapshots,
+    recommendation outputs, and user feedback; independent of the
+    disposable catalogue cache.
 
 MAL is the authority for external anime metadata. The local ledger is
 the authority for the user's personal status and collection membership.
@@ -40,6 +43,7 @@ the authority for the user's personal status and collection membership.
 -   Keep the application useful offline for ledger and cached data
     access.
 -   Provide a compact, efficient desktop user experience.
+-   Provide explainable, offline anime recommendations in the Catalogue carousel.
 
 ## 3. Scope
 
@@ -60,6 +64,7 @@ the authority for the user's personal status and collection membership.
 -   Manual catalogue refresh and manual cache clearing.
 -   Manual and automatic database backup, plus manual restore.
 -   Dark desktop UI with icon-first contextual actions and tooltips.
+-   Local rules-based recommendations with persistent feedback history, shown only in the single-card Catalogue carousel.
 
 ### 3.2 Out of scope
 
@@ -70,7 +75,7 @@ the authority for the user's personal status and collection membership.
 -   Social features, multiple users, roles, or authentication.
 -   Cloud synchronization or server-side hosting.
 -   Mobile applications.
--   Recommendation engines or machine learning.
+-   External LLM integrations and trained machine-learning models for the initial recommendation release; the initial engine is local and rules-based.
 -   Docker, Kubernetes, CI/CD infrastructure, or a separate backend
     service.
 -   Custom Office-style ribbon framework.
@@ -391,8 +396,8 @@ The application shall provide an explicit Clear Cache action. It shall
 remove cached anime metadata, cached seasonal search results, search
 history, and persisted open-catalogue-tab restoration data.
 
-**FR-CACHE-009 --- Ledger protection**\
-Clear Cache shall never delete or modify the personal ledger.
+**FR-CACHE-009 --- Durable data protection**\
+Clear Cache shall never delete or modify the personal ledger or recommendation history.
 
 **FR-CACHE-010 --- No automatic expiration**\
 No automatic time-based cache expiration is required. Manual clearing is
@@ -453,10 +458,39 @@ Manual backup and manual restore shall remain available.
 
 Backup files shall remain ordinary, unencrypted SQLite database files.
 The backup shall contain the local database contents, including the
-ledger, cached catalogue data, search history, and persisted open-tab
-state. Backup preferences and scheduling metadata shall be stored
-outside the SQLite database in the local configuration/preferences
-file.
+ledger, cached catalogue data, search history, persisted open-tab state,
+and recommendation history. Backup preferences and scheduling metadata
+shall be stored outside the SQLite database in the local
+configuration/preferences file.
+
+## 5.7 Offline recommendations
+
+**FR-REC-001 --- Carousel-only presentation**\
+Recommendation suggestions shall be displayed only in the single-card Catalogue carousel. They shall not appear in grid cards, the ledger, dashboard, or Anime Details window.
+
+**FR-REC-002 --- Strictly local recommendation processing**\
+Recommendation generation shall use only the local personal ledger, locally cached anime metadata, and locally stored recommendation history. Recommendation processing shall not make MAL API requests, invoke detail lookups, or access any external AI service.
+
+**FR-REC-003 --- Cached metadata eligibility**\
+An anime shall be eligible for recommendation only when it is not already present in the ledger and its metadata is available in the local catalogue cache. Missing candidate metadata shall cause the recommendation to be omitted. Missing metadata for a ledger anime shall cause that anime to be skipped when building the preference profile. Partial cached metadata may be used, with confidence reflecting the available evidence.
+
+**FR-REC-004 --- Valid status suggestions**\
+For anime outside the ledger, the initial engine may suggest Watch Later or Blacklisted. It shall not suggest Hold because Hold represents an anime already started and paused for a long period. It shall not infer Watched, Watching, or Abandoned from catalogue metadata. Blacklisted may be suggested when the available user preference evidence indicates a strong mismatch. No suggestion shall create or modify a ledger entry without explicit user action.
+
+**FR-REC-005 --- Preference and priority suggestions**\
+The initial engine may suggest Like or Dislike when explicit preference history provides sufficient evidence. Watch Later priority shall be suggested only when the recommended status is Watch Later. Priority values follow the existing convention: 1 is highest priority and 10 is lowest. The engine shall leave a field without a suggestion when evidence is insufficient.
+
+**FR-REC-006 --- Explanation and confidence**\
+Each recommendation shall expose its suggested status, any available preference and Watch Later priority, taste compatibility, confidence, and concise rationale. The engine shall not fabricate confidence or force a preference/priority suggestion when local evidence is insufficient.
+
+**FR-REC-007 --- Distinct user feedback**\
+The user shall be able to Accept, Reject, or Dismiss a recommendation. Rejected means the user disagrees with the recommendation; Dismissed means the user is not deciding about the anime now. These actions shall be stored distinctly. Feedback shall be recorded independently for Status, Preference, and Watch Later Priority so a later implementation can learn from field-level decisions. Modified shall be supported by the history model for future editable recommendations.
+
+**FR-REC-008 --- Durable recommendation history**\
+When a recommendation is shown, the application shall persist its MAL ID, engine identifier and version, candidate metadata snapshot, exact preference-profile snapshot used for scoring, recommendation output, and creation timestamp. User feedback and selected values shall be persisted with the relevant recommendation event. Recommendation history shall survive catalogue cache clearing and shall be included in database backups and restores.
+
+**FR-REC-009 --- Algorithm boundary**\
+The application shall depend on a recommendation-engine interface rather than a concrete algorithm. The initial implementation shall use a deterministic local rules-based engine. Adaptive learning and trained models may be introduced later without changing the presentation or recommendation-history contracts.
 
 ## 6. User interface requirements
 

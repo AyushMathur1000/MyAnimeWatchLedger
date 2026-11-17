@@ -1,6 +1,9 @@
 package com.myanimewatchledger.presentation.catalogue;
 
 import com.myanimewatchledger.app.ApplicationServices;
+import com.myanimewatchledger.domain.recommendation.AnimeRecommendation;
+import com.myanimewatchledger.domain.recommendation.RecommendationDimension;
+import com.myanimewatchledger.domain.recommendation.RecommendationFeedbackAction;
 import com.myanimewatchledger.application.service.CatalogueRefreshOutcome;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.domain.catalogue.*;
@@ -60,11 +63,25 @@ public final class CatalogueController {
     public CompletableFuture<Void> clearCacheAsync() { return services.clearCatalogueCacheAsync(); }
     public Optional<LedgerEntry> findLedgerEntry(long malId) { return services.ledger().find(malId); }
     public LedgerEntry add(CatalogueAnime anime, LedgerStatus status) { return services.ledger().add(anime, status); }
+    public LedgerEntry addRecommendation(CatalogueAnime anime, AnimeRecommendation recommendation) {
+        return services.ledger().add(anime, recommendation.suggestedStatus(),
+                recommendation.suggestedPreference(), recommendation.suggestedWatchLaterPriority());
+    }
     public boolean changeStatus(long malId, LedgerStatus status) {
         return services.ledger().changeStatus(malId, status);
     }
     public boolean changePreference(long malId, AnimePreference preference) { return services.ledger().changePreference(malId, preference); }
     public boolean changeWatchLaterPriority(long malId, Integer priority) { return services.ledger().changeWatchLaterPriority(malId, priority); }
+    public CompletableFuture<Optional<AnimeRecommendation>> recommend(CatalogueAnime anime) {
+        return services.recommendAnimeAsync(anime);
+    }
+    public CompletableFuture<Long> recordRecommendation(CatalogueAnime anime, AnimeRecommendation recommendation) {
+        return services.recordRecommendationAsync(anime, recommendation);
+    }
+    public CompletableFuture<Void> recordRecommendationFeedback(long eventId, RecommendationDimension dimension,
+            RecommendationFeedbackAction action, String selectedValue) {
+        return services.recordRecommendationFeedbackAsync(eventId, dimension, action, selectedValue);
+    }
     public AutoCloseable subscribeToLedgerChanges(Consumer<LedgerChangeEvent> listener) {
         return services.ledger().subscribe(listener);
     }
