@@ -13,6 +13,11 @@ import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
 import javafx.scene.Node;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.control.TextInputControl;
+import javafx.scene.control.ComboBoxBase;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -104,6 +109,7 @@ public final class CatalogueView extends BorderPane {
             }
         });
         setCenter(tabs);
+        addEventFilter(KeyEvent.KEY_PRESSED, this::handleCarouselNavigationKey);
         restoreOrOpenCurrent(selectedSearchId);
         ledgerSubscription = controller.subscribeToLedgerChanges(this::ledgerChanged);
         sceneProperty().addListener((observable, oldScene, newScene) -> {
@@ -285,7 +291,7 @@ public final class CatalogueView extends BorderPane {
                     cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
                             item.ledgerStatus(), preference,
                             carouselMode ? null : createCard(item, preference),
-                            carouselMode ? createCarouselCard(item, preference) : null);
+                            carouselMode ? createCarouselCard(item, preference, state) : null);
                     state.cardCache.put(item.malId(), cached);
                 }
                 if (!carouselMode) desiredNodes.add(cached.card());
@@ -437,7 +443,7 @@ public final class CatalogueView extends BorderPane {
         return card;
     }
 
-    private HBox createCarouselCard(CatalogueAnime item, AnimePreference preference) {
+    private HBox createCarouselCard(CatalogueAnime item, AnimePreference preference, SeasonTab state) {
         VBox source = createCard(item, preference);
         List<Node> parts = new ArrayList<>(source.getChildren());
         source.getChildren().clear();
@@ -453,6 +459,7 @@ public final class CatalogueView extends BorderPane {
             posterFrame.setMinSize(300, 430);
             posterFrame.setPrefSize(300, 430);
             posterFrame.setMaxSize(300, 430);
+            HBox.setHgrow(posterFrame, Priority.NEVER);
             for (Node child : posterFrame.getChildren()) {
                 if (child instanceof ImageView image) {
                     image.setFitWidth(290);
@@ -489,7 +496,10 @@ public final class CatalogueView extends BorderPane {
         // increasing the card beyond the available catalogue viewport.
         ScrollPane informationScroll = new ScrollPane(information);
         informationScroll.setFitToWidth(true);
-        informationScroll.setFitToHeight(false);
+        informationScroll.setFitToHeight(true);
+        informationScroll.setPrefViewportHeight(420);
+        informationScroll.prefViewportHeightProperty().bind(
+                Bindings.max(240, state.carouselCardHost.heightProperty().subtract(88)));
         informationScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         informationScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         informationScroll.getStyleClass().add("anime-carousel-information-scroll");
@@ -540,6 +550,9 @@ public final class CatalogueView extends BorderPane {
         information.getChildren().add(statusEditor);
 
         HBox card = new HBox(36, posterNode, informationScroll);
+        card.prefHeightProperty().bind(
+                Bindings.max(460, state.carouselCardHost.heightProperty().subtract(8)));
+        card.prefWidthProperty().bind(state.carouselCardHost.widthProperty());
         card.getStyleClass().addAll("anime-card", "anime-carousel-card");
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(30));
@@ -564,6 +577,23 @@ public final class CatalogueView extends BorderPane {
         state.carouselPosition.setText((state.currentIndex + 1) + " / " + state.visibleIds.size());
         state.previousCard.setDisable(state.currentIndex == 0);
         state.nextCard.setDisable(state.currentIndex >= state.visibleIds.size() - 1);
+    }
+
+    private void handleCarouselNavigationKey(KeyEvent event) {
+        if (!carouselMode || (event.getCode() != KeyCode.LEFT && event.getCode() != KeyCode.RIGHT)) return;
+        // Preserve caret movement and popup navigation in editable/search controls.
+        if (event.getTarget() instanceof TextInputControl
+                || event.getTarget() instanceof ComboBoxBase<?>) return;
+        SeasonTab selected = selectedTab();
+        if (selected == null || selected.visibleIds.isEmpty()) return;
+
+        if (event.getCode() == KeyCode.LEFT) {
+            if (selected.currentIndex > 0) selected.currentIndex--;
+        } else if (selected.currentIndex < selected.visibleIds.size() - 1) {
+            selected.currentIndex++;
+        }
+        renderCarousel(selected);
+        event.consume();
     }
 
     private void updateCardPreference(CatalogueAnime anime, AnimePreference preference) {
