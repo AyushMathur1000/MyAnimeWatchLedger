@@ -1,7 +1,7 @@
 # MyAnimeWatchLedger --- Software Requirements Specification
 
 **Document ID:** MALW-SRS-001\
-**Version:** 1.6\
+**Version:** 1.7\
 **Status:** Approved requirements and implementation reference\
 **Last updated:** 2026-11-17\
 **Project:** MyAnimeWatchLedger\
