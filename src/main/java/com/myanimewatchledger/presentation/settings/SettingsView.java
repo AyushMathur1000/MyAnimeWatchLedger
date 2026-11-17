@@ -1,7 +1,7 @@
 package com.myanimewatchledger.presentation.settings;
 
 import com.myanimewatchledger.app.ApplicationServices;
-import com.myanimewatchledger.presentation.state.WindowStateStore;
+import com.myanimewatchledger.presentation.state.WindowStateStore;\nimport com.myanimewatchledger.presentation.state.CataloguePresentation;
 import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.infrastructure.persistence.DatabaseBackupService;
 import javafx.application.Platform;
@@ -11,7 +11,7 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-import javafx.scene.control.CheckBox;
+import javafx.scene.control.CheckBox;\nimport javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.Tooltip;
@@ -267,11 +267,18 @@ public final class SettingsView extends VBox {
         });
 
         getChildren().addAll(
-                title, subtitle, backgroundOpening, description, preferenceFeedback,
+                title, subtitle, cataloguePresentationLabel, cataloguePresentation, cataloguePresentationFeedback,\n                backgroundOpening, description, preferenceFeedback,
                 feedbackSubtitle, soundEffects, animations, feedbackPreferenceStatus,
                 malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback,
                 cacheSubtitle, cacheDescription, clearCacheButton, cacheFeedback,
                 databaseSubtitle, databaseDescription, databaseActions, databaseFeedback);
+    }
+
+    private static String presentationLabel(CataloguePresentation presentation) {
+        return switch (presentation) {
+            case GRID -> "Grid";
+            case SINGLE_CARD_CAROUSEL -> "Single-card carousel";
+        };
     }
 
     private void updateConfiguredState(Label label) {
