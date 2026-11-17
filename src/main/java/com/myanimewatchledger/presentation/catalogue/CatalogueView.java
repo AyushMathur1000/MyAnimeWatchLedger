@@ -272,10 +272,12 @@ public final class CatalogueView extends BorderPane {
             List<Node> desiredNodes = new ArrayList<>(anime.size() == 0 ? 1 : anime.size());
 
             for (CatalogueAnime item : anime) {
+                AnimePreference preference = controller.findLedgerEntry(item.malId())
+                        .map(LedgerEntry::preference).orElse(null);
                 CardCacheEntry cached = state.cardCache.get(item.malId());
-                if (cached == null || !cached.matches(item)) {
+                if (cached == null || !cached.matches(item, preference)) {
                     cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
-                            item.ledgerStatus(), createCard(item));
+                            item.ledgerStatus(), preference, createCard(item, preference));
                     state.cardCache.put(item.malId(), cached);
                 }
                 desiredNodes.add(cached.card());
@@ -311,7 +313,7 @@ public final class CatalogueView extends BorderPane {
         }
     }
 
-    private VBox createCard(CatalogueAnime item) {
+    private VBox createCard(CatalogueAnime item, AnimePreference currentPreference) {
         AnimeMetadata metadata;
         try { metadata = JSON.readValue(item.metadataJson(), AnimeMetadata.class); }
         catch (Exception invalid) {
@@ -363,31 +365,23 @@ public final class CatalogueView extends BorderPane {
                 : "Ledger: " + displayStatus(item.ledgerStatus());
         Label ledger = new Label(ledgerText);
         ledger.getStyleClass().add("anime-card-ledger");
-        ComboBox<String> preferenceChoice = new ComboBox<>(
-                javafx.collections.FXCollections.observableArrayList("Unassigned", "Like", "Dislike"));
-        preferenceChoice.setPromptText("Preference");
-        preferenceChoice.setMaxWidth(Double.MAX_VALUE);
-        preferenceChoice.setDisable(item.ledgerStatus() == null);
-        if (item.ledgerStatus() != null) {
-            controller.findLedgerEntry(item.malId()).ifPresent(entry -> preferenceChoice.setValue(
-                    entry.preference() == null ? "Unassigned" : entry.preference().name().equals("LIKE") ? "Like" : "Dislike"));
-        }
-        preferenceChoice.setTooltip(new Tooltip("Set your Like / Dislike preference"));
-        preferenceChoice.setOnAction(event -> {
-            if (item.ledgerStatus() == null || preferenceChoice.getValue() == null) return;
-            AnimePreference preference = switch (preferenceChoice.getValue()) {
-                case "Like" -> AnimePreference.LIKE;
-                case "Dislike" -> AnimePreference.DISLIKE;
-                default -> null;
-            };
-            try {
-                if (!controller.changePreference(item.malId(), preference)) {
-                    ToastNotifications.show(this, "Could not update anime preference.", true);
-                }
-            } catch (RuntimeException failure) {
-                ToastNotifications.show(this, "Could not update preference: " + safeMessage(failure), true);
-            }
-        });
+        HBox preferenceActions = new HBox(6);
+        preferenceActions.setAlignment(Pos.CENTER_LEFT);
+        Button likeAction = new Button("👍");
+        Button dislikeAction = new Button("👎");
+        likeAction.getStyleClass().add("anime-card-preference-action");
+        dislikeAction.getStyleClass().add("anime-card-preference-action");
+        likeAction.setTooltip(new Tooltip("Like this anime"));
+        dislikeAction.setTooltip(new Tooltip("Dislike this anime"));
+        likeAction.setAccessibleText("Like this anime");
+        dislikeAction.setAccessibleText("Dislike this anime");
+        if (currentPreference == AnimePreference.LIKE) likeAction.getStyleClass().add("ledger-preference-active");
+        if (currentPreference == AnimePreference.DISLIKE) dislikeAction.getStyleClass().add("ledger-preference-active");
+        likeAction.setDisable(item.ledgerStatus() == null);
+        dislikeAction.setDisable(item.ledgerStatus() == null);
+        likeAction.setOnAction(event -> updateCardPreference(item, AnimePreference.LIKE));
+        dislikeAction.setOnAction(event -> updateCardPreference(item, AnimePreference.DISLIKE));
+        preferenceActions.getChildren().addAll(likeAction, dislikeAction);
         Button malAction = new Button("↗");
         malAction.getStyleClass().addAll("anime-card-icon-action", "anime-card-mal-action");
         malAction.setTooltip(new Tooltip("Open on MyAnimeList"));
@@ -424,8 +418,21 @@ public final class CatalogueView extends BorderPane {
         VBox.setVgrow(cardSpacer, Priority.ALWAYS);
         card.setMinHeight(510);
         card.setPrefHeight(510);
-        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, preferenceChoice, cardSpacer, actions);
+        card.getChildren().addAll(posterFrame, title, details, synopsis, ledger, preferenceActions, cardSpacer, actions);
         return card;
+    }
+
+    private void updateCardPreference(CatalogueAnime anime, AnimePreference preference) {
+        try {
+            if (!controller.changePreference(anime.malId(), preference)) {
+                ToastNotifications.show(this, "Could not update anime preference.", true);
+            } else {
+                ToastNotifications.show(this, preference == AnimePreference.LIKE
+                        ? "Anime liked." : "Anime disliked.", false);
+            }
+        } catch (RuntimeException failure) {
+            ToastNotifications.show(this, "Could not update preference: " + safeMessage(failure), true);
+        }
     }
 
     private static void openMal(long malId) {
@@ -533,11 +540,12 @@ public final class CatalogueView extends BorderPane {
     }
 
     private record CardCacheEntry(String metadataJson, String preferredTitle,
-                                  LedgerStatus ledgerStatus, VBox card) {
-        private boolean matches(CatalogueAnime item) {
+                                  LedgerStatus ledgerStatus, AnimePreference preference, VBox card) {
+        private boolean matches(CatalogueAnime item, AnimePreference currentPreference) {
             return Objects.equals(metadataJson, item.metadataJson())
                     && Objects.equals(preferredTitle, item.preferredTitle())
-                    && ledgerStatus == item.ledgerStatus();
+                    && ledgerStatus == item.ledgerStatus()
+                    && preference == currentPreference;
         }
     }
 }
