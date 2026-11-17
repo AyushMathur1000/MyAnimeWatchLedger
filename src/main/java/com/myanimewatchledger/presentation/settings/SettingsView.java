@@ -19,6 +19,7 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
@@ -32,7 +33,7 @@ import java.util.concurrent.CompletionException;
 import java.util.function.Consumer;
 
 /** Application preferences and local MAL API configuration. */
-public final class SettingsView extends VBox {
+public final class SettingsView extends ScrollPane {
     private final ApplicationServices services;
 
     public SettingsView(
@@ -48,8 +49,14 @@ public final class SettingsView extends VBox {
         Objects.requireNonNull(onBackgroundOpeningChanged, "onBackgroundOpeningChanged");
 
         getStyleClass().add("settings-workspace");
-        setSpacing(14);
-        setPadding(new Insets(26));
+        VBox content = new VBox(14);
+        content.setPadding(new Insets(26));
+        content.getStyleClass().add("settings-content");
+        setContent(content);
+        setFitToWidth(true);
+        setFitToHeight(false);
+        setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
 
         Label title = new Label("Settings");
         title.getStyleClass().add("workspace-title");
@@ -378,7 +385,7 @@ public final class SettingsView extends VBox {
                     }));
         });
 
-        getChildren().addAll(
+        content.getChildren().addAll(
                 title, subtitle, cataloguePresentationLabel, cataloguePresentation, cataloguePresentationFeedback,
                 backgroundOpening, description, preferenceFeedback,
                 feedbackSubtitle, soundEffects, animations, feedbackPreferenceStatus,
