@@ -261,6 +261,9 @@ public final class SettingsView extends VBox {
         automaticBackups.setOnAction(event -> saveAutomaticSettings.run());
         backupFrequency.setOnAction(event -> saveAutomaticSettings.run());
         retentionCount.setOnAction(event -> saveAutomaticSettings.run());
+        retentionCount.focusedProperty().addListener((observable, wasFocused, isFocused) -> {
+            if (!isFocused) saveAutomaticSettings.run();
+        });
         chooseBackupFolder.setOnAction(event -> {
             DirectoryChooser chooser = new DirectoryChooser();
             chooser.setTitle("Choose Automatic Backup Folder");
