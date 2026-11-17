@@ -5,17 +5,21 @@ import com.myanimewatchledger.presentation.state.WindowStateStore;
 import com.myanimewatchledger.presentation.state.CataloguePresentation;
 import com.myanimewatchledger.presentation.feedback.SoundFeedback;
 import com.myanimewatchledger.infrastructure.persistence.DatabaseBackupService;
+import com.myanimewatchledger.config.AutomaticBackupSettings;
+import com.myanimewatchledger.config.BackupFrequency;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
 import javafx.stage.FileChooser;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Window;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -212,6 +216,74 @@ public final class SettingsView extends VBox {
                 "Backups include your ledger, cached catalogue data, search history, and open-tab state. "
                         + "Backup files are ordinary, unencrypted SQLite databases; store them somewhere private.");
         databaseDescription.getStyleClass().add("settings-description");
+        AutomaticBackupSettings initialBackupSettings = preferences.loadAutomaticBackupSettings();
+        CheckBox automaticBackups = new CheckBox("Enable automatic database backups");
+        automaticBackups.setSelected(initialBackupSettings.enabled());
+        ComboBox<BackupFrequency> backupFrequency = new ComboBox<>();
+        backupFrequency.getItems().setAll(BackupFrequency.DAILY, BackupFrequency.WEEKLY, BackupFrequency.MONTHLY);
+        backupFrequency.setValue(initialBackupSettings.frequency());
+        backupFrequency.setMaxWidth(220);
+        backupFrequency.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
+            @Override protected void updateItem(BackupFrequency item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : frequencyLabel(item));
+            }
+        });
+        backupFrequency.setButtonCell(new javafx.scene.control.ListCell<>() {
+            @Override protected void updateItem(BackupFrequency item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : frequencyLabel(item));
+            }
+        });
+        TextField retentionCount = new TextField(Integer.toString(initialBackupSettings.retentionCount()));
+        retentionCount.setPromptText("Retention count");
+        retentionCount.setMaxWidth(100);
+        Label destinationLabel = new Label(initialBackupSettings.destination().toString());
+        destinationLabel.setWrapText(true);
+        destinationLabel.setMaxWidth(620);
+        Button chooseBackupFolder = new Button("Choose Backup Folder");
+        Label automaticBackupFeedback = new Label();
+        automaticBackupFeedback.getStyleClass().add("settings-feedback");
+        Runnable saveAutomaticSettings = () -> {
+            try {
+                int count = Integer.parseInt(retentionCount.getText().trim());
+                AutomaticBackupSettings updated = new AutomaticBackupSettings(
+                        automaticBackups.isSelected(), backupFrequency.getValue(), count,
+                        Path.of(destinationLabel.getText()));
+                preferences.saveAutomaticBackupSettings(updated);
+                automaticBackupFeedback.setText("Automatic backup settings saved.");
+            } catch (NumberFormatException | IllegalArgumentException failure) {
+                automaticBackupFeedback.setText("Retention count must be a whole number between 1 and 1000.");
+            } catch (IOException failure) {
+                automaticBackupFeedback.setText("Could not save automatic backup settings. Check file permissions.");
+            }
+        };
+        automaticBackups.setOnAction(event -> saveAutomaticSettings.run());
+        backupFrequency.setOnAction(event -> saveAutomaticSettings.run());
+        retentionCount.setOnAction(event -> saveAutomaticSettings.run());
+        chooseBackupFolder.setOnAction(event -> {
+            DirectoryChooser chooser = new DirectoryChooser();
+            chooser.setTitle("Choose Automatic Backup Folder");
+            File current = Path.of(destinationLabel.getText()).toFile();
+            if (current.isDirectory()) chooser.setInitialDirectory(current);
+            File selected = chooser.showDialog(getScene() == null ? null : getScene().getWindow());
+            if (selected != null) {
+                String previous = destinationLabel.getText();
+                destinationLabel.setText(selected.toPath().toAbsolutePath().normalize().toString());
+                saveAutomaticSettings.run();
+                if (!automaticBackupFeedback.getText().startsWith("Automatic backup settings saved")) {
+                    destinationLabel.setText(previous);
+                }
+            }
+        });
+        Label retentionLabel = new Label("Keep latest automatic backups");
+        Label frequencyLabel = new Label("Automatic backup frequency");
+        Label destinationTitle = new Label("Automatic backup folder");
+        Label automaticBackupDescription = new Label(
+                "Backups run at startup when the selected interval has elapsed. Only automatic backups are pruned; "
+                        + "manual backups are never deleted. Backup files are unencrypted SQLite databases.");
+        automaticBackupDescription.getStyleClass().add("settings-description");
+
         Button createBackupButton = new Button("Create Backup");
         Button restoreBackupButton = new Button("Restore Backup");
         Label databaseFeedback = new Label();
@@ -309,7 +381,18 @@ public final class SettingsView extends VBox {
                 feedbackSubtitle, soundEffects, animations, feedbackPreferenceStatus,
                 malSubtitle, malDescription, configuredState, clientIdInput, actions, malFeedback,
                 cacheSubtitle, cacheDescription, clearCacheButton, cacheFeedback,
-                databaseSubtitle, databaseDescription, databaseActions, databaseFeedback);
+                databaseSubtitle, databaseDescription,
+                automaticBackups, frequencyLabel, backupFrequency, retentionLabel, retentionCount,
+                destinationTitle, destinationLabel, chooseBackupFolder, automaticBackupDescription,
+                automaticBackupFeedback, databaseActions, databaseFeedback);
+    }
+
+    private static String frequencyLabel(BackupFrequency frequency) {
+        return switch (frequency) {
+            case DAILY -> "Daily";
+            case WEEKLY -> "Weekly";
+            case MONTHLY -> "Monthly";
+        };
     }
 
     private static String presentationLabel(CataloguePresentation presentation) {
