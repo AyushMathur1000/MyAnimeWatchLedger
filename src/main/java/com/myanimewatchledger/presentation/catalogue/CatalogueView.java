@@ -7,7 +7,7 @@ import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.presentation.image.MalImageLoader;
 import com.myanimewatchledger.presentation.image.PosterPreviewDialog;
-import com.myanimewatchledger.presentation.feedback.ToastNotifications;
+import com.myanimewatchledger.presentation.feedback.ToastNotifications;\nimport com.myanimewatchledger.presentation.state.CataloguePresentation;
 import com.myanimewatchledger.application.service.LedgerChangeEvent;
 import com.myanimewatchledger.application.service.SeasonNavigator;
 import javafx.application.Platform;
@@ -423,6 +423,58 @@ public final class CatalogueView extends BorderPane {
         return card;
     }
 
+    private HBox createCarouselCard(CatalogueAnime item, AnimePreference preference) {
+        VBox source = createCard(item, preference);
+        List<Node> parts = new ArrayList<>(source.getChildren());
+        source.getChildren().clear();
+
+        Node posterNode = parts.remove(0);
+        if (posterNode instanceof StackPane posterFrame) {
+            posterFrame.setMinSize(300, 430);
+            posterFrame.setPrefSize(300, 430);
+            posterFrame.setMaxSize(300, 430);
+            for (Node child : posterFrame.getChildren()) {
+                if (child instanceof ImageView image) {
+                    image.setFitWidth(290);
+                    image.setFitHeight(420);
+                }
+            }
+        }
+
+        VBox information = new VBox(12);
+        information.getStyleClass().add("anime-carousel-information");
+        information.setFillWidth(true);
+        information.setMaxWidth(Double.MAX_VALUE);
+        information.getChildren().addAll(parts);
+        HBox.setHgrow(information, Priority.ALWAYS);
+
+        HBox card = new HBox(28, posterNode, information);
+        card.getStyleClass().addAll("anime-card", "anime-carousel-card");
+        card.setAlignment(Pos.CENTER_LEFT);
+        card.setPadding(new Insets(24));
+        card.setMaxWidth(Double.MAX_VALUE);
+        card.setMinHeight(480);
+        return card;
+    }
+
+    private void renderCarousel(SeasonTab state) {
+        if (!carouselMode) return;
+        if (state.visibleIds.isEmpty()) {
+            state.carouselCardHost.getChildren().setAll(state.carouselEmptyState);
+            state.carouselPosition.setText("0 / 0");
+            state.previousCard.setDisable(true);
+            state.nextCard.setDisable(true);
+            return;
+        }
+        state.currentIndex = Math.max(0, Math.min(state.currentIndex, state.visibleIds.size() - 1));
+        long malId = state.visibleIds.get(state.currentIndex);
+        CardCacheEntry entry = state.cardCache.get(malId);
+        if (entry != null) state.carouselCardHost.getChildren().setAll(entry.carouselCard());
+        state.carouselPosition.setText((state.currentIndex + 1) + " / " + state.visibleIds.size());
+        state.previousCard.setDisable(state.currentIndex == 0);
+        state.nextCard.setDisable(state.currentIndex >= state.visibleIds.size() - 1);
+    }
+
     private void updateCardPreference(CatalogueAnime anime, AnimePreference preference) {
         try {
             if (!controller.changePreference(anime.malId(), preference)) {
@@ -508,6 +560,10 @@ public final class CatalogueView extends BorderPane {
     }
 
     private final class SeasonTab {
+        private Long selectedMalId() {
+            return visibleIds.isEmpty() ? null : visibleIds.get(Math.max(0,
+                    Math.min(currentIndex, visibleIds.size() - 1)));
+        }
         private CatalogueSearch search;
         private final Tab tab = new Tab();
         private final TextField searchField = new TextField();
