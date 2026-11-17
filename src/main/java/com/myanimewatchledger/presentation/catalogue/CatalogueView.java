@@ -453,7 +453,7 @@ public final class CatalogueView extends BorderPane {
         card.setAlignment(Pos.CENTER_LEFT);
         card.setPadding(new Insets(24));
         card.setMaxWidth(Double.MAX_VALUE);
-        card.setMinHeight(480);
+        card.setMinHeight(420);\n        card.setPrefHeight(-1);
         return card;
     }
 
