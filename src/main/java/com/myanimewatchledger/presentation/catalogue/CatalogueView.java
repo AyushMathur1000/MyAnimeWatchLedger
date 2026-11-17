@@ -566,8 +566,12 @@ public final class CatalogueView extends BorderPane {
         ledgerHeading.getStyleClass().add("anime-card-ledger");
         VBox statusEditor = new VBox(6, ledgerHeading, statusChoice);
         statusEditor.setMaxWidth(Double.MAX_VALUE);
-        information.getChildren().addAll(parts);
+        // Keep the status selector beside the Like / Dislike controls,
+        // before the separate row of catalogue action buttons.
+        int actionRowIndex = Math.max(0, parts.size() - 1);
+        information.getChildren().addAll(parts.subList(0, actionRowIndex));
         information.getChildren().add(statusEditor);
+        information.getChildren().addAll(parts.subList(actionRowIndex, parts.size()));
 
         HBox card = new HBox(24, posterColumn, informationScroll);
         card.prefHeightProperty().bind(
