@@ -455,15 +455,30 @@ public final class CatalogueView extends BorderPane {
         source.setMinWidth(0);
         source.setMaxWidth(Double.MAX_VALUE);
 
+        VBox posterColumn = new VBox(posterNode);
+        posterColumn.setAlignment(Pos.TOP_CENTER);
+        posterColumn.setMinWidth(320);
+        posterColumn.setPrefWidth(320);
+        posterColumn.setMaxWidth(320);
+        posterColumn.setMinHeight(430);
+        posterColumn.setPrefHeight(430);
+        HBox.setHgrow(posterColumn, Priority.NEVER);
+
         if (posterNode instanceof StackPane posterFrame) {
-            posterFrame.setMinSize(300, 430);
-            posterFrame.setPrefSize(300, 430);
-            posterFrame.setMaxSize(300, 430);
-            HBox.setHgrow(posterFrame, Priority.NEVER);
+            // Override the grid's 190px CSS minimum width. The ImageView
+            // otherwise grows beyond its StackPane and overlaps the details.
+            posterFrame.setMinWidth(300);
+            posterFrame.setPrefWidth(300);
+            posterFrame.setMaxWidth(300);
+            posterFrame.setMinHeight(430);
+            posterFrame.setPrefHeight(430);
+            posterFrame.setMaxHeight(430);
+            posterFrame.setStyle("-fx-min-width: 300px; -fx-pref-width: 300px; -fx-max-width: 300px;");
             for (Node child : posterFrame.getChildren()) {
                 if (child instanceof ImageView image) {
-                    image.setFitWidth(290);
+                    image.setFitWidth(280);
                     image.setFitHeight(420);
+                    image.setPreserveRatio(true);
                 }
             }
         }
@@ -549,7 +564,7 @@ public final class CatalogueView extends BorderPane {
         information.getChildren().addAll(parts);
         information.getChildren().add(statusEditor);
 
-        HBox card = new HBox(36, posterNode, informationScroll);
+        HBox card = new HBox(24, posterColumn, informationScroll);
         card.prefHeightProperty().bind(
                 Bindings.max(490, state.carouselCardHost.heightProperty().subtract(8)));
         card.prefWidthProperty().bind(state.carouselCardHost.widthProperty());
