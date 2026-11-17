@@ -187,7 +187,7 @@ public final class MainWindow {
             }
             case MY_LEDGER -> root.setCenter(
                     new LedgerView(new LedgerController(services.ledger()),
-                            this::openAnimeDetails, this::openCurrentSeason));
+                            this::openAnimeDetailsFromLedger, this::openCurrentSeason));
             case ANIME_DETAILS -> root.setCenter(animeDetailsView);
             case SEARCH_HISTORY -> root.setCenter(
                     new SearchHistoryView(new SearchHistoryController(services), this::openHistoricalSearch));
