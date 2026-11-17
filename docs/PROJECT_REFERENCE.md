@@ -863,7 +863,8 @@ and the goal of keeping development manageable for one developer.
   OD-01                   Detailed anime          Separate non-modal
                           presentation            window
 
-  OD-02                   Database backup and     Manual and automatic;\n                          restore                 automatic enabled by\n                                                  default; Weekly; retain\n                                                  2 automatic backups;\n                                                  configurable destination\n\n  OD-03                   Ledger record deletion  Explicit deletion with
+  OD-02                   Database backup and     Manual and automatic;
+                          restore                 automatic enabled by\n                                                  default; Weekly; retain\n                                                  2 automatic backups;\n                                                  configurable destination\n\n  OD-03                   Ledger record deletion  Explicit deletion with
                                                   confirmation
 
   OD-04                   Duplicate anime records One record per MAL ID
