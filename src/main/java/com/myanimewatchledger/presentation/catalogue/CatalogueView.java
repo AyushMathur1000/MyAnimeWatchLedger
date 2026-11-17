@@ -486,16 +486,66 @@ public final class CatalogueView extends BorderPane {
         information.setMinWidth(0);
         information.setMaxWidth(Double.MAX_VALUE);
         information.getChildren().addAll(parts);
-        HBox.setHgrow(information, Priority.ALWAYS);
 
-        HBox card = new HBox(36, posterNode, information);
+        // Let long synopses scroll inside the information column instead of
+        // increasing the card beyond the available catalogue viewport.
+        ScrollPane informationScroll = new ScrollPane(information);
+        informationScroll.setFitToWidth(true);
+        informationScroll.setFitToHeight(false);
+        informationScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        informationScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        informationScroll.getStyleClass().add("anime-carousel-information-scroll");
+        informationScroll.setMinWidth(0);
+        informationScroll.setMaxHeight(Double.MAX_VALUE);
+        HBox.setHgrow(informationScroll, Priority.ALWAYS);
+        VBox.setVgrow(informationScroll, Priority.ALWAYS);
+
+        // The status selector is deliberately specific to carousel mode;
+        // grid cards keep their existing compact quick-action layout.
+        ComboBox<LedgerStatus> statusChoice = new ComboBox<>();
+        statusChoice.getItems().setAll(LedgerStatus.values());
+        statusChoice.setMaxWidth(260);
+        statusChoice.setPromptText("Add to My Ledger…");
+        statusChoice.setValue(item.ledgerStatus());
+        statusChoice.setCellFactory(list -> new ListCell<>() {
+            @Override protected void updateItem(LedgerStatus status, boolean empty) {
+                super.updateItem(status, empty);
+                setText(empty || status == null ? null : displayStatus(status));
+            }
+        });
+        statusChoice.setButtonCell(new ListCell<>() {
+            @Override protected void updateItem(LedgerStatus status, boolean empty) {
+                super.updateItem(status, empty);
+                setText(empty || status == null ? "Add to My Ledger…" : displayStatus(status));
+            }
+        });
+        statusChoice.setTooltip(new Tooltip("Add this anime to your ledger or change its current status."));
+        statusChoice.setOnAction(event -> {
+            LedgerStatus selected = statusChoice.getValue();
+            if (selected == null || selected == item.ledgerStatus()) return;
+            try {
+                if (item.ledgerStatus() == null) controller.add(item, selected);
+                else if (!controller.changeStatus(item.malId(), selected)) {
+                    throw new IllegalStateException("The ledger status could not be changed.");
+                }
+                ToastNotifications.show(this, "Ledger status set to " + displayStatus(selected) + ".", false);
+            } catch (RuntimeException failure) {
+                statusChoice.setValue(item.ledgerStatus());
+                ToastNotifications.show(this, "Could not update ledger status: " + safeMessage(failure), true);
+            }
+        });
+        Label ledgerHeading = new Label("My Ledger status");
+        ledgerHeading.getStyleClass().add("anime-card-ledger");
+        VBox statusEditor = new VBox(6, ledgerHeading, statusChoice);
+        statusEditor.setMaxWidth(Double.MAX_VALUE);
+        parts.add(statusEditor);
+
+        HBox card = new HBox(36, posterNode, informationScroll);
         card.getStyleClass().addAll("anime-card", "anime-carousel-card");
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(30));
-        card.setMinWidth(0);
-        card.setMaxWidth(Double.MAX_VALUE);
-        card.setMinHeight(490);
-        card.setPrefHeight(-1);
+        card.setMinSize(0, 0);
+        card.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         return card;
     }
 
@@ -638,6 +688,7 @@ public final class CatalogueView extends BorderPane {
             scroll.getStyleClass().add("catalogue-scroll");
 
             carouselCardHost.setAlignment(Pos.CENTER);
+            carouselCardHost.setMinSize(0, 0);
             carouselCardHost.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
             carouselPane.setPadding(new Insets(14, 10, 10, 10));
             carouselPane.setAlignment(Pos.TOP_CENTER);
