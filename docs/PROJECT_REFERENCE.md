@@ -1,9 +1,9 @@
 # MyAnimeWatchLedger --- Software Requirements Specification
 
 **Document ID:** MALW-SRS-001\
-**Version:** 1.3\
+**Version:** 1.4\
 **Status:** Approved requirements and implementation reference\
-**Last updated:** 2026-11-15\
+**Last updated:** 2026-11-17\
 **Project:** MyAnimeWatchLedger\
 **Document role:** Primary requirements reference for this project
 
@@ -502,6 +502,26 @@ ledger status management, detailed view, and MAL navigation.
 **UI-CAT-007** --- Missing posters shall use a placeholder. Missing
 metadata shall be omitted or represented gracefully.
 
+**UI-CAT-008** --- The Catalogue shall offer Grid and Single-card
+Carousel presentations. Grid shall remain the default for existing and
+new installations unless the user selects the carousel.
+
+**UI-CAT-009** --- The Single-card Carousel shall display exactly one
+anime card at a time. It shall not show partial neighbouring cards or
+preview cards. Previous and Next controls shall navigate horizontally
+through the current eligible result set.
+
+**UI-CAT-010** --- The carousel card shall make effective use of the
+available Catalogue workspace. It shall present poster artwork and
+available anime information in a spacious, responsive two-column
+layout, with the poster beside the title, score, type, genres, concise
+synopsis, ledger status, and available quick actions.
+
+**UI-CAT-011** --- Grid and Carousel shall use the same Catalogue
+results, search query, filters, and blacklist exclusion. Changing the
+presentation shall not trigger a MAL request or change cached catalogue
+membership.
+
 ### 6.4 Seasonal tabs and search history
 
 **UI-TAB-001** --- Seasonal searches shall be displayed as tabs in the
@@ -538,6 +558,12 @@ action.
 
 **UI-SET-002** --- Settings shall provide access to manual cache
 clearing and database backup/restore.
+
+**UI-SET-003** --- Settings shall provide a Catalogue Presentation
+preference with Grid and Single-card Carousel options. The selection
+shall be saved locally and restored on application startup. Changing
+the selection shall take effect the next time the Catalogue workspace
+is opened.
 
 ## 7. Data requirements and integrity
 
@@ -805,10 +831,11 @@ and the goal of keeping development manageable for one developer.
                                                   expiration; manual
                                                   clearing
 
-  OD-07                   Catalogue presentation  Cards or whichever is
-                                                  simpler to implement;
-                                                  adaptive card grid is
-                                                  the initial preference
+  OD-07                   Catalogue presentation  Adaptive card grid is
+                                                  the default; a user-
+                                                  selectable single-card
+                                                  horizontal carousel is
+                                                  also supported
 
   OD-08                   Search semantics        Partial,
                                                   case-insensitive
@@ -826,7 +853,7 @@ Additional finalized UI decisions:
 -   Contextual icon-first toolbar with tooltips.
 -   My Ledger is the default landing screen.
 -   Ledger uses a compact table.
--   Catalogue initially uses an adaptive card grid.
+-   Catalogue defaults to an adaptive card grid and also supports a user-selectable single-card horizontal carousel.
 -   Multiple seasonal tabs are supported.
 -   Previously open seasonal tabs are restored after restart when their
     cache still exists.
@@ -902,13 +929,16 @@ locally outside the SQLite database.
 - **Catalogue:** seasonal MAL browsing, multiple season tabs, previous/next
   navigation, local metadata search using partial case-insensitive AND token
   matching, poster previews, quick ledger actions, manual refresh, and cache
-  clearing. Blacklisted anime are excluded from catalogue presentation.
+  clearing. Grid and single-card horizontal carousel presentations share the
+  same filtered results. The selected presentation is stored in local UI
+  preferences. Blacklisted anime are excluded from catalogue presentation.
 - **Anime Details:** separate non-modal detail window with independently open
   anime tabs, extended metadata, poster preview, and ledger actions.
 - **Search History:** previously fetched seasonal searches can be reopened;
   refresh is asynchronous and preserves prior successful data on failure.
-- **Settings:** MAL Client ID, background-opening preference, sound and animation
-  toggles, database backup/restore, and catalogue cache clearing.
+- **Settings:** MAL Client ID, Catalogue Presentation (Grid / Single-card
+  Carousel), background-opening preference, sound and animation toggles,
+  database backup/restore, and catalogue cache clearing.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
@@ -955,3 +985,22 @@ This document is the single authoritative project reference. Requirements,
 implementation decisions, and acceptance changes must be updated here rather
 than maintained in parallel specification files. Test cases should trace to
 requirement identifiers and acceptance criteria.
+
+
+## 17. Approved requirement change — CHANGE-002
+
+The Catalogue now supports a user-selectable Single-card Carousel in
+addition to the adaptive Grid presentation. The carousel shows one anime
+card at a time, with horizontal Previous/Next navigation and no
+neighbouring-card previews. Its expanded card uses a responsive
+poster-and-information layout. Grid remains the default presentation.
+The global selection is stored in the existing local UI preferences
+file, outside the SQLite catalogue cache and permanent ledger. Both
+presentations use the same filtered catalogue result set and do not
+cause additional MAL requests.
+
+### Change record
+
+| Version | Date | Description |
+|---|---|---|
+| 1.4 | 2026-11-17 | Approved Change 002: add the persisted Grid / Single-card Carousel catalogue presentation preference and define carousel behaviour. |

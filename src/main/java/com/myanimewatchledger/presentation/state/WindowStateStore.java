@@ -18,6 +18,7 @@ public final class WindowStateStore {
     private static final String UI_SOUNDS_KEY = "ui.sound-effects.enabled";
     private static final String UI_ANIMATIONS_KEY = "ui.animations.enabled";
     private static final String CATALOGUE_HIDE_LEDGER_KEY = "catalogue.hide-ledger-entries";
+    private static final String CATALOGUE_PRESENTATION_KEY = "catalogue.presentation";
     private final Path file;
 
     public WindowStateStore(Path file) {
@@ -79,6 +80,24 @@ public final class WindowStateStore {
     public void saveHideLedgerEntries(boolean enabled) throws IOException {
         Properties properties = loadProperties();
         properties.setProperty(CATALOGUE_HIDE_LEDGER_KEY, Boolean.toString(enabled));
+        saveProperties(properties);
+    }
+
+    /** Existing installations retain the original grid presentation by default. */
+    public CataloguePresentation loadCataloguePresentation() {
+        String saved = loadProperties().getProperty(CATALOGUE_PRESENTATION_KEY,
+                CataloguePresentation.GRID.name());
+        try {
+            return CataloguePresentation.valueOf(saved);
+        } catch (IllegalArgumentException invalid) {
+            return CataloguePresentation.GRID;
+        }
+    }
+
+    public void saveCataloguePresentation(CataloguePresentation presentation) throws IOException {
+        Objects.requireNonNull(presentation, "presentation");
+        Properties properties = loadProperties();
+        properties.setProperty(CATALOGUE_PRESENTATION_KEY, presentation.name());
         saveProperties(properties);
     }
 

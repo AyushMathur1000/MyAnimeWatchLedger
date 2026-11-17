@@ -60,4 +60,33 @@ class WindowStateStoreTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new WindowState(640, 480, false, MainNavigation.MY_LEDGER));
     }
+    @Test
+    void cataloguePresentationDefaultsToGridForExistingInstallations() {
+        var store = new WindowStateStore(temp.resolve("ui.properties"));
+        assertEquals(CataloguePresentation.GRID, store.loadCataloguePresentation());
+    }
+
+    @Test
+    void persistsCataloguePresentationWithoutLosingOtherPreferences() throws Exception {
+        var store = new WindowStateStore(temp.resolve("config/ui.properties"));
+        store.saveUiSoundsEnabled(false);
+        store.saveHideLedgerEntries(true);
+
+        store.saveCataloguePresentation(CataloguePresentation.SINGLE_CARD_CAROUSEL);
+
+        assertEquals(CataloguePresentation.SINGLE_CARD_CAROUSEL, store.loadCataloguePresentation());
+        assertFalse(store.loadUiSoundsEnabled());
+        assertTrue(store.loadHideLedgerEntries());
+        store.saveCataloguePresentation(CataloguePresentation.GRID);
+        assertEquals(CataloguePresentation.GRID, store.loadCataloguePresentation());
+    }
+
+    @Test
+    void invalidCataloguePresentationFallsBackToGrid() throws Exception {
+        Path file = temp.resolve("config/ui.properties");
+        java.nio.file.Files.createDirectories(file.getParent());
+        java.nio.file.Files.writeString(file, "catalogue.presentation=UNKNOWN\n");
+        assertEquals(CataloguePresentation.GRID, new WindowStateStore(file).loadCataloguePresentation());
+    }
+
 }

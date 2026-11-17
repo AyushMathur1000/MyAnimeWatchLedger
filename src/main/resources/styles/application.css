@@ -407,3 +407,58 @@
 .anime-details-ledger-actions .button { -fx-background-color: #405a80; -fx-font-weight: bold; }
 .anime-details-ledger-actions .button:disabled { -fx-opacity: 0.6; }
 .anime-details-poster { -fx-cursor: hand; }
+
+
+/* Single-card Catalogue carousel */
+.anime-carousel-card {
+    -fx-background-color: #20242d;
+    -fx-border-color: #3b4658;
+    -fx-border-width: 1px;
+    -fx-background-radius: 10px;
+    -fx-border-radius: 10px;
+}
+.anime-carousel-card .anime-card-title {
+    -fx-font-size: 21px;
+    -fx-text-fill: #f1f2f5 !important;
+}
+.anime-carousel-card .anime-card-details {
+    -fx-font-size: 12px;
+    -fx-text-fill: #aebbd0 !important;
+}
+.anime-carousel-card .anime-card-synopsis {
+    -fx-font-size: 13px;
+    -fx-line-spacing: 3px;
+    -fx-text-fill: #c5cad4 !important;
+}
+.anime-carousel-card .anime-card-ledger {
+    -fx-font-size: 12px;
+}
+.anime-carousel-information {
+    -fx-padding: 8px 10px 8px 0;
+}
+.settings-workspace .settings-field-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+.catalogue-workspace .anime-carousel-card .button {
+    -fx-min-height: 34px;
+}
+
+
+.anime-carousel-information-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+.anime-carousel-information-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.anime-carousel-information-scroll > .scroll-bar:vertical {
+    -fx-pref-width: 9px;
+}
+.anime-carousel-information {
+    -fx-padding: 4px 14px 8px 0;
+}
+.anime-carousel-card .combo-box {
+    -fx-pref-width: 260px;
+}

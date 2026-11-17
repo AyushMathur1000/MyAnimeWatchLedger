@@ -8,6 +8,7 @@ import com.myanimewatchledger.domain.ledger.LedgerEntry;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
 import com.myanimewatchledger.presentation.state.WindowStateStore;
+import com.myanimewatchledger.presentation.state.CataloguePresentation;
 import java.io.IOException;
 
 import java.util.List;
@@ -41,6 +42,15 @@ public final class CatalogueController {
         try { preferences.saveHideLedgerEntries(enabled); }
         catch (IOException failure) {
             throw new IllegalStateException("Could not save the Catalogue filter preference.", failure);
+        }
+    }
+    public CataloguePresentation cataloguePresentation() {
+        return preferences.loadCataloguePresentation();
+    }
+    public void saveCataloguePresentation(CataloguePresentation presentation) {
+        try { preferences.saveCataloguePresentation(presentation); }
+        catch (IOException failure) {
+            throw new IllegalStateException("Could not save the Catalogue presentation preference.", failure);
         }
     }
     public CompletableFuture<CatalogueRefreshOutcome> refresh(Season season, int year) {
