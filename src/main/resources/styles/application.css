@@ -277,6 +277,39 @@
     -fx-border-color: #81505c;
 }
 
+.ledger-table .ledger-preference-toggle {
+    -fx-min-width: 32px;
+    -fx-pref-width: 32px;
+    -fx-max-width: 32px;
+    -fx-min-height: 28px;
+    -fx-pref-height: 28px;
+    -fx-max-height: 28px;
+    -fx-padding: 2px;
+    -fx-font-size: 13px;
+}
+.ledger-table .ledger-preference-active {
+    -fx-background-color: #405a80;
+    -fx-border-color: #7899c7;
+}
+.ledger-table .combo-box {
+    -fx-min-width: 66px;
+    -fx-pref-width: 70px;
+    -fx-max-width: 74px;
+}
+.anime-card .anime-card-preference-action {
+    -fx-min-width: 34px;
+    -fx-pref-width: 34px;
+    -fx-max-width: 34px;
+    -fx-min-height: 30px;
+    -fx-pref-height: 30px;
+    -fx-max-height: 30px;
+    -fx-padding: 2px;
+}
+.anime-card .ledger-preference-active {
+    -fx-background-color: #405a80;
+    -fx-border-color: #7899c7;
+}
+
 
 /* Search History */
 .history-workspace { -fx-background-color: #17191f; }
