@@ -83,6 +83,24 @@ public final class WindowStateStore {
         saveProperties(properties);
     }
 
+    /** Existing installations retain the original grid presentation by default. */
+    public CataloguePresentation loadCataloguePresentation() {
+        String saved = loadProperties().getProperty(CATALOGUE_PRESENTATION_KEY,
+                CataloguePresentation.GRID.name());
+        try {
+            return CataloguePresentation.valueOf(saved);
+        } catch (IllegalArgumentException invalid) {
+            return CataloguePresentation.GRID;
+        }
+    }
+
+    public void saveCataloguePresentation(CataloguePresentation presentation) throws IOException {
+        Objects.requireNonNull(presentation, "presentation");
+        Properties properties = loadProperties();
+        properties.setProperty(CATALOGUE_PRESENTATION_KEY, presentation.name());
+        saveProperties(properties);
+    }
+
     public void save(WindowState state) throws IOException {
         Objects.requireNonNull(state, "state");
         Properties properties = loadProperties();
