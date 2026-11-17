@@ -47,8 +47,7 @@ The SQLite database is `my_anime_watch_ledger.db`. If `LOCALAPPDATA` is unavaila
 - [Project reference](docs/PROJECT_REFERENCE.md) — authoritative requirements, finalized decisions, implementation overview, build workflow, and phase acceptance/closure checklist.
 - [Keyboard shortcuts](docs/KEYBOARD_SHORTCUTS.md) — current keyboard behaviour and shortcut support.
 - [Single-card catalogue carousel](docs/features/single-card-catalogue-carousel.md) — presentation behaviour, settings, controls, and manual verification.
-- [Automatic database backups](docs/features/automatic-database-backups.md) — approved defaults, configurable schedule/retention/location, safety rules, and implementation plan.
 
 ## Project status
 
-`develop` contains the merged single-card catalogue carousel (PR #18). The project reference records the approved requirements and current implementation. Run the Maven test suite and launch the JavaFX application locally when validating a checkout.
+`develop` contains the single-card catalogue carousel and configurable automatic database backups. The project reference is the authoritative source for requirements and implementation decisions.
