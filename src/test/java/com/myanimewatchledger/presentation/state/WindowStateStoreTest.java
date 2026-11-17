@@ -99,6 +99,7 @@ class WindowStateStoreTest {
         assertEquals(com.myanimewatchledger.config.ApplicationPaths.dataDirectory().resolve("backups"),
                 defaults.destination());
 
+        store.saveUiSoundsEnabled(false);
         var changed = new com.myanimewatchledger.config.AutomaticBackupSettings(false,
                 com.myanimewatchledger.config.BackupFrequency.MONTHLY, 5, temp.resolve("custom-backups"));
         store.saveAutomaticBackupSettings(changed);
