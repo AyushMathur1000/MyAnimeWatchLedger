@@ -988,7 +988,7 @@ locally outside the SQLite database.
   refresh is asynchronous and preserves prior successful data on failure.
 - **Settings:** MAL Client ID, Catalogue Presentation (Grid / Single-card
   Carousel), background-opening preference, sound and animation toggles,
-  database backup/restore, automatic backup settings (enablement, frequency, retention, and destination), and catalogue cache clearing.
+  database backup/restore, automatic backup settings (enablement, frequency, retention, and destination), and catalogue cache clearing. Automatic backups are enabled by default and run at startup when due; the defaults are Weekly frequency, 2 retained backups, and `<application-data>/backups`. Daily, Weekly, and Monthly schedules, retention count, and destination are configurable. The Settings workspace scrolls vertically when its content exceeds the available window height.
 
 ### 15.4 Phase 6 quality-of-life implementation baseline
 
@@ -1067,6 +1067,7 @@ quick-actions remain unchanged.
 | 1.4 | 2026-11-17 | Approved Change 002: add the persisted Grid / Single-card Carousel catalogue presentation preference and define carousel behaviour. |
 | 1.5 | 2026-11-17 | Documented carousel status and preference controls, keyboard navigation, settings application behaviour, and the merged implementation; corrected stale branch-status references. |
 | 1.6 | 2026-11-17 | Approved automatic database backups with configurable frequency, retention, and destination; documented defaults and safe retention rules. |
+| 1.7 | 2026-11-17 | Recorded the implemented automatic-backup behaviour and made the Settings workspace vertically scrollable. |
 
 
 ## 18. Approved requirement change — CHANGE-003
@@ -1091,3 +1092,30 @@ not in SQLite. Existing manual backup and restore remain available.
 The existing SQLite backup mechanism uses a consistent database snapshot
 and validates the resulting file; the automatic workflow should reuse
 that mechanism rather than copying the active database file directly.
+
+
+## 19. Implementation change — automatic backups
+
+Automatic backups are enabled by default and are checked once during
+application startup. The first startup without a recorded successful
+automatic backup creates one immediately. Subsequent backups become due
+after the configured interval: 24 hours for Daily, 7 days for Weekly,
+or one calendar month for Monthly.
+
+The defaults are Weekly, retain 2 automatic backups, and save them under
+the application data directory's `backups` folder. Settings allows the
+user to disable automatic backups, change the frequency and retention
+count, and select another destination. Changing the destination resets
+the last-successful timestamp so the newly selected folder receives a
+backup at the next startup.
+
+Backup creation reuses the validated SQLite snapshot service and runs
+asynchronously. A failed backup does not block startup or advance the
+last-successful timestamp. Retention applies only to files matching the
+automatic-backup naming pattern; manually created backups and unrelated
+files are not removed. Backup preferences and schedule metadata remain
+in the local configuration file outside SQLite. Backup files are
+unencrypted SQLite databases.
+
+The Settings workspace uses a vertical scrollbar when its content
+exceeds the available window height; horizontal scrolling is disabled.
