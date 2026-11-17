@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myanimewatchledger.domain.catalogue.*;
 import com.myanimewatchledger.domain.ledger.AnimePreference;
 import com.myanimewatchledger.domain.ledger.LedgerStatus;
+import com.myanimewatchledger.application.service.CatalogueService;
 import com.myanimewatchledger.infrastructure.persistence.*;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
