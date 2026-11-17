@@ -85,7 +85,7 @@ class WindowStateStoreTest {
     void invalidCataloguePresentationFallsBackToGrid() throws Exception {
         Path file = temp.resolve("config/ui.properties");
         java.nio.file.Files.createDirectories(file.getParent());
-        java.nio.file.Files.writeString(file, "catalogue.presentation=UNKNOWN\\n");
+        java.nio.file.Files.writeString(file, "catalogue.presentation=UNKNOWN\n");
         assertEquals(CataloguePresentation.GRID, new WindowStateStore(file).loadCataloguePresentation());
     }
 
