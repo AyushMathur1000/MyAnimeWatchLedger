@@ -443,3 +443,22 @@
 .catalogue-workspace .anime-carousel-card .button {
     -fx-min-height: 34px;
 }
+
+
+.anime-carousel-information-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+.anime-carousel-information-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+.anime-carousel-information-scroll > .scroll-bar:vertical {
+    -fx-pref-width: 9px;
+}
+.anime-carousel-information {
+    -fx-padding: 4px 14px 8px 0;
+}
+.anime-carousel-card .combo-box {
+    -fx-pref-width: 260px;
+}
