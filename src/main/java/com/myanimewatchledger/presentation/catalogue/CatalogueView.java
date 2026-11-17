@@ -485,8 +485,6 @@ public final class CatalogueView extends BorderPane {
         information.setFillWidth(true);
         information.setMinWidth(0);
         information.setMaxWidth(Double.MAX_VALUE);
-        information.getChildren().addAll(parts);
-
         // Let long synopses scroll inside the information column instead of
         // increasing the card beyond the available catalogue viewport.
         ScrollPane informationScroll = new ScrollPane(information);
@@ -538,7 +536,8 @@ public final class CatalogueView extends BorderPane {
         ledgerHeading.getStyleClass().add("anime-card-ledger");
         VBox statusEditor = new VBox(6, ledgerHeading, statusChoice);
         statusEditor.setMaxWidth(Double.MAX_VALUE);
-        parts.add(statusEditor);
+        information.getChildren().addAll(parts);
+        information.getChildren().add(statusEditor);
 
         HBox card = new HBox(36, posterNode, informationScroll);
         card.getStyleClass().addAll("anime-card", "anime-carousel-card");
