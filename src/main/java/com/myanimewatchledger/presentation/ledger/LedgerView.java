@@ -149,55 +149,83 @@ public final class LedgerView extends VBox {
 
         TableColumn<LedgerEntry, String> preference = new TableColumn<>("Preference");
         preference.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyStringWrapper(
-                data.getValue().preference() == null ? "Unassigned" : data.getValue().preference().name()));
+                data.getValue().preference() == null ? "NONE" : data.getValue().preference().name()));
         preference.setCellFactory(column -> new TableCell<>() {
-            private final ComboBox<String> choice = new ComboBox<>(FXCollections.observableArrayList("Unassigned", "Like", "Dislike"));
+            private final Button like = new Button("👍");
+            private final Button dislike = new Button("👎");
+            private final HBox buttons = new HBox(4, like, dislike);
             {
-                choice.setMaxWidth(Double.MAX_VALUE);
-                choice.setOnAction(event -> {
+                like.setTooltip(new Tooltip("Like this anime"));
+                like.setAccessibleText("Like this anime");
+                dislike.setTooltip(new Tooltip("Dislike this anime"));
+                dislike.setAccessibleText("Dislike this anime");
+                like.getStyleClass().add("ledger-preference-toggle");
+                dislike.getStyleClass().add("ledger-preference-toggle");
+                like.setOnAction(event -> {
                     LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
-                    if (entry != null) updatePreference(entry, switch (choice.getValue()) {
-                        case "Like" -> AnimePreference.LIKE;
-                        case "Dislike" -> AnimePreference.DISLIKE;
-                        default -> null;
-                    });
+                    if (entry != null) updatePreference(entry, AnimePreference.LIKE);
+                });
+                dislike.setOnAction(event -> {
+                    LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
+                    if (entry != null) updatePreference(entry, AnimePreference.DISLIKE);
                 });
             }
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                if (empty || item == null) setGraphic(null);
-                else { choice.setValue(item); setGraphic(choice); }
+                if (empty || item == null) {
+                    setGraphic(null);
+                    return;
+                }
+                like.getStyleClass().remove("ledger-preference-active");
+                dislike.getStyleClass().remove("ledger-preference-active");
+                if ("LIKE".equals(item)) like.getStyleClass().add("ledger-preference-active");
+                if ("DISLIKE".equals(item)) dislike.getStyleClass().add("ledger-preference-active");
+                setGraphic(buttons);
             }
         });
-        preference.setMinWidth(125);
+        preference.setMinWidth(88);
+        preference.setPrefWidth(94);
 
         TableColumn<LedgerEntry, String> priority = new TableColumn<>("Priority");
         priority.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyStringWrapper(
-                data.getValue().watchLaterPriority() == null ? "Unassigned" : data.getValue().watchLaterPriority().toString()));
+                data.getValue().status() != LedgerStatus.WATCH_LATER ? "N/A"
+                        : data.getValue().watchLaterPriority() == null ? "Unassigned"
+                        : data.getValue().watchLaterPriority().toString()));
         priority.setCellFactory(column -> new TableCell<>() {
             private final ComboBox<String> choice = new ComboBox<>();
+            private boolean rendering;
             {
                 choice.getItems().add("Unassigned");
                 for (int i = 1; i <= 10; i++) choice.getItems().add(Integer.toString(i));
-                choice.setMaxWidth(Double.MAX_VALUE);
+                choice.setPrefWidth(70);
+                choice.setMinWidth(66);
+                choice.setMaxWidth(74);
                 choice.setOnAction(event -> {
+                    if (rendering) return;
                     LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
                     if (entry != null && entry.status() == LedgerStatus.WATCH_LATER) {
-                        updatePriority(entry, "Unassigned".equals(choice.getValue()) ? null : Integer.valueOf(choice.getValue()));
+                        updatePriority(entry, "Unassigned".equals(choice.getValue())
+                                ? null : Integer.valueOf(choice.getValue()));
                     }
                 });
             }
             @Override protected void updateItem(String item, boolean empty) {
                 super.updateItem(item, empty);
-                LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
-                if (empty || item == null) setGraphic(null);
-                else {
+                if (empty || item == null) {
+                    setGraphic(null);
+                } else if ("N/A".equals(item)) {
+                    setGraphic(new Label("—"));
+                } else {
+                    rendering = true;
                     choice.setValue(item);
-                    choice.setDisable(entry == null || entry.status() != LedgerStatus.WATCH_LATER);
+                    rendering = false;
                     setGraphic(choice);
                 }
             }
         });
+        priority.setMinWidth(78);
+        priority.setPrefWidth(82);
+        priority.setMaxWidth(88);
         priority.setComparator((left, right) -> {
             if ("Unassigned".equals(left)) return "Unassigned".equals(right) ? 0 : 1;
             if ("Unassigned".equals(right)) return -1;
@@ -281,8 +309,8 @@ public final class LedgerView extends VBox {
         double usableWidth = Math.max(0, tableWidth - 18);
         title.setPrefWidth(usableWidth * 0.34);
         status.setPrefWidth(usableWidth * 0.11);
-        preference.setPrefWidth(usableWidth * 0.12);
-        priority.setPrefWidth(usableWidth * 0.09);
+        preference.setPrefWidth(Math.min(94, usableWidth * 0.09));
+        priority.setPrefWidth(Math.min(82, usableWidth * 0.07));
         added.setPrefWidth(usableWidth * 0.11);
         modified.setPrefWidth(usableWidth * 0.13);
         actions.setPrefWidth(Math.max(125, usableWidth * 0.10));
@@ -405,7 +433,7 @@ public final class LedgerView extends VBox {
                 table.refresh();
                 return;
             }
-            source.set(source.indexOf(entry), controller.find(entry.malId()).orElseThrow());
+            int index = source.indexOf(entry);\n            if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
             showFeedback("Anime preference updated.", false);
         } catch (RuntimeException failure) {
             showFeedback("Could not update preference: " + safeMessage(failure), true);
