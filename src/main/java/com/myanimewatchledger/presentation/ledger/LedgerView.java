@@ -434,7 +434,8 @@ public final class LedgerView extends VBox {
                 table.refresh();
                 return;
             }
-            int index = source.indexOf(entry);\n            if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
+            int index = source.indexOf(entry);
+            if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
             showFeedback("Anime preference updated.", false);
         } catch (RuntimeException failure) {
             showFeedback("Could not update preference: " + safeMessage(failure), true);
