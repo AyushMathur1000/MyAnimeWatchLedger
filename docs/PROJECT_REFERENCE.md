@@ -955,3 +955,22 @@ This document is the single authoritative project reference. Requirements,
 implementation decisions, and acceptance changes must be updated here rather
 than maintained in parallel specification files. Test cases should trace to
 requirement identifiers and acceptance criteria.
+
+
+## 17. Approved requirement change — CHANGE-002
+
+The Catalogue now supports a user-selectable Single-card Carousel in
+addition to the adaptive Grid presentation. The carousel shows one anime
+card at a time, with horizontal Previous/Next navigation and no
+neighbouring-card previews. Its expanded card uses a responsive
+poster-and-information layout. Grid remains the default presentation.
+The global selection is stored in the existing local UI preferences
+file, outside the SQLite catalogue cache and permanent ledger. Both
+presentations use the same filtered catalogue result set and do not
+cause additional MAL requests.
+
+### Change record
+
+| Version | Date | Description |
+|---|---|---|
+| 1.4 | 2026-11-17 | Approved Change 002: add the persisted Grid / Single-card Carousel catalogue presentation preference and define carousel behaviour. |
