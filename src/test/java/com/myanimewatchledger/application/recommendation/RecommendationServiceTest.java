@@ -80,7 +80,15 @@ class RecommendationServiceTest {
         assertEquals(LedgerStatus.WATCH_LATER, added.status());
         assertEquals(AnimePreference.LIKE, added.preference());
         assertEquals(2, added.watchLaterPriority());
-        assertEquals(added, persistence.ledger().findByMalId(50).orElseThrow());
+        var persisted = persistence.ledger().findByMalId(50).orElseThrow();
+        assertEquals(added.malId(), persisted.malId());
+        assertEquals(added.title(), persisted.title());
+        assertEquals(added.status(), persisted.status());
+        assertEquals(added.preference(), persisted.preference());
+        assertEquals(added.watchLaterPriority(), persisted.watchLaterPriority());
+        // SQLite stores ledger timestamps as epoch milliseconds.
+        assertEquals(added.dateAdded().toEpochMilli(), persisted.dateAdded().toEpochMilli());
+        assertEquals(added.lastModified().toEpochMilli(), persisted.lastModified().toEpochMilli());
     }
 
     @Test
