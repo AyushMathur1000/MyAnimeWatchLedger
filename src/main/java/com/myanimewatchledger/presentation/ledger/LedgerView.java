@@ -163,11 +163,11 @@ public final class LedgerView extends VBox {
                 dislike.getStyleClass().add("ledger-preference-toggle");
                 like.setOnAction(event -> {
                     LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
-                    if (entry != null) updatePreference(entry, AnimePreference.LIKE);
+                    if (entry != null) updatePreference(entry, entry.preference() == AnimePreference.LIKE ? null : AnimePreference.LIKE);
                 });
                 dislike.setOnAction(event -> {
                     LedgerEntry entry = getTableRow() == null ? null : getTableRow().getItem();
-                    if (entry != null) updatePreference(entry, AnimePreference.DISLIKE);
+                    if (entry != null) updatePreference(entry, entry.preference() == AnimePreference.DISLIKE ? null : AnimePreference.DISLIKE);
                 });
             }
             @Override protected void updateItem(String item, boolean empty) {
@@ -436,7 +436,7 @@ public final class LedgerView extends VBox {
             }
             int index = source.indexOf(entry);
             if (index >= 0) source.set(index, controller.find(entry.malId()).orElseThrow());
-            showFeedback("Anime preference updated.", false);
+            showFeedback(preference == null ? "Anime preference cleared." : "Anime preference updated.", false);
         } catch (RuntimeException failure) {
             showFeedback("Could not update preference: " + safeMessage(failure), true);
             table.refresh();
