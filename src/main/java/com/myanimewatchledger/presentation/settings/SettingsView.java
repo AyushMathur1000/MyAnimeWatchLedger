@@ -319,13 +319,6 @@ public final class SettingsView extends VBox {
         };
     }
 
-    private static String presentationLabel(CataloguePresentation presentation) {
-        return switch (presentation) {
-            case GRID -> "Grid";
-            case SINGLE_CARD_CAROUSEL -> "Single-card carousel";
-        };
-    }
-
     private void updateConfiguredState(Label label) {
         label.setText(services.isMalConfigured()
                 ? "Client ID configured. The value is hidden."
