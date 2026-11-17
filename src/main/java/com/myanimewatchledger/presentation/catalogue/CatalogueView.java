@@ -33,6 +33,7 @@ public final class CatalogueView extends BorderPane {
     private static final ObjectMapper JSON = new ObjectMapper();
     private final CatalogueController controller;
     private final LongConsumer onOpenDetails;
+    private final boolean carouselMode;
     private final TabPane tabs = new TabPane();
     private final ComboBox<Season> seasonChoice = new ComboBox<>();
     private final Spinner<Integer> yearChoice = new Spinner<>(1900, 9999, java.time.Year.now().getValue());
@@ -53,6 +54,7 @@ public final class CatalogueView extends BorderPane {
     public CatalogueView(CatalogueController controller, Long selectedSearchId, LongConsumer onOpenDetails) {
         this.controller = Objects.requireNonNull(controller);
         this.onOpenDetails = Objects.requireNonNull(onOpenDetails);
+        this.carouselMode = controller.cataloguePresentation() == CataloguePresentation.SINGLE_CARD_CAROUSEL;
         getStyleClass().add("catalogue-workspace");
         setPadding(new Insets(18, 22, 20, 22));
         seasonChoice.getItems().setAll(Season.values());
@@ -271,7 +273,9 @@ public final class CatalogueView extends BorderPane {
         try {
             List<CatalogueAnime> anime = controller.loadAnime(
                     state.search.searchId(), state.searchField.getText(), hideLedgerEntries);
-            List<Node> desiredNodes = new ArrayList<>(anime.size() == 0 ? 1 : anime.size());
+            List<Node> desiredNodes = new ArrayList<>(anime.isEmpty() ? 1 : anime.size());
+            Long previouslySelected = state.selectedMalId();
+            state.visibleIds.clear();
 
             for (CatalogueAnime item : anime) {
                 AnimePreference preference = controller.findLedgerEntry(item.malId())
@@ -279,10 +283,12 @@ public final class CatalogueView extends BorderPane {
                 CardCacheEntry cached = state.cardCache.get(item.malId());
                 if (cached == null || !cached.matches(item, preference)) {
                     cached = new CardCacheEntry(item.metadataJson(), item.preferredTitle(),
-                            item.ledgerStatus(), preference, createCard(item, preference));
+                            item.ledgerStatus(), preference, createCard(item, preference),
+                            createCarouselCard(item, preference));
                     state.cardCache.put(item.malId(), cached);
                 }
                 desiredNodes.add(cached.card());
+                state.visibleIds.add(item.malId());
             }
 
             if (anime.isEmpty()) {
@@ -293,6 +299,12 @@ public final class CatalogueView extends BorderPane {
             }
 
             reconcileChildren(state.cards, desiredNodes);
+            if (previouslySelected != null && state.visibleIds.contains(previouslySelected)) {
+                state.currentIndex = state.visibleIds.indexOf(previouslySelected);
+            } else if (state.currentIndex >= state.visibleIds.size()) {
+                state.currentIndex = Math.max(0, state.visibleIds.size() - 1);
+            }
+            renderCarousel(state);
             state.message.setText(anime.size() + " anime");
         } catch (RuntimeException failure) {
             state.message.setText("Could not load cached catalogue: " + safeMessage(failure));
@@ -431,17 +443,26 @@ public final class CatalogueView extends BorderPane {
 
         Node posterNode = parts.remove(0);
         if (posterNode instanceof StackPane posterFrame) {
-            posterFrame.setMinSize(300, 430);
-            posterFrame.setPrefSize(300, 430);
-            posterFrame.setMaxSize(300, 430);
+            posterFrame.setMinSize(270, 390);
+            posterFrame.setPrefSize(270, 390);
+            posterFrame.setMaxSize(270, 390);
             for (Node child : posterFrame.getChildren()) {
                 if (child instanceof ImageView image) {
-                    image.setFitWidth(290);
-                    image.setFitHeight(420);
+                    image.setFitWidth(260);
+                    image.setFitHeight(380);
                 }
             }
         }
 
+        for (Node part : parts) {
+            if (part instanceof Label label && label.getStyleClass().contains("anime-card-synopsis")) {
+                label.setMaxHeight(Double.MAX_VALUE);
+                VBox.setVgrow(label, Priority.ALWAYS);
+            }
+            if (part instanceof Label label && label.getStyleClass().contains("anime-card-title")) {
+                label.setStyle("-fx-font-size: 21px;");
+            }
+        }
         VBox information = new VBox(12);
         information.getStyleClass().add("anime-carousel-information");
         information.setFillWidth(true);
@@ -562,21 +583,32 @@ public final class CatalogueView extends BorderPane {
     }
 
     private final class SeasonTab {
-        private Long selectedMalId() {
-            return visibleIds.isEmpty() ? null : visibleIds.get(Math.max(0,
-                    Math.min(currentIndex, visibleIds.size() - 1)));
-        }
         private CatalogueSearch search;
         private final Tab tab = new Tab();
         private final TextField searchField = new TextField();
         private final FlowPane cards = new FlowPane(14, 14);
         private final ScrollPane scroll = new ScrollPane(cards);
+        private final StackPane carouselCardHost = new StackPane();
+        private final VBox carouselPane = new VBox(12);
+        private final Label carouselEmptyState = new Label("No anime match this search or the active filters.");
+        private final Button previousCard = new Button("← Previous");
+        private final Button nextCard = new Button("Next →");
+        private final Label carouselPosition = new Label("0 / 0");
+        private final List<Long> visibleIds = new ArrayList<>();
+        private int currentIndex;
+        private final StackPane viewArea = new StackPane();
         private final Label message = new Label();
         private final ProgressIndicator progress = new ProgressIndicator();
         private final VBox content = new VBox(6);
         private final Map<Long, CardCacheEntry> cardCache = new HashMap<>();
         private final Label emptyState = new Label();
         private boolean refreshing;
+
+        private Long selectedMalId() {
+            return visibleIds.isEmpty() ? null : visibleIds.get(Math.max(0,
+                    Math.min(currentIndex, visibleIds.size() - 1)));
+        }
+
         private SeasonTab(CatalogueSearch search) {
             this.search = search;
             searchField.setPromptText("Search this season… (AND across words and metadata)");
@@ -585,6 +617,30 @@ public final class CatalogueView extends BorderPane {
             cards.setPrefWrapLength(1050);
             scroll.setFitToWidth(true);
             scroll.getStyleClass().add("catalogue-scroll");
+
+            carouselCardHost.setAlignment(Pos.CENTER);
+            carouselCardHost.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            carouselPane.setPadding(new Insets(14, 10, 10, 10));
+            carouselPane.setAlignment(Pos.CENTER);
+            VBox.setVgrow(carouselCardHost, Priority.ALWAYS);
+            carouselEmptyState.getStyleClass().add("catalogue-empty-state");
+            previousCard.setOnAction(event -> {
+                currentIndex = Math.max(0, currentIndex - 1);
+                renderCarousel(this);
+            });
+            nextCard.setOnAction(event -> {
+                currentIndex = Math.min(visibleIds.size() - 1, currentIndex + 1);
+                renderCarousel(this);
+            });
+            HBox carouselNavigation = new HBox(12, previousCard, carouselPosition, nextCard);
+            carouselNavigation.setAlignment(Pos.CENTER);
+            carouselPane.getChildren().addAll(carouselCardHost, carouselNavigation);
+            viewArea.getChildren().addAll(scroll, carouselPane);
+            scroll.setVisible(!carouselMode);
+            scroll.setManaged(!carouselMode);
+            carouselPane.setVisible(carouselMode);
+            carouselPane.setManaged(carouselMode);
+
             Button clearSearch = new Button("Clear search");
             clearSearch.setOnAction(event -> searchField.clear());
             HBox searchRow = new HBox(8, searchField, clearSearch, message, progress);
@@ -592,14 +648,15 @@ public final class CatalogueView extends BorderPane {
             progress.setPrefSize(22, 22);
             progress.setVisible(false);
             progress.setManaged(false);
-            VBox.setVgrow(scroll, Priority.ALWAYS);
+            VBox.setVgrow(viewArea, Priority.ALWAYS);
             content.setPadding(new Insets(6, 2, 0, 2));
-            content.getChildren().addAll(searchRow, scroll);
+            content.getChildren().addAll(searchRow, viewArea);
         }
     }
 
     private record CardCacheEntry(String metadataJson, String preferredTitle,
-                                  LedgerStatus ledgerStatus, AnimePreference preference, VBox card) {
+                                  LedgerStatus ledgerStatus, AnimePreference preference,
+                                  VBox card, HBox carouselCard) {
         private boolean matches(CatalogueAnime item, AnimePreference currentPreference) {
             return Objects.equals(metadataJson, item.metadataJson())
                     && Objects.equals(preferredTitle, item.preferredTitle())
