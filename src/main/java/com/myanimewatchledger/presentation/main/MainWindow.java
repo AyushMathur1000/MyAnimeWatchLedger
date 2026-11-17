@@ -166,6 +166,12 @@ public final class MainWindow {
         navigate(MainNavigation.CATALOGUE);
     }
 
+    /** Ledger actions always navigate to Details, regardless of the Catalogue background-open preference. */
+    private void openAnimeDetailsFromLedger(long malId) {
+        navigate(MainNavigation.ANIME_DETAILS);
+        animeDetailsView.openAnime(malId);
+    }
+
     private void openAnimeDetails(long malId) {
         if (!openAnimeDetailsInBackground) navigate(MainNavigation.ANIME_DETAILS);
         animeDetailsView.openAnime(malId);
