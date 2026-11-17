@@ -153,7 +153,8 @@ public final class LedgerView extends VBox {
             }
         });
         status.setMinWidth(155);
-        status.setPrefWidth(175);
+        status.setPrefWidth(155);
+        status.setMaxWidth(155);
 
         TableColumn<LedgerEntry, String> preference = new TableColumn<>("Preference");
         preference.setCellValueFactory(data -> new javafx.beans.property.ReadOnlyStringWrapper(
@@ -315,21 +316,18 @@ public final class LedgerView extends VBox {
                                    TableColumn<LedgerEntry, java.time.Instant> modified,
                                    TableColumn<LedgerEntry, LedgerEntry> actions) {
         if (tableWidth <= 0) return;
+
+        // Every column except Anime is sized to its content/control. Anime absorbs
+        // the remaining width, keeping the compact columns anchored at the right.
         double usableWidth = Math.max(0, tableWidth - 18);
-        // Keep the compact action columns fixed, then distribute every remaining
-        // pixel across the title, status and date columns. This avoids the unused
-        // filler area produced by percentage widths that total less than 100%.
-        double preferenceWidth = 94;
-        double priorityWidth = 82;
-        double actionsWidth = 140;
-        double flexibleWidth = Math.max(0, usableWidth - preferenceWidth - priorityWidth - actionsWidth);
-        title.setPrefWidth(flexibleWidth * 0.48);
-        status.setPrefWidth(flexibleWidth * 0.20);
-        preference.setPrefWidth(preferenceWidth);
-        priority.setPrefWidth(priorityWidth);
-        added.setPrefWidth(flexibleWidth * 0.14);
-        modified.setPrefWidth(flexibleWidth * 0.18);
-        actions.setPrefWidth(actionsWidth);
+        double fixedWidth = 155 + 94 + 82 + 150 + 150 + 140;
+        title.setPrefWidth(Math.max(280, usableWidth - fixedWidth));
+        status.setPrefWidth(155);
+        preference.setPrefWidth(94);
+        priority.setPrefWidth(82);
+        added.setPrefWidth(150);
+        modified.setPrefWidth(150);
+        actions.setPrefWidth(140);
     }
 
     private ComboBox<LedgerStatus> statusCombo() {
@@ -379,7 +377,8 @@ public final class LedgerView extends VBox {
             }
         });
         column.setMinWidth(145);
-        column.setPrefWidth(160);
+        column.setPrefWidth(150);
+        column.setMaxWidth(150);
         return column;
     }
 
